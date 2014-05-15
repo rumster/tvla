@@ -1,0 +1,430 @@
+//#define CondAssign(cond,pred,result) pred = ((cond) ? (result) : (pred))
+//#define CondAssign(cond,pred,result) pred = ((cond) & (result)) | ( !(cond) & (pred))
+#define CondAssign(cond,pred,result) pred = ((pred) ? ((!(cond)) | (result)) : ((cond) & (result)))
+#define UPDATE_AT(from,to)\
+    CondAssign(tr_scheduled(t),at[from](t),0)\
+    CondAssign(tr_scheduled(t),at[to](t),1)\
+
+%action schedule(loc) {
+  %t "schedule " + loc
+  %f { tr_scheduled(tr) & at[loc](tr), &/{id(t) : id in threadIds} }
+  %p E(t) at[loc](t) & tr_scheduled(t)
+}
+
+%action unschedule() {
+  %t "unschedule"
+  {
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+%action ifNonDet(from, to) {
+  %t "if(nondet())"
+  %compose at[from](v) & at[to](v2)
+  %p E(t) at[from](t) & tr_scheduled(t)
+  {
+    UPDATE_AT(from,to)
+  }
+}
+
+%action skip(from, to) {
+  %t "skip"
+  %compose at[from](v) & at[to](v2)
+  %p E(t) at[from](t) & tr_scheduled(t)
+  {
+    UPDATE_AT(from,to)
+  }
+}
+
+// lhs is a local variable
+%action newObject(from, to, lhs, type) {
+  %t lhs + "=new("  + type + ")"
+//  %compose |/{at[from](v1) & at[to](v2) & r[gvar,n](v3) : gvar in globalpointers}
+  %compose at[from](v) & at[to](v2)
+  %p tr_scheduled(tr) & E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v) & at[to](v2)
+//  %message (E(o) rv[lhs](tr,o)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  %message (E(t) tr_scheduled(t) & r_out[lhs](t)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  %new
+  {
+    UPDATE_AT(from,to)
+    CondAssign(t == tr, rv[lhs](t,o), isNew(o))
+    t[type](o) = t[type](o) | isNew(o)
+
+    t[n](v1,v2) = t[n](v1,v2) | isNew(v1) & isNew(v2)
+    // Global pointers don't change
+    foreach (var in globalpointers) {
+      foreach (fld in recfields) {
+        r[var,n](v) = r[var,n](v)
+      }
+    }
+    // Field values don't change
+    foreach (fld in fields) {
+      is[fld](v) = is[fld](v)
+      r_in[fld](v) = r_in[fld](v)
+      r_out[fld](v) = r_out[fld](v)
+    }
+
+    foreach (var in localpointers-{lhs}) {
+      is[var](v) = is[var](v)
+      r_in[var](v) = r_in[var](v)
+      r_out[var](v) = r_out[var](v)
+    }
+    is[lhs](v) = is[lhs](v)
+    r_in[lhs](v) = r_in[lhs](v) | isNew(v)
+    r_out[lhs](v) = r_out[lhs](v) | v==tr
+
+    acquired(lock) = acquired(lock)
+
+    foreach (var in localpointers-{lhs}) {
+      foreach (fld in fields) {
+        r_rv[var](v) = r_rv[var](v)
+      }
+    }
+    foreach (fld in fields) {
+      r_rv[lhs](v) = r_rv[lhs](v) | isNew(v)
+    }
+
+    foreach (label in locations - {from,to}) {
+      foreach (var in localpointers) {
+        r_by[label,var](v) = r_by[label,var](v)
+      }
+    }
+    foreach (var in localpointers-{lhs}) {
+      r_by[from,var](v) = r_by[from,var](v) & !(rv[var](tr,v) & (!is[var](v) | E(t) at[from](t) & rv[var](t,v)))
+      r_by[to,var](v) = r_by[from,var](v) | rv[var](tr,v)
+    }
+    r_by[from,lhs](v) = r_by[from,lhs](v) & !(rv[lhs](tr,v) & (!is[lhs](v) | E(t) at[from](t) & rv[lhs](t,v)))
+    r_by[to,lhs](v) = r_by[to,lhs](v) | at[from](tr) & isNew(v)
+
+    foreach (label in locations-{from,to}) {
+      heap_at[label](v) = heap_at[label](v)
+    }
+    heap_at[from](v) = heap_at[from](v) & !E(t) t!=tr & E(o) |/{ rv[var](tr,o) & t[n](o,v) : var in localpointers}
+    heap_at[to](v) =    heap_at[to](v)
+                     | (heap_at[from](v) & E(o) |/{ rv[var](tr,o) & t[n](o,v) : var in localpointers})
+                     | isNew(v)
+
+    foreach (label in locations-{from,to}) {
+      locked_at[label](v) = locked_at[label](v)
+    }
+    locked_at[from](v) = locked_at[from](v) & !acq(v,tr)
+    locked_at[to](v) = locked_at[to](v) | locked_at[from](v) & acq(v,tr)
+
+    foreach (gvar in globalpointers) {
+      nn[gvar]() = nn[gvar]()
+    }
+  }
+}
+
+%action assignNullToGlobal(from, to, lhs) {
+  %t lhs + "=null"
+  %compose at[from](v) & at[to](v2) & r[lhs,n](v3)
+  %p E(t) at[from](t) & tr_scheduled(t)
+  // %message (?) -> "At location " + from + ": " + "Assigning null to " + lhs + " could cause a memory leak!"
+  {
+    UPDATE_AT(from,to)
+    g[lhs](v) = 0
+  }
+}
+
+// lhs is global; rhs is local
+%action assignLocalToGlobal(from, to, lhs, rhs) {
+  %t lhs + "="  + rhs
+  %compose at[from](v1) & at[to](v2) //& r[lhs,n](v3)
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (E(o) g[lhs](o)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    g[lhs](v) = E(t) tr_scheduled(t) & rv[rhs](t,v)
+  }
+}
+
+// lhs is local; rhs is global
+%action assignGlobalToLocal(from, to, lhs, rhs) {
+  %t lhs + "="  + rhs
+  %compose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %message (E(t,o) tr_scheduled(t) & rv[lhs](t,o)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    rv[lhs](t,v) = rv[lhs](t,v) | E(t1) tr_scheduled(t1) & t==t1 & g[rhs](v)
+  }
+}
+
+%action assignNullToLocal(from, to, lhs) {
+  %t lhs + "=null"
+  %compose at[from](v1) & at[to](v2)// & r[gvar,n](v3) : gvar in globalpointers}
+  // %message (?) -> "At location " + from + ": " + "Assigning null to " + lhs + " could cause a memory leak!"
+  %p E(t) at[from](t) & tr_scheduled(t)
+  {
+    UPDATE_AT(from,to)
+    rv[lhs](t,v) = rv[lhs](t,v) & !tr_scheduled(t)
+  }
+}
+
+// lhs and rhs are local variables
+%action getField(from, to, lhs, rhs, fld) {
+  %t lhs + "=" + rhs + "->" + fld
+  %compose at[from](v1) & at[to](v2)
+  %f {tr_scheduled(t) & rv[lhs](t,m_lhs) & rv[rhs](t,m_rhs) & fld(m_rhs,m1) & t[fld](m1,m2)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %message (!E(t,o) tr_scheduled(t) & rv[rhs](t,o)) -> "At location " + from + ": " + "Possible null dereference via " + rhs + "!"
+  %message (E(t,o1,o2) tr_scheduled(t) & rv[lhs](t,o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    rv[lhs](t,v) = rv[lhs](t,v) | tr_scheduled(t) & E(v1) rv[rhs](t,v1) & fld(v1,v)
+  }
+}
+
+// lhs is global; rhs is local
+%action getFieldLocalToGlobal(from, to, lhs, rhs, fld) {
+  %t lhs + "=" + rhs + "->" + fld
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %f {tr_scheduled(t) & g[lhs](m_lhs) & rv[rhs](t,m_rhs) & fld(m_rhs,m1) & t[fld](m1,m2)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (!E(t,o) rv[rhs](t,o)) -> "At location " + from + ": " + "Possible null dereference via " + rhs + "!"
+  %message (E(o1,o2) g[lhs](o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    g[lhs](v) = g[lhs](v) | E(t1) tr_scheduled(t1) & E(v1) rv[rhs](t1,v1) & fld(v1,v)
+  }
+}
+
+// lhs is local; rhs is global
+%action getFieldGlobalToLocal(from, to, lhs, rhs, fld) {
+  %t lhs + "=" + rhs + "->" + fld
+  %compose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %f {tr_scheduled(t) & rv[lhs](t,m_lhs) & g[rhs](m_rhs) & fld(m_rhs,m1) & t[fld](m1,m2)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %message (!E(o) g[rhs](o)) -> "At location " + from + ": " + "Possible null dereference via " + rhs + "!"
+  %message (E(t,o1,o2) tr_scheduled(t) & rv[lhs](t,o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    rv[lhs](t,v) = rv[lhs](t,v) | E(t1) tr_scheduled(t1) & E(v1) t == t1 & g[rhs](v1) & fld(v1,v)
+  }
+}
+
+// lhs is local
+%action assignFieldNull(from, to, lhs, fld) {
+  %t lhs + "->" + fld + "=null"
+  %compose at[from](v1) & at[to](v2)
+  %f {tr_scheduled(t) & rv[lhs](t,o) & fld(o,o2) & t[fld](o2,o3)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)
+  // %message (?) -> "At location " + from + ": " + "Assigning null to " + lhs + "->" + fld + " could cause a memory leak!"
+  %message (!E(t,o) tr_scheduled(t) & rv[lhs](t,o)) -> "At location " + from + ": " + "Possible null dereference via " + lhs + "!"
+  {
+    UPDATE_AT(from,to)
+    fld(v1,v2) = fld(v1,v2) & !E(t) tr_scheduled(t) & rv[lhs](t,v1)
+  }
+}
+
+// lhs is global
+%action assignFieldNullGlobal(from, to, lhs, fld) {
+  %t lhs + "->" + fld + "=null"
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3) & at[label](v4) : label in locations}
+  %f {tr_scheduled(t) & g[lhs](o) & fld(o,o2) & t[fld](o2,o3)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  // %message (?) -> "At location " + from + ": " + "Assigning null to " + lhs + "->" + fld + " could cause a memory leak!"
+  %message (!E(o) g[lhs](o)) -> "At location " + from + ": " + "Possible null dereference via " + lhs + "!"
+  {
+    UPDATE_AT(from,to)
+    fld(v1,v2) = fld(v1,v2) & !g[lhs](v1)
+  }
+}
+
+// lhs and rhs are local
+%action assignField(from, to, lhs, fld, rhs) {
+  %t lhs + "->" + fld + "=" + rhs
+  %compose at[from](v1) & at[to](v2)
+  %f {tr_scheduled(t) & rv[lhs](t,o) & fld(o,o2) & rv[rhs](t,o3) & t[fld](o3,o4)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)
+  %message (E(t,o1,o2) tr_scheduled(t) & rv[lhs](t,o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + "->" + fld + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    fld(v1,v2) = fld(v1,v2) | E(t) tr_scheduled(t) & rv[lhs](t,v1) & rv[rhs](t,v2)
+  }
+}
+
+// lhs is global; rhs is local
+%action assignFieldLocalToGlobal(from, to, lhs, fld, rhs) {
+  %t lhs + "->" + fld + "=" + rhs
+  %compose          at[from](v1) & at[to](v2) & r[lhs,n](v3) // & r[lhs,n](v3) & at[label](v4) : label in locations}
+  %f {tr_scheduled(t) & g[lhs](o) & fld(o,o2) & rv[rhs](t,o3) & t[fld](o3,o4)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose   at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (E(o1,o2) g[lhs](o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + "->" + fld + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    fld(v1,v2) = fld(v1,v2) | E(t) tr_scheduled(t) & g[lhs](v1) & rv[rhs](t,v2)
+  }
+}
+
+// lhs is local; rhs is global
+%action assignFieldGlobalToLocal(from, to, lhs, fld, rhs) {
+  %t lhs + "->" + fld + "=" + rhs
+  %compose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %f {tr_scheduled(t) & rv[lhs](t,o) & fld(o,o2) & g[rhs](o3) & t[fld](o3,o4)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[rhs,n](v3)
+  %message (E(t,o1,o2) tr_scheduled(t) & rv[lhs](t,o1) & fld(o1,o2)) -> "At location " + from + ": " + "Internal error: " + lhs + "->" + fld + " is not null!"
+  {
+    UPDATE_AT(from,to)
+    fld(v1,v2) = fld(v1,v2) | E(t) tr_scheduled(t) & rv[lhs](t,v1) & g[rhs](v2)
+  }
+}
+
+%action startThread(from, to, startAt, id) {
+  %t "startThread(" + startAt + ", " + id + ")"
+  %compose at[from](v1) & at[to](v2) & at[startAt](v3)
+  //%p tr_scheduled(tr)
+  %p E(t) at[from](t) & tr_scheduled(t) & !E(t1) id(t1)
+  %new
+  {
+    UPDATE_AT(from,to)
+    isthread(t) = isthread(t) | isNew(t)
+//    alloc[from](t) = alloc[from](t) | isNew(t)
+    at[startAt](t) = at[startAt](t) | isNew(t)
+    id(t) = id(t) | isNew(t)
+
+    t[n](v1,v2) = t[n](v1,v2) | isNew(v1) & isNew(v2)
+    // Global pointers don't change
+    foreach (var in globalpointers) {
+      foreach (fld in recfields) {
+        r[var,n](v) = r[var,n](v)
+      }
+    }
+    // Field values don't change
+    foreach (fld in fields) {
+      is[fld](v) = is[fld](v)
+      r_in[fld](v) = r_in[fld](v)
+      r_out[fld](v) = r_out[fld](v)
+    }
+    // Local variable values don't change
+    foreach (var in localpointers) {
+      is[var](v) = is[var](v)
+      r_in[var](v) = r_in[var](v)
+      r_out[var](v) = r_out[var](v)
+    }
+    // The state of locks doesn't change
+    acquired(lock) = acquired(lock)
+
+    foreach (var in localpointers-{lhs}) {
+      foreach (fld in fields) {
+        r_rv[var](v) = r_rv[var](v)
+      }
+    }
+
+    foreach (label in locations) {
+      foreach (var in localpointers) {
+        r_by[label,var](v) = r_by[label,var](v)
+      }
+    }
+
+    foreach (label in locations) {
+      heap_at[label](v) = heap_at[label](v)
+    }
+
+    foreach (label in locations) {
+      locked_at[label](v) = locked_at[label](v)
+    }
+
+    foreach (gvar in globalpointers) {
+      nn[gvar]() = nn[gvar]()
+    }
+  }
+}
+
+// lhs is a local variable
+%action acquire_succeded(from, to, lhs) {
+  %t "acquire(" + lhs + ") succeded"
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %f {tr_scheduled(t) & rv[lhs](t,o) & acq(o,t)}
+  %p E(t) at[from](t) & tr_scheduled(t) & !(E(o) rv[lhs](t,o) & acquired(o))
+  %messagecompose at[from](v1) & at[to](v2)// & at[to](v3)
+  %message (A(t,o) !tr_scheduled(t) & rv[lhs](t,o)) -> "At location " + from + ": " + "Attempt to acquire using a null object!"
+  {
+    UPDATE_AT(from,to)
+    acq(v,t) = acq(v,t) | tr_scheduled(t) & rv[lhs](t,v)
+  }
+}
+
+// lhs is a global variable
+%action acquire_succeded(from, to, lhs) {
+  %t "acquire(" + lhs + ") succeded"
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %f {tr_scheduled(t) & g[lhs](o) & acq(o,t)}
+//  %p E(t) at[from](t) & tr_scheduled(t) & (!E(t1,o1) g[lhs](o1) & acq(o1,t1))
+  %p E(t) at[from](t) & tr_scheduled(t) & (!E(o) g[lhs](o) & acquired(o))
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (A(o) !g[lhs](o)) -> "At location " + from + ": " + "Attempt to acquire using a null object!"
+  {
+    UPDATE_AT(from,to)
+    CondAssign(E(t1) tr_scheduled(t1) & t == t1 & g[lhs](v), acq(v,t), 1)
+  }
+}
+
+// lhs is a local variable
+%action acquire_failed(from, to, lhs) {
+  %t "acquire(" + lhs + ") failed"
+  %compose at[from](v1) & at[to](v2)
+  %f {tr_scheduled(t) & rv[lhs](t,o1) & acq(o1,t)}
+  %p E(t) at[from](t) & tr_scheduled(t) & !(!E(t1,o) rv[lhs](t1,o) & acq(o,t1))
+  %messagecompose at[from](v1) & at[to](v2)
+  %message (E(t,o) tr_scheduled(t) & rv[lhs](t,o) & acq(o,t)) -> "At location " + from + ": " + "Attempt to double lock by " + lhs + "!"
+  {
+    // When acquiring fails then the action loops back to the same
+    // location.  To avoid modeling errors we don't advance the
+    // program counter.  This is the same as doing UPDATE_AT(from,from)
+  }
+}
+
+// lhs is a global variable
+%action acquire_failed(from, to, lhs) {
+  %t "acquire(" + lhs + ") failed"
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %f {tr_scheduled(t) & g[lhs](o1) & acq(o1,t)}
+  %p E(t) at[from](t) & tr_scheduled(t) & !(!E(t1,o) g[lhs](o) & acq(o,t1))
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (E(t,o) g[lhs](o) & tr_scheduled(t) & acq(o,t)) -> "At location " + from + ": " + "Attempt to double lock by " + lhs + "!"
+  {
+    // When acquiring fails then the action loops back to the same
+    // location.  To avoid modeling errors we don't advance the
+    // program counter.  This is the same as doing UPDATE_AT(from,from)
+  }
+}
+
+// lhs is a local variable
+%action release(from, to, lhs) {
+  %t "release(" + lhs + ")"
+  %compose at[from](v1) & at[to](v2)
+  %f {tr_scheduled(t) & rv[lhs](t,o1) & acq(o1,t)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)
+  %message (!E(t,o) rv[lhs](t,o) & !acq(o,t)) -> "At location " + from + ": " + "Attempt to double free by " + lhs + "!"
+  {
+    UPDATE_AT(from,to)
+    acq(o,t) = E(t1) tr_scheduled(t1) & acq(o,t) & !(t == t1 & rv[lhs](t,o))
+  }
+}
+
+// lhs is a global variable
+%action release(from, to, lhs) {
+  %t "release(" + lhs + ")"
+  %compose at[from](v1) & at[to](v2)// & r[lhs,n](v3) & at[label](v4) : label in locations}
+  %f {tr_scheduled(t) & g[lhs](o1) & acq(o1,t)}
+  %p E(t) at[from](t) & tr_scheduled(t)
+  %messagecompose at[from](v1) & at[to](v2)// & r[lhs,n](v3)
+  %message (!E(t,o) g[lhs](o) & !acq(o,t)) -> "At location " + from + ": " + "Attempt to double free by " + lhs + "!"
+  {
+    UPDATE_AT(from,to)
+    acq(o,t) = E(t1) tr_scheduled(t1) & acq(o,t) & !(t == t1 & g[lhs](o))
+  }
+}

@@ -1,0 +1,330 @@
+package tvla.language.BUC;
+
+import tvla.logic.*;
+import tvla.formulae.*;
+import tvla.language.*;
+import tvla.language.TVP.*;
+import tvla.language.TVM.*;
+import tvla.util.*;
+import com.ibm.dk.dps.io.CPreProcessorStream;
+import java.util.*;
+import java.io.*;
+
+parser code {:
+    static BUCLex scanner;
+    static String entry;
+    static CPreProcessorStream stream;
+
+    public void report_error(String message, Object info) {
+    Logger.println(message + " in line " + stream.getLine(scanner.line_count) + 
+            " of file " + stream.getFile(scanner.line_count));
+    }
+
+    public static BuchiAutomatonAST configure(String filename, String path) 
+                    throws Exception {
+    String infileName = filename + ".buc";
+    stream = new CPreProcessorStream(infileName);
+	AddMacrosToPreProcessor.add(stream);
+
+    stream.setSearchPath(path);
+    scanner = new BUCLex(new InputStreamReader(stream));
+   
+    return (BuchiAutomatonAST)(new BUCParser(scanner).parse().value);
+    }
+:}
+
+terminal String ID;
+terminal INS_PRED,
+    EXISTS, FORALL, TC, IFF, IMPLIES, OR, AND, NOT, STAR, PLUS,
+    EQ, NEQ, TRUE, FALSE, UNKNOWN, LP, RP, ASSIGN, COMMA, LCBR, RCBR, QMARK, COLON, 
+    PERCENT, FOREACH, SET, MINUS, LBR, RBR, COMBINE;
+
+terminal ARROW;
+terminal BUCHI;
+
+
+non terminal DeclarationsAST declarations;
+non terminal buc;
+non terminal in;
+non terminal BuchiAutomatonAST buchi_aut;
+
+non terminal BuchiStateAST state_node,initial_state;
+
+non terminal BuchiTransitionAST transition;
+
+non terminal Set show_attr, show_attr_list, optional_show_attr_list;
+non terminal List optional_params;
+non terminal FormulaAST formula;
+non terminal PredicateAST predicate;
+non terminal Var var;
+non terminal CombineAST combine;
+non terminal String binary_op;
+
+non terminal Kleene kleene;
+non terminal SetAST set_expr;
+non terminal tvla.language.TVM.SetDefAST set_def;
+non terminal InstrumPredicateAST nullary_inst_pred_def;
+
+non terminal AST decl;
+
+non terminal List optional_id_list, id_list, decls;
+
+non terminal ForeachAST decl_foreach;
+non terminal List transition_list;
+
+
+non terminal PredicatePropertiesAST optional_dependency;
+
+
+precedence right EXISTS;
+precedence right FORALL;
+precedence right TC;
+precedence left IFF;
+precedence left IMPLIES;
+precedence left OR;
+precedence left AND;
+precedence right NOT;
+precedence left STAR;
+precedence left PLUS, MINUS;
+
+start with buc;
+
+buc ::= declarations:d PERCENT PERCENT buchi_aut:cp 
+    {:  //cp.generate();
+        cp.declarations(d);
+        //d.generate();
+        //cp.compile();
+        RESULT = cp; 
+    :}
+    ;
+    
+/***********************************************************/
+/*********************** General ***************************/
+/***********************************************************/
+
+var             ::=     ID:id
+                        {: RESULT = new Var(id); :}
+                ;
+
+kleene ::=  TRUE
+        {: RESULT = Kleene.trueKleene; :}
+    |   FALSE
+                {: RESULT = Kleene.falseKleene; :}
+    |   UNKNOWN
+                {: RESULT = Kleene.unknownKleene; :}
+    ;
+
+/********************************************/
+/******************* Sets *******************/
+/********************************************/
+
+set_def ::= SET ID:name LCBR optional_id_list:members RCBR
+                {: RESULT = new tvla.language.TVM.SetDefAST(name, members); :}
+    ;
+
+set_expr ::=    ID:set
+                {: RESULT = new SetUseAST(set); :}
+        |    LCBR optional_id_list:list RCBR
+        {: RESULT = new SetConstantAST(list); :}
+        |   set_expr:e1 PLUS set_expr:e2
+                {: RESULT = new SetPlusAST(e1, e2); :}
+        |   set_expr:e1 MINUS set_expr:e2
+                {: RESULT = new SetMinusAST(e1, e2); :}
+        |     set_expr:e1 AND set_expr:e2
+                {: RESULT = new SetAndAST(e1, e2); :}
+        |     LP set_expr:e1 RP
+                {: RESULT = e1; :}
+    ;
+
+/***********************************************************/
+/*********************** Declarations **********************/
+/***********************************************************/
+   
+in ::= ID:id 
+    {: if (!id.equals("in")) 
+        parser.report_fatal_error("expected 'in'", null); 
+    :}
+    ;
+        
+decl_foreach ::= FOREACH LP ID:id in set_expr:e RP LCBR decls:a RCBR
+                {: RESULT = new ForeachAST(id, e, a); :}
+    ;
+
+declarations  ::= decls:list
+                {: 
+                RESULT = new DeclarationsAST(list); :}
+    ;
+
+decls   ::= /* empty */
+                {: RESULT = new ArrayList(); :}
+        |   decls:list decl:single
+                {: RESULT = list; RESULT.add(single); :}
+        |   decls:list decl_foreach:f
+                {: RESULT = list; RESULT.add(f); :}
+    ;
+
+decl    ::= nullary_inst_pred_def:def
+                {: RESULT = def; :}
+        |   set_def:def
+                {: RESULT = def; :}
+    ;
+
+show_attr_list ::= kleene:a
+        {: RESULT = new HashSet(); RESULT.add(a); :}
+        | show_attr_list:list COMMA kleene:a
+        {: RESULT = list; RESULT.add(a); :}
+    ;
+
+optional_show_attr_list ::= /* empty */ 
+        {: RESULT = new HashSet(); :}
+        | show_attr_list:l 
+        {: RESULT = l; :}
+    ;
+
+show_attr ::= /* empty */
+        {: RESULT = null; :}
+    |   LBR optional_show_attr_list:attr RBR
+        {: RESULT = attr; :}
+    ;
+
+optional_params ::= /* empty */
+        {: RESULT = new ArrayList(); :}
+        | LBR id_list:params RBR 
+        {: RESULT = params; :}
+    ;
+
+nullary_inst_pred_def ::=  INS_PRED ID:p LP RP  
+                ASSIGN formula:f optional_dependency:od show_attr:attr
+                        {:
+                        RESULT = new InstrumPredicateAST(p, new ArrayList(), 
+                                 VarAST.asVariables(new ArrayList()), 
+                                 f, od, attr); 
+                        :}
+                ;
+        
+predicate    ::=   ID:id optional_params:params
+                  {: RESULT = PredicateAST.getPredicateAST(id, params); :}
+          ;
+
+optional_dependency ::= /* empty */
+			{:
+				RESULT = new PredicatePropertiesAST();
+			:}
+		| optional_dependency:od ID:id
+			{: 
+				RESULT = od;
+				RESULT.addProperty(id); 
+			:}
+        | optional_dependency:od LCBR optional_id_list:lhs RCBR ARROW ID:rhs
+			{: 
+				RESULT = od;
+				RESULT.addFunctionalDependency(lhs,rhs);
+			:}
+		 ;
+
+
+/*********************************************/
+/************** Buchi Transitions ************/
+/********************************************/
+
+buchi_aut ::= BUCHI ID:id LCBR initial_state:init transition_list:actions RCBR
+        {: RESULT = new BuchiAutomatonAST(id,init,actions); :}
+        ;
+        
+transition_list ::= transition:first 
+        {: RESULT = new ArrayList(); RESULT.add(first); :}
+    |   transition_list:prev transition:current
+        {:  RESULT = prev; RESULT.add(current); :}
+    ;
+
+transition  ::=  state_node:source predicate:label state_node:target 
+                {: RESULT = new BuchiTransitionAST(source, label, target);
+        :}
+    ;
+    
+initial_state ::= IMPLIES state_node:source 
+                {: RESULT = source; :}
+    ;
+    
+state_node ::= LP ID:label RP
+                {: RESULT = new BuchiStateAST(label,true); :}
+    |           ID:label
+                {: RESULT = new BuchiStateAST(label,false); :}
+    ;
+    
+
+/********************************************/
+/************** Combine operator ************/
+/********************************************/
+binary_op ::=   OR
+    {: RESULT = "OrFormula"; :}
+    |   AND
+    {: RESULT = "AndFormula"; :}
+    ;
+combine ::= binary_op:op COMBINE LCBR formula:f COLON ID:id in 
+        set_expr:e RCBR
+    {: RESULT = new CombineAST(op, f, id, e); :}
+    ;
+
+/********************************************/
+/************** Logical formulae ************/
+/********************************************/
+formula ::= FORALL LP optional_id_list:list RP  formula:f
+                {: RESULT = new QuantFormulaAST(VarAST.asVariables(list), f, "AllQuantFormula"); :}
+        |   EXISTS LP optional_id_list:list RP  formula:f
+                {: RESULT = new QuantFormulaAST(VarAST.asVariables(list), f, "ExistQuantFormula"); :}
+    |   combine:comb
+        {: RESULT = comb; :}
+        |   TC LP var:l COMMA var:r RP LP var:sl COMMA var:sr RP formula:f 
+                {: RESULT = new TCFormulaAST(l, r, sl, sr, f); :}
+        |   formula:f1 AND formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "AndFormula"); :}
+        |   formula:f1 OR formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "OrFormula"); :}
+        |   formula:f1 IMPLIES formula:f2
+                {: RESULT = new CompositeFormulaAST(f2, new CompositeFormulaAST(f1), "OrFormula"); :}
+    |   formula:f1 IFF formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "EquivalenceFormula"); :}
+    |   NOT formula:f
+                {: RESULT = new CompositeFormulaAST(f); :}
+        |   LP formula:fc QMARK formula:ft COLON formula:ff RP /* if-then-else */
+                {: RESULT = new IfFormulaAST(fc, ft, ff); :}
+    |   LP formula:f RP
+                {: RESULT = f; :}
+    |   var:l EQ var:r
+                {: RESULT  = new EqualityAST(l, r); :}
+    |   var:l NEQ var:r
+                {: RESULT  = new CompositeFormulaAST(new EqualityAST(l, r)); :}
+    |   predicate:p LP optional_id_list:args RP
+                {: RESULT = new PredicateFormulaAST(p, VarAST.asVariables(args)); :}
+    |   predicate:p STAR LP var:l COMMA var:r RP 
+                {: Var v1 = new Var("__v1"); 
+           Var v2 = new Var("__v2"); 
+           RESULT = new CompositeFormulaAST(new EqualityAST(l, r),
+                           new TCFormulaAST(l, r, v1, v2, 
+                                 new PredicateFormulaAST(p, v1, v2)),
+                           "OrFormula");
+        :}
+    |   predicate:p PLUS LP var:l COMMA var:r RP 
+                {: Var v1 = new Var("__v1"); 
+           Var v2 = new Var("__v2"); 
+           RESULT = new TCFormulaAST(l, r, v1, v2, 
+                         new PredicateFormulaAST(p, v1, v2));
+        :}
+    |   kleene:k
+                {: RESULT = new ValueFormulaAST(k); :}
+        ;
+       
+
+
+/*************************************************/
+id_list ::= ID:id
+        {:  RESULT = new ArrayList(); RESULT.add(id); :}
+        |   id_list:list COMMA ID:id
+        {:  RESULT = list; RESULT.add(id); :}
+        ;
+optional_id_list    ::= /* empty */
+        {: RESULT = new ArrayList(); :}
+        |   id_list:list
+        {: RESULT = list; :}
+    ;

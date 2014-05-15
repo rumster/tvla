@@ -1,0 +1,33 @@
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+
+pu\=blic class Client implements Runnable \{ \+ \\
+    pu\=blic void run() \{ \+ \\
+      wh\=ile (true) \{ \+ \\
+        sy\=nchronized(lock) \{ \+ \\
+            // do some critical stuff \- \\
+        \} \- \\
+      \} \- \\
+    \} \- \\
+\} \\
+
+pu\=blic class Main \{ \+ \\
+  pu\=blic static void main() \{ \+ \\
+    Thread t1 = new Thread(new Client()); \\
+    Thread t2 = new Thread(new Client()); \\
+    Thread t3 = new Thread(new Client()); \\
+    t1.start(); \\
+    t2.start(); \\
+    t3.start(); \- \\
+  \} \- \\\
+\} \\
+
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:MutexJava}Mutual exclusion example program.}
+\end{figure}

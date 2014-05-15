@@ -1,0 +1,32 @@
+/***
+* apprentice_pred.tvm
+* Predicates for the apprentice challenge
+***/
+
+/**************** Core Predicates **************/
+
+foreach (v in FieldsAndParameters) {
+    %p rv[v](o_1, o_2) function 
+    }
+    
+%p islock(l) 
+
+%p heldby(l, t) 
+%p blocked(t, l)
+
+%p zero(v_1) unique
+%p successor(v_1,v_2) function invfunction antisymmetric
+
+%p property_occured()
+
+/**************** Instrumentation Predicates **************/
+
+%i is_acquired(l) = islock(l) & E(t) isthread(t) & heldby(l,t)
+
+foreach (v in FieldsAndParameters) {
+    %i r_by[v](o) = E(o_1) rv[v](o_1,o)
+}
+
+#ifdef REACH
+    %i rt[z,successor](v) = E(v_1) zero(v_1) & successor*(v_1,v)
+#endif

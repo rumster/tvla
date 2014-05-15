@@ -1,0 +1,149 @@
+/************************************************************************
+ * set.tvm
+ ***********************************************************************/
+
+/*********************** Sets ******************************/
+
+
+%s GlobalFields {Head,Tail}
+
+%s LocalFields {x_i,pred,curr,next,res,res_seq}
+
+//%s LocalBooleans {res,res_seq}
+
+%s NextFields {n}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+%pset Threads {t1,t2}
+//////////////////////////////////////////////////////////////
+
+%s locations { 
+l_2, l_3, l_4, l_5, l_7, l_9, l_10, l_11, ld_3, ld_6, l_dispatch
+} 
+
+%s Operations {insert,delete,find}
+
+//%s LocalRt {pred,curr} //local fields from which we maintain reachability
+
+/**************** Predicates **************/
+
+#include "set_pred.tvp"
+
+foreach (tn in Threads) {
+  %dname (tn(v) | locked_by[tn](v) | rt[Head](v) | rt[Tail](v) |
+        |/{ r_by[fld,tn](v) : fld in LocalFields} |
+  	|/{ r_by[fld](v) : fld in GlobalFields}) & (
+    &/{&/{ !r_by[fld,other](v) : fld in LocalFields} & 
+ //      &/{ !rt[fld,other](v) : fld in LocalRt} & 
+           !other(v) & !locked_by[other](v) 
+    	   : other in (Threads)-{ tn }} ) tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "set_stat.tvp"
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+
+//****** Code for one thread *****************************
+
+//general client one *****************************
+
+l_ready schedule(l_dispatch) l_dispatch 
+l_dispatch setChoice(insert) l_00 
+l_dispatch setChoice(delete) l_00
+
+/* locate     */                                            
+/* concurrent */                                            
+l_ready schedule(l_2) l_2 
+l_ready schedule(l_3) l_3 
+l_ready schedule(l_4) l_4 
+l_ready schedule(l_5) l_5 
+l_ready schedule(l_7) l_7 
+l_ready schedule(l_9) l_9 
+l_ready schedule(l_10) l_10 
+l_ready schedule(l_11) l_11 
+
+l_00 Clear() l_00a
+l_00a assignNew(x_i) l_1
+l_1 assignFromGlbField(pred,Head) l_1p
+l_1p unschedule(l_2) l_ready
+
+l_2 succLockNode(pred) l_2p
+l_2p unschedule(l_3) l_ready
+l_3 assignFromNextField(curr,pred) l_3p
+l_3p unschedule(l_4) l_ready
+
+l_4 succLockNode(curr) l_4p
+l_4p unschedule(l_5) l_ready
+
+l_5 isDataGreaterEq(curr,x_i) ll_dispatch
+l_5 isDataLess(curr,x_i) l_6
+l_6 unlockNode(pred) l_6p
+l_6p unschedule(l_7) l_ready
+
+/*atomic {*/                                                
+l_7 assignNull(pred) l_7a    
+l_7a assignRef(pred,curr) l_8
+l_8 assignNull(curr) l_8a   
+l_8a assignFromNextField(curr,pred) l_8p
+l_8p unschedule(l_9) l_ready
+/*}*/                                                   
+
+l_9 succLockNode(curr) l_9p
+l_9p unschedule(l_5) l_ready
+
+l_10 unlockNode(pred) l_10p
+l_10p unschedule(l_11) l_ready
+                                             
+/*atomic {*/                                        
+l_11 unlockNode(curr) l_exit                      
+
+l_exit ClearOp() l_dispatch     
+
+ll_dispatch isChoice(insert) li_1 
+ll_dispatch isChoice(delete) ld_1
+
+/*insert */
+
+/*atomic {*/                                                    
+li_1 isDataEq(curr,x_i) li_5     
+li_1 isDataNotEq(curr,x_i) li_2
+li_2 updateNext(x_i,curr) li_3a
+li_3a updateNext(pred,x_i) li_4 
+li_4 assignRef(res,x_i) li_4p
+li_4p unschedule(l_10) l_ready
+li_5 assignNull(res) li_5p
+li_5p unschedule(l_10) l_ready
+/*}*/                                                       
+
+/*delete*/
+l_ready schedule(ld_3) ld_3 
+//l_ready schedule(ld_6) ld_6 
+
+/*atomic {*/                          
+ld_1 isDataNotEq(curr,x_i) ld_5 
+ld_1 isDataEq(curr,x_i) ld_2
+ld_2 assignFromNextField(next,curr) ld_2p
+ld_2p unschedule(ld_3) l_ready
+/*}*/                                                       
+/*atomic {*/                                                     
+ld_3 updateNext(pred,next) ld_4                                  
+ld_4 assignRef(res,curr) ld_4p
+ld_4p unschedule(l_10) l_ready
+//ld_4p unschedule(ld_6) l_ready
+
+ld_5 assignNull(res) ld_5p
+ld_5p unschedule(l_10) l_ready
+
+//ld_6 assignNextNull(curr) ld_6p
+//ld_6p unschedule(l_10) l_ready
+

@@ -1,0 +1,674 @@
+/******************************************************************
+* set_stat.tvm
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+#define IF_IN_SET(var, set) foreach (dummy in {var} & set)
+#define CondAssign(cond,pred,result) pred = ((cond) ? (result) : (pred))
+#define UPDATE_AT(from,to,trnm)\
+    CondAssign(tr_scheduled(v) & trnm(v), at[from](v), 0)\
+    CondAssign(tr_scheduled(v) & trnm(v), at[to](v), 1)\
+
+/*******************
+* skip()
+********************/
+%action skip(from, to) {
+    %param trnm in Threads
+    %t "skip" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+        UPDATE_AT(from,to,trnm)
+    }
+}
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* Allocation to local variable.
+* note - the type is currently ignored.
+********************/
+//ref IS assumed to be null before allocation.
+
+%action assignNew(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "= new T()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field in new"
+    %new
+    {
+        ref(w, v) = (tr_scheduled(w) ? isNew(v) : ref(w,v))
+        r_by[ref,trnm](v) = isNew(v)
+        dnode(v) = dnode(v) | isNew(v)
+
+        //new node holds some value val s.t. -inf < val < +inf
+        dle(v_1, v_2) =
+       (((isNew(v_1) & isNew(v_2)) |
+             (r_by[Head](v_1) & isNew(v_2)) |
+             (isNew(v_1) & r_by[Tail](v_2))) ? 1 :
+                (((isNew(v_1) & !r_by[Head](v_2) & !isthread(v_2)) |
+                  (isNew(v_2) & !r_by[Tail](v_1) & !isthread(v_1))) ? 1/2 :
+                 dle(v_1, v_2)))
+
+        eq(v_1, v_2) = 
+      ((isNew(v_1) | isNew(v_2)) 
+        & !r_by[Head](v_1) & !r_by[Tail](v_1) & !isthread(v_1)
+        & !r_by[Head](v_2) & !r_by[Tail](v_2) & !isthread(v_2)
+        ? 1/2 : eq(v_1, v_2))
+
+        inSOrder[dle,n](v) = inSOrder[dle,n](v) | isNew(v)
+
+        bn[n](o_1,o_2) = bn[n](o_1,o_2) | (isNew(o_1) & isNew(o_2))
+
+        rt[Head](o_1) = rt[Head](o_1)
+        
+        r_by_tr_sc(v) = r_by_tr_sc(v) | isNew(v)
+
+        //updates due to universe-changing action:
+
+        foreach (fld in NextFields) {
+              rv[fld](o_1,o_2) = rv[fld](o_1,o_2)
+        }
+
+        foreach (fld in GlobalFields) {
+              r_by[fld](o) = r_by[fld](o)
+        }
+
+        foreach (nm in Threads-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](v) = r_by[fld,nm](v)
+	     }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+	}
+
+        foreach (op in Operations) {
+             choice[op](t) = choice[op](t)
+        }
+
+        UPDATE_AT(from,to,trnm)
+    }
+}
+
+/*
+* assignFromGlbField(from, to, ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a global field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromGlbField(from, to, ref,fld) {
+    %param trnm in Threads
+    %t ref + " = " + fld + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    {
+        ref(w,v) = (tr_scheduled(w) ? r_by[fld](v) : ref(w,v))
+    foreach (otrnm in Threads-{trnm}) {
+        r_by[ref, otrnm](v) = r_by[ref, otrnm](v)
+      }
+    UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* assignFromNextField(ref,obj,trnm)
+* ref = obj.n where ref is a local field and obj is a local field
+***/
+//ref IS assumed to be null before assignment.
+%action assignFromNextField(from, to, ref,obj) {
+    %param trnm in Threads
+    %t ref + " = " + obj + "." + n + " [" + trnm + "]"
+    //focus needed becuase we read a successor
+    %f { r_by[obj,trnm](v1) & rv[n](v1,v2) & bn[n](v2,v)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (!(E(v) r_by[obj,trnm](v))) -> "possible null dereference of " + obj + " for " + trnm
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    {
+       ref(w, o_1) = (tr_scheduled(w) ? E(o_t) obj(w, o_t) & rv[n](o_t,o_1) : ref(w,o_1))
+       foreach (otrnm in Threads-{trnm}) {
+         r_by[ref, otrnm](v) = r_by[ref, otrnm](v)
+       }
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* isDataGreater(ref1,ref2)
+* Is the value of the node pointed-to by local variable ref1 greater-or-equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataGreater(from, to, ref1,ref2) {
+    %param trnm in Threads
+    %t "tr." + ref1 + "->data > " + tr + "." + ref2 + "->data" + " [" + trnm + "]"
+    %frame_pre |/{
+      otrnm(v) <->
+       (
+        |/{ at[loc](v) : loc in locations } |
+        |/{ choice[op](v) : op in Operations } )
+        : otrnm in Threads-{trnm} }
+    %compose trnm(v1) |  |/{(trnm(v1) <-> (trnm(v1) | r_by[ref1, trnm](v1) | r_by[ref2,trnm](v1)) &
+             (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_1, v_2)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+         & A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> dle(v_2, v_1) & !dle(v_1, v_2))
+    %message [trnm(v)] (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* isDataGreaterEq(ref1,ref2)
+* Is the value of the node pointed-to by local variable ref1 greater-or-equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataGreaterEq(from, to, ref1,ref2) {
+    %param trnm in Threads
+    %t "tr." + ref1 + "->data >= " + tr + "." + ref2 + "->data" + " [" + trnm + "]"
+    %frame_pre |/{
+     otrnm(v) <->
+     (
+      |/{ at[loc](v) : loc in locations } |
+      |/{ choice[op](v) : op in Operations } )
+      : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[ref1, trnm](v1) | r_by[ref2,trnm](v1)) &
+             (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+         & A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> dle(v_2, v_1))
+    %message [trnm(v)] (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* isDataLess(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 less than
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataLess(from, to, ref1,ref2) {
+    %param trnm in Threads
+    %t "tr." + ref1 + "->data < " + tr + "." + ref2 + "->data" + " [" + trnm + "]"
+    %frame_pre |/{
+     otrnm(v) <->
+     (
+      |/{ at[loc](v) : loc in locations } |
+      |/{ choice[op](v) : op in Operations } )
+      : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[ref1, trnm](v1) | r_by[ref2,trnm](v1)) & (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+         & !A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> dle(v_2, v_1))
+    %message [trnm(v)] (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* isDataEq(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataEq(from, to, ref1,ref2) {
+    %param trnm in Threads
+    %t "tr." + ref1 + "->data == " + tr + "." + ref2 + "->data" + " [" + trnm + "]"
+    %frame_pre |/{
+           otrnm(v) <->
+           (
+            |/{ at[loc](v) : loc in locations } |
+            |/{ choice[op](v) : op in Operations } )
+            : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[ref1, trnm](v1) | r_by[ref2,trnm](v1)) & 
+             (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & eq(v_1,v_2)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+         & A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) ->
+                   eq(v_1,v_2))
+    %message [trnm(v)] (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* isDataNotEq(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 not equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataNotEq(from, to, ref1,ref2) {
+    %param trnm in Threads
+    %t "tr." + ref1 + "->data != " + tr + "." + ref2 + "->data" + " [" + trnm + "]"
+    %frame_pre |/{
+          otrnm(v) <->
+      (
+       |/{ at[loc](v) : loc in locations } |
+       |/{ choice[op](v) : op in Operations } )
+           : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[ref1, trnm](v1) | r_by[ref2,trnm](v1)) &
+             (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & eq(v_1,v_2)}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+         & !A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) ->
+                    eq(v_1,v_2))
+    %message [trnm(v)] (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* assignNull(ref,trnm)
+* ref = null where ref is a local field
+***/
+%action assignNull(from, to, ref) {
+    %param trnm in Threads
+    %t ref + " = null" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+         ref(w,o_1) = (tr_scheduled(w) ? 0 : ref(w,o_1))
+         r_by[ref,trnm](o_1) = 0
+     UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* assignRef(from, to, ref1,ref2,trnm)
+* ref1 = ref2 where ref1 and ref2 are local fields
+***/
+//ref1 IS assumed to be null before assignment
+%action assignRef(from, to, ref1, ref2) {
+    %param trnm in Threads
+    %t ref1 + " = " + ref2 + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref1,trnm](v)) -> "possible assignment to non-null field"
+    {
+      UPDATE_AT(from,to,trnm)
+      ref1(w,o_1) = (tr_scheduled(w) ? ref2(w, o_1) : ref1(w,o_1))
+      foreach (otrnm in Threads-{trnm}) {
+    r_by[ref1, otrnm](v) = r_by[ref1, otrnm](v)
+      }
+      r_by_tr_sc(v) = r_by_tr_sc(v) | (E(tr) tr_scheduled(tr) & ref2(tr, v))
+    }
+    %decompose
+}
+
+%action assignRefFind(from, to, ref1, ref2) {
+    %param trnm in Threads
+    %t ref1 + " = " + ref2 + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref1,trnm](v)) -> "possible assignment to non-null field"
+    {
+      UPDATE_AT(from,to,trnm)
+      ref1(w,o_1) = (tr_scheduled(w) ? ref2(w, o_1) : ref1(w,o_1))
+      foreach (otrnm in Threads-{trnm}) {
+    r_by[ref1, otrnm](v) = r_by[ref1, otrnm](v)
+      }
+      r_by_tr_sc(v) = r_by_tr_sc(v) | (E(tr) tr_scheduled(tr) & ref2(tr, v))
+    }
+    %decompose
+}
+
+/****
+* setChoice(op,trnm)
+* Set operation choice to op.
+***/
+%action setChoice(from, to, op) {
+    %param trnm in Threads
+    %t "setChoice(" + op + ")" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (E(tr) trnm(tr) & |/{ choice[op2](tr) : op2 in Operations-{op}}) -> "Already performing another operation!"
+    {
+      UPDATE_AT(from,to,trnm)
+      choice[op](t) = choice[op](t) | tr_scheduled(t)
+    }
+    %decompose
+}
+
+/****
+* isChoice(op,trnm)
+* Is op the operation choice of tr.
+***/
+%action isChoice(from, to, op) {
+    %param trnm in Threads
+    %t "isChoice(" + op + ")" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & choice[op](tr)
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+     %decompose
+}
+
+/*******************
+* ClearOp(trnm)
+* null assignment to all local variables 
+********************/
+//We clear all local fields, no matter which action was performed.
+%action ClearOp(from, to) {
+    %param trnm in Threads
+    %t "ClearOp()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+      UPDATE_AT(from,to,trnm)
+      foreach (op in Operations) {
+          choice[op](o_1) = (tr_scheduled(o_1) ? 0 : choice[op](o_1))
+      }
+    }
+    %decompose
+}
+
+/*******************
+* Clear2(trnm)
+* null assignment to all local variables 
+********************/
+//We clear all local fields, no matter which action was performed.
+%action Clear2(from, to) {
+    %param trnm in Threads
+    %t "Clear2()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+      UPDATE_AT(from,to,trnm)
+      foreach (fld in LocalFields-{x_i}) {
+        fld(w,o_1) = (tr_scheduled(w) ? 0 : fld(w,o_1))
+      }
+      foreach (otrnm in Threads-{trnm}) {
+        foreach (fld in LocalFields-{x_i}) {
+           r_by[fld,otrnm](o_1) = r_by[fld,otrnm](o_1)  
+        }
+      }
+    }
+    %decompose
+}
+
+/*******************
+* Clear(trnm)
+* null assignment to all local variables 
+********************/
+//We clear all local fields, no matter which action was performed.
+%action Clear(from, to) {
+    %param trnm in Threads
+    %t "Clear()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+      UPDATE_AT(from,to,trnm)
+      foreach (fld in LocalFields) {
+        fld(w,o_1) = (tr_scheduled(w) ? 0 : fld(w,o_1))
+      }
+      foreach (otrnm in Threads-{trnm}) {
+        foreach (fld in LocalFields) {
+           r_by[fld,otrnm](o_1) = r_by[fld,otrnm](o_1)  
+        }
+      }
+    }
+    %decompose
+}
+
+/***
+* updateNext(obj,ref,trnm)
+* obj->n = ref where obj and ref are thread-local variables.
+***/
+//obj->n IS assumed to be null before assignment.
+//Note: Updates are simplified due to this assumption. Is focus still needed?
+%action updateNext(from, to, obj,ref) {
+    %param trnm in Threads
+    %t "updateNext(" + obj + "," + ref + "," + trnm + ")"
+    %frame_pre |/{
+            otrnm(v) <->
+              (
+              |/{ at[loc](v) : loc in locations } |
+               |/{ choice[op](v) : op in Operations } )
+    : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[ref, trnm](v1) | r_by[obj,trnm](v1)) & (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    // %f { r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    %message [trnm(v)] (!E(o_1) r_by[ref,trnm](o_1))-> "possible null dereference of " + ref
+    {
+      UPDATE_AT(from,to,trnm)
+
+        rv[n](o_1,o_2) = (rv[n](o_1, o_2) ? !r_by[obj,trnm](o_1) | r_by[ref,trnm](o_2):
+                      (r_by[obj,trnm](o_1) & r_by[ref,trnm](o_2)))
+
+#define updateNext_bn_1(w1,w2) (bn[n](w1, w2) & !(bn[n](w1, o_1) & bn[n](o_1, w2) & o_1 != w2))
+       bn[n](v_1,v_2) = E(o_1, r) r_by[ref,trnm](r) & r_by[obj,trnm](o_1) &
+                           (updateNext_bn_1(v_1,v_2) | (updateNext_bn_1(v_1,o_1) & updateNext_bn_1(r, v_2)))
+    }
+    %decompose
+}
+
+/***
+* assignNextNull(obj,trnm)
+* obj->n = null where obj is a thread-local variable.
+***/
+%action assignNextNull(from, to, obj) {
+    %param trnm in Threads
+    %t "assignNextNull(" + obj + "," + trnm + ")"
+    // michal - t2 needs to see obj's outgoing edges. Should this be {E(o_2) rv[n](obj, o_2)} ?
+    // maybe its enough for it to see obj?
+    %frame_pre |/{
+            otrnm(v) <->
+                (
+                |/{ at[loc](v) : loc in locations } |
+                 |/{ choice[op](v) : op in Operations } )
+    : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> (trnm(v1) | r_by[obj,trnm](v1)) & 
+    	( &/{!choice[op](v1) : op in Operations} & 	 &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f { r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+        UPDATE_AT(from,to,trnm)
+        rv[n](o_1,o_2) = (rv[n](o_1,o_2) & !r_by[obj,trnm](o_1))
+    }
+    %decompose
+}
+
+/***
+* SuccCAS_Next(from, to, obj,oldVal,ref,trnm)
+* Successful CAS where obj is a thread-local variable and fld is n.
+* obj->n == oldVal and we assign obj->n = ref.
+***/
+//obj->n is not assumed to be null before assignment.
+%action SuccCAS_Next(from, to, obj,oldVal,ref) {
+    %param trnm in Threads
+    %t "SuccCAS_Next(" + obj + "," + oldVal + "," + ref + ")"
+    // michal - t2 needs to see obj, oldVal, ref  and obj->next(?) fixme
+    %frame_pre |/{
+     otrnm(v) <->
+       (
+     |/{ at[loc](v) : loc in locations } |
+      |/{ choice[op](v) : op in Operations } )
+      : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <->
+      ((trnm(v1) | r_by[obj,trnm](v1) | r_by[ref, trnm](v1) | r_by[oldVal,trnm](v1) )) &
+      ((&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } )) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f { r_by[obj,trnm](o_t) & r_by[oldVal,trnm](dst) & rv[n](o_t,dst) & bn[n](dst,v) , r_by[ref,trnm](o_r) & bn[n](o_r,u) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) &
+        A(o_f) ((E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_f)) <-> r_by[oldVal,trnm](o_f))
+    %message [trnm(v)] (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+       UPDATE_AT(from,to,trnm)
+
+        rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                           r_by[ref,trnm](o_2) : rv[n](o_1,o_2) ) 
+#define CAS_bn_1(w1,w2) (bn[n](w1, w2) & !(bn[n](w1, o_1) & bn[n](o_1, w2) & o_1 != w2))
+       bn[n](v_1,v_2) = E(o_1, r) r_by[ref,trnm](r) & r_by[obj,trnm](o_1) &
+                           (CAS_bn_1(v_1,v_2) | (CAS_bn_1(v_1,o_1) & CAS_bn_1(r, v_2)))
+    }
+    %decompose
+}
+
+
+/***
+* FailCAS_Next(obj,oldVal,ref,trnm)
+* Failed CAS where obj is a thread-local variable and fld is n,
+* since obj->n != oldVal.
+***/
+%action FailCAS_Next(from, to, obj,oldVal,ref) {
+    %param trnm in Threads
+    %t "FailCAS_Next(" + obj + "," + oldVal + "," + ref + ")"
+    // michal - this is a failed cas - no update is made. maybe t2 can see less of t1?
+    %frame_pre |/{
+        otrnm(v) <->
+        (
+         |/{ at[loc](v) : loc in locations } |
+         |/{ choice[op](v) : op in Operations } )
+        : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> 
+        ((trnm(v1) | r_by[obj,trnm](v1) | r_by[ref, trnm](v1) | r_by[oldVal,trnm](v1) )) &
+	((&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ))) &
+	otrnm(v2) : otrnm in Threads-{trnm}}
+    %f { r_by[obj,trnm](o_t) & r_by[oldVal,trnm](o_f) & rv[n](o_t,o_f) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) &
+        !A(o_f) ((E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_f)) <-> r_by[oldVal,trnm](o_f))
+    %message [trnm(v)] (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+
+//obj1->n, obj2->n is not assumed to be null before assignment.
+%action SuccDCAS_Next(from, to, obj1,obj2, oldVal1, oldVal2, ref) {
+    %param trnm in Threads
+    %t "SuccDCAS_Next(" + obj1 + "," + oldVal1 + ","+ obj2+ "," + oldVal2 + "," + ref + ")"
+    %frame_pre |/{
+            otrnm(v) <->
+              (
+                |/{ at[loc](v) : loc in locations } |
+                 |/{ choice[op](v) : op in Operations } )
+    : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> 
+        (trnm(v1) | r_by[obj1,trnm](v1) | r_by[ref, trnm](v1) | r_by[oldVal1, trnm](v1) | r_by[obj2,trnm](v1)) & (&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %f { r_by[obj1,trnm](o_t) & r_by[oldVal1, trnm](o_f) & rv[n](o_t,o_f),
+         r_by[obj2,trnm](o_t) & r_by[oldVal2, trnm](o_f) & rv[n](o_t,o_f),
+     r_by[obj1,trnm](o_t) & bn[n](o_f,o_t),
+     r_by[obj2,trnm](o_t) & bn[n](o_f,o_t) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) &
+        (A(o_f1) (E(o_t1) r_by[obj1,trnm](o_t1) & rv[n](o_t1,o_f1)) <->  r_by[oldVal1,trnm](o_f1)) &
+        (A(o_f2) (E(o_t2) r_by[obj2,trnm](o_t2) & rv[n](o_t2,o_f2)) <->  r_by[oldVal2,trnm](o_f2)) 
+    %message [trnm(v)] (!(E(o_t) r_by[obj1, trnm](o_t))) -> "possible null dereference of " + obj1
+    %message [trnm(v)] (!(E(o_t) r_by[obj2, trnm](o_t))) -> "possible null dereference of " + obj2
+    %message [trnm(v)] (!(E(o_t) r_by[ref, trnm](o_t))) -> "assumption not met - " + ref + " should not be null"
+    %message [trnm(v)] (E(v) r_by[obj1,trnm](v) & r_by[obj2,trnm](v)) -> "assumption not met - Aliased " + obj1 + " and " + obj2 + " in DCAS"
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v) & r_by[obj2,trnm](v)) -> "assumption not met - Aliased " + ref + " and " + obj2 + " in DCAS"
+    {
+       UPDATE_AT(from,to,trnm)
+
+        rv[n](o_1,o_2) = ( rv[n](o_1,o_2) ?  
+               !r_by[obj2, trnm](o_1) & !r_by[obj1, trnm](o_1) :
+                        r_by[obj1,trnm](o_1) & r_by[ref,trnm](o_2))
+#define DCAS_bn_1(w1,w2) ((bn[n](w1, w2) & !(bn[n](w1, o_1) & bn[n](o_1, w2) & o_1 != w2) & !(bn[n](w1, o_2) & bn[n](o_2, w2) & o_2 != w2)))
+         bn[n](v1,v2) = E(o_1,o_2, r) r_by[obj1,trnm](o_1) & r_by[obj2,trnm](o_2) & r_by[ref,trnm](r) &
+                    (DCAS_bn_1(v1,v2) | (DCAS_bn_1(v1,o_1) & DCAS_bn_1(r, v2)))
+    }
+    %decompose
+}
+
+%action FailDCAS_Next(from, to, obj1,obj2, oldVal1, oldVal2, ref) {
+    %param trnm in Threads
+    %t "FailDCAS_Next(" + obj1 + "," + oldVal1 + ","+ obj2+ "," + oldVal2 + "," + ref + ")"
+    %frame_pre |/{
+           otrnm(v) <->
+           (
+            |/{ at[loc](v) : loc in locations } |
+            |/{ choice[op](v) : op in Operations } )
+           : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> 
+        (trnm(v1) | r_by[obj1,trnm](v1) | r_by[oldVal1, trnm](v1) | r_by[oldVal2, trnm](v1) | r_by[obj2,trnm](v1) ) &
+	(&/{!choice[op](v1) :op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2)
+	: otrnm in Threads-{trnm}}
+    %f { r_by[obj1,trnm](o_t) & r_by[oldVal1, trnm](o_f) & rv[n](o_t,o_f),
+         r_by[obj2,trnm](o_t) & r_by[oldVal2, trnm](o_f) & rv[n](o_t,o_f) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) &
+        (!(A(o_f1) (E(o_t1) r_by[obj1,trnm](o_t1) & rv[n](o_t1,o_f1)) <->  r_by[oldVal1,trnm](o_f1)) |
+        !(A(o_f2) (E(o_t2) r_by[obj2,trnm](o_t2) & rv[n](o_t2,o_f2)) <->  r_by[oldVal2,trnm](o_f2))) 
+    %message [trnm(v)] (!(E(o_t) r_by[obj1,trnm](o_t))) -> "possible null dereference of " + obj1
+    %message [trnm(v)] (!(E(o_t) r_by[obj2,trnm](o_t))) -> "possible null dereference of " + obj2
+    {
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+%action isNull(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "== null" + " [" + trnm + "]"
+    %frame_pre |/{
+            otrnm(v) <->
+            (
+             |/{ at[loc](v) : loc in locations } |
+             |/{ choice[op](v) : op in Operations } )
+            : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <->
+        (trnm(v1) | r_by[ref, trnm](v1)) & (
+	&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & !E(v) r_by[ref,trnm](v)
+    {
+          UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+
+%action isNotNull(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "!= null" + " [" + trnm + "]"
+    %frame_pre |/{
+       otrnm(v) <->
+       (
+        |/{ at[loc](v) : loc in locations } |
+        |/{ choice[op](v) : op in Operations } )
+       : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> 
+        (trnm(v1) | r_by[ref, trnm](v1)) & (
+	&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & E(v) r_by[ref,trnm](v)
+    {
+          UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+%action removeDnode(from, to, obj) {
+    %param trnm in Threads
+    %t "removeDnode(" + obj + ")"
+    %frame_pre |/{
+       otrnm(v) <->
+       (
+        |/{ at[loc](v) : loc in locations } |
+        |/{ choice[op](v) : op in Operations } )
+       : otrnm in Threads-{trnm} }
+    %compose trnm(v1) | |/{(trnm(v1) <-> 
+        (trnm(v1) | r_by[obj, trnm](v1)) & (
+	&/{!choice[op](v1) : op in Operations} & &/{ !at[loc](v1) : loc in locations-{from,to} } ) ) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) 
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+       dnode(v) = (r_by[obj,trnm](v) ? 0 : dnode(v))
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+

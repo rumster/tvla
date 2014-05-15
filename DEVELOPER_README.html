@@ -1,0 +1,140 @@
+<HTML>
+<HEAD>
+<META http-equiv=content-type content="text/html; charset=UTF-8">
+<title>TVLA development notes</title>
+</HEAD>
+
+<BODY>
+<H1 align=center><IMG src="./TVLA.gif"><BR>development notes</H1>
+
+<P>This directory contains sources and other resources needed for building,
+testing, and creating a distribution of the 
+<A href="http://www.cs.tau.ac.il/~tvla/">TVLA</A> system.
+</P>
+
+
+<H2>Relevant links</H2>
+<P>
+<A href="http://listserv.tau.ac.il/archives/tvla-d.html">Development mailing list</A>
+</P>
+
+<P>
+<A href="http://pldi.math.tau.ac.il:8080/cruisecontrol">Results of nighly build</A> 
+(remote users may need SSH to connect to PLDI)
+</P>
+
+
+<H2>Building TVLA</H2>
+
+<P>We are using <A href="http://ant.apache.org/">ANT</A> version 1.6.2 to build and perform different build-related tasks.
+</P>
+
+<H3>Build requirements</H3>
+<OL>
+<LI> TVLA requires 
+<A href="http://java.sun.com/j2se/1.4.2/">J2SE verision 1.4.2</A> or higher. 
+ 
+<LI> In order to perform tasks with <A 
+  href="http://ant.apache.org/">ANT</A>, download and install Ant version 1.6.2
+  (and add the bin sub-directory to your PATH environment variable).  
+
+<LI> We are using JUnit<SUP><A href="#junit">1</A></SUP> version 3.8.1 for unit testing.<br>
+Add <STRONG>junit.jar</STRONG>, which is under the <STRONG>lib</STRONG>
+sub-directory, to your CLASSPATH environment variable.
+</LI>
+
+<LI> To test the installation, open a command console, move to the installation
+directory and enter 'ant'.  This should activate the build process and terminate
+with a ``BUILD SUCCESSFUL'' message.
+</LI>
+</OL>
+
+For additional documentation on TVLA sources, enter `ant javadocs' and inspect
+the documentation created under the build/javadocs directory.
+
+
+
+<H2>Directory structure:</H2>
+
+<P>
+<STRONG>./</STRONG><BR>
+.classpath : used by <A href="http://www.eclipse.org/">Eclipse</A> to find jar
+files needed for building and testing TVLA.<BR>
+
+.project : an Eclipse project file.<BR>
+
+<A href="./build.xml">build.xml</A> : contains information for
+performing different tasks using the <A href="http://ant.apache.org/">ANT</A>
+Java-based build tool.
+Enter 'ant -projecthelp' to see the list of available tasks and their description.<BR>
+
+tvla.properties : contains properties for runtime configuration of TVLA.<BR>
+
+user.properties : a file for user-specified properties that override the ones
+in tvla.properties.
+</P>
+
+<P><STRONG>bin</STRONG><BR>
+Contains scripts for running TVLA on different platforms.
+</P>
+
+<P><STRONG>docs</STRONG><BR>
+Contains the sources and a version of the user manual.
+</P>
+
+<P><STRONG>etc</STRONG><BR>
+Contains miscellaneous files, e.g., license for tools used by TVLA.
+</P>
+
+<P><STRONG>examples</STRONG><BR>
+Contains inputs for TVLA that demonstrate how is can be used to perform various
+kinds of static analyses.
+</P>
+
+<P><STRONG>lib</STRONG><BR>
+Contains library files, some go into the distribution and some don't. After 
+building TVLA, tvla.jar goes in here as well.<BR>
+<UL>
+<LI>checkstyle-all-3.4.jar</LI>
+<LI>cprep.jar : <A href="http://www.alphaworks.ibm.com/tech/cpreprocessor">CPreProcessorStream</A> from AlphaWorks.  Part of the the distribution.</LI>
+<LI>java_cup.jar : <A href="http://www.cs.princeton.edu/~appel/modern/java/CUP/">Java Cup</A> parser generator version 0.10k.  Part of the distribution.</LI>
+<LI>JCSC.jar</LI>
+<LI>JLex.jar : <A href="http://www.cs.princeton.edu/~appel/modern/java/JLex/">JLex</A> lexical analyzer generator.</LI>
+<LI>junit.jar : <A href="http://www.junit.org/index.htm">JUnit version 3.8.1</A></LI>
+<LI>tvla.jar : compiled TVLA.  Part of the distribution.</LI>
+</UL>
+</P>
+
+<P><STRONG>src</STRONG><BR>
+Contains sources and resources (e.g., Metadata files) that are used to build
+the distribution.
+</P>
+
+<P><STRONG>tests</STRONG><BR>
+Contains sources and resources for testing system (with JUnit). These sources
+don't go into the distribution.
+</P>
+
+
+<H2>Recommended template for TVLA code submissions</H2>
+<PRE>
+TVLA code submission
+====================
+Date      : 
+Submitter : 
+branch    : HEAD
+
+General description:
+====================
+
+Details by file:
+================
+</PRE>
+
+<HR WIDTH=100%></HR>
+
+<A name=junit></A>
+For more information about JUnit click <A href="http://junit.org/">here</A>.
+
+</BODY>
+</HTML>

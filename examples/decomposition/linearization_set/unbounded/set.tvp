@@ -1,0 +1,251 @@
+/************************************************************************
+ * set.tvm
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s GlobalFields {Head,Tail}
+
+%s LocalFields {x_i,pred,curr,next,res,res_seq}
+
+//%s LocalBooleans {res,res_seq}
+
+%s NextFields {n}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+%pset Threads {t1,t2}
+//////////////////////////////////////////////////////////////
+
+%s locations { 
+    l_ready,
+    l1_0, l1_1, l1_2, l1_3, l1_4, l1_5, l1_6, 
+    l1_7a, l1_7, l1_8a, l1_8, l1_9, l1_10, l1_exit, 
+    ls1_0, 
+    lfs1_1, 
+    ls1_dispatch, lis1_1, lds1_1, l1_11, l1_ver, 
+    li1_1, li1_2, li1_3a, li1_3, li1_4, li1_5, ld1_1, 
+    ld1_2, ld1_3a, ld1_3, ld1_4, ld1_5, ld1_6, l1_dispatch 
+} 
+
+%s Operations {insert,delete,find}
+
+%s GlobalRt {Head}  //global fields from which we maintain reachability
+
+%s LocalRt {pred,curr} //local fields from which we maintain reachability
+
+/**************** Predicates **************/
+
+#include "set_pred.tvp"
+
+%dname (member(v) | rt[Head,n](v) | 
+		|/{ r_by[fld](v) : fld in GlobalFields}) &
+       &/{ !choice[op](v) : op in Operations } &
+    &/{&/{ !r_by[fld,tn](v) : fld in LocalFields} & 
+       &/{ !rt[fld,tn,n](v) : fld in LocalRt} &
+       &/{ !choice[op,tn](v) : op in Operations } &
+     	   !tn(v) & !locked_by[tn](v) & 
+    	   &/{ !at[loc,tn](v) : loc in locations } 
+    	 : tn in (Threads+{t_})} member
+
+foreach (tn in Threads) {
+  %dname (tn(v) | /{ r_by[fld,tn](v) : fld in LocalFields} |
+  	|/{ r_by[fld](v) : fld in GlobalFields}) &
+    &/{&/{ !r_by[fld,other](v) : fld in LocalFields} & 
+       &/{ !rt[fld,other,n](v) : fld in LocalRt} &
+       &/{ !choice[op,other](v) : op in Operations } &
+     	   !other(v) & !locked_by[other](v) & 
+    	   &/{ !at[loc,other](v) : loc in locations } 
+    	 : other in (Threads+{t_})-{ tn }} tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "set_stat.tvp"
+
+%action schedule(loc) {
+  %param trnm in Threads
+  %t "schedule " + loc
+  %f { tr_scheduled(tr) }
+  %p tr_scheduled(tr) & trnm(tr) & at[loc](tr)  
+}
+
+%action unschedule() {
+  %t "unschedule"
+  {
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+pre_schedule unschedule() l_ready
+
+//****** Code for one thread *****************************
+
+//general client one *****************************
+
+//NOTE: Add atomic blocks - by local actions
+//      and also by left/right movers such as lock/unlock (see old set version)?
+//      succLock cannot be in atomic block because it's blocking?
+//      Is nesting of atomic blocks legal?
+//NOTE: Initial "locate" code common to all three transaction types.
+//NOTE: Null assignments needed - check by message in non-null assignments to vars / next fields,
+//      and change comments.
+//      Additional requirements for correct differencing?
+//      All null assignments needed (in particular - in assignFromNextField)?
+//NOTE: New node always allocated - in order to compare given value with list values.
+//      In Delete, Find and failed Insert (value already in list) the node
+//      remains thread-local and need not be retained after action?
+//NOTE: Can seq "locate" be written only once (predicate can record transaction type)?
+//NOTE: Is "contain" code correct? (does not appear in paper)
+//NOTE: Another possibility - instead of boolean values:
+//      Insert returns NULL if failed, and pointer x_i otherwise (added node).
+//      Delete returns NULL if failed, and pointer curr otherwise (removed node).
+//      Find returns NULL if failed, and pointer curr otherwise (found node).
+//      Additinal result assignment is needed anyway.
+//      Can also be checked in addition to boolean results.
+//NOTE: Write last two unlock operations as common part as well
+//      (together with verify and clear)?
+//NOTE: Linearization points for insert and delete taken from Vafeiadis.
+//      Is it possible to choose a single lin point for both branches of each transaction?
+//NOTE: GC assumed?
+//NOTE: Clear() also clears responses. In order to !retain x_i in del/find, operation
+//      choice should still be recorded at this point (and then it is unset in Clear()
+//      and efficiency is as if final actions are written for each op separately).
+//NOTE: Efficiency problem in delete: removed node keeps pointing into list.
+//      Also causes sharing of list-nodes.
+//NOTE: Newer version of Vafeiadis?
+//NOTE: Linearization points for find? (Should be in common part -> problem?)
+//NOTE: Seq Spec - same implementation, without locks.
+//NOTE: In original algorithm, progress in list traversal is by curr=curr->next.
+//      Since we assign curr=null first, we use curr=pred->next.
+//      It's equivalent because we assigned pred=curr and both are local variables,
+//      so they reamined equal. Same in sequential.
+
+/* locate     */                                            
+/* concurrent */                                            
+l_ready schedule(l1_0) l1_0 
+l_ready schedule(l1_2) l1_2 
+l_ready schedule(l1_3) l1_3 
+l_ready schedule(l1_4) l1_4 
+l_ready schedule(l1_5) l1_5 
+/*atomic {*/                                                
+l1_0 assignNew(l1_0, l1_1, x_i) l1_1                    /*x_i expected to be null /local action */ 
+l1_1 assignFromGlbField(l1_1, l1_2, pred,Head) pre_schedule     /*pred expected to be null */          
+/*}*/                                                   
+l1_2 succLockNode(l1_2, l1_3, pred) pre_schedule                               
+l1_3 assignFromNextField(l1_3, l1_4, curr,pred) pre_schedule    /*curr expected to be null */          
+l1_4 succLockNode(l1_4, l1_5, curr) pre_schedule                               
+/*atomic {*/                                                
+l1_5 isDataGreaterEq(l1_5, l1_dispatch, curr,x_i) l1_dispatch  /*local action */              
+l1_5 isDataLess(l1_5, l1_6, curr,x_i) l1_6              /*local action */              
+l1_6 unlockNode(l1_6, l1_7a, pred) l1_7a                                
+
+
+//}     "}" is in Producer/Consumer/General code
+
+l_ready schedule(l1_7a) l1_7a 
+l_ready schedule(l1_0) l1_0 
+l_ready schedule(l1_9) l1_9 
+/*atomic {*/                                                
+l1_7a assignNull(l1_7a, l1_7, pred) l1_7                 /*atomic with assignRef / local action   */    
+l1_7 assignRef(l1_7, l1_8a, pred,curr) l1_8a             /*local action  */             
+                                                    
+l1_8a assignNull(l1_8a, l1_8, curr) l1_8                 /*atomic with assignFromNextField / local action  */   
+l1_8 assignFromNextField(l1_8, l1_9, curr,pred) pre_schedule                           
+/*}*/                                                   
+l1_9 succLockNode(l1_9, l1_5, curr) pre_schedule                               
+
+/*final actions - common to all operations, including linearization point */
+
+l_ready schedule(l1_10) l1_10 
+/*atomic {*/                                        
+l1_10 unlockNode(l1_10, ls1_0, pred) ls1_0                /*linearization point   */ 
+                                            
+                                            
+/****Sequential*****************************************************/           
+                                            
+/*locate*/                                      
+ls1_0 assignNew_Seq(ls1_0, ls1_dispatch, x_i) ls1_dispatch                     
+
+/*choice of transaction according to concurrent choice */               
+ls1_dispatch isChoice(ls1_dispatch, lis1_1, insert) lis1_1                   
+ls1_dispatch isChoice(ls1_dispatch, lds1_1, delete) lds1_1                   
+ls1_dispatch isChoice(ls1_dispatch, lfs1_1, find) lfs1_1                 
+
+/*insert*/                                      
+lis1_1 Successful_Insert_Seq(lis1_1, l1_11, x_i) pre_schedule                   
+lis1_1 Failed_Insert_Seq(lis1_1, l1_11, x_i) pre_schedule                                                            
+                                            
+/*delete*/                                      
+lds1_1 Delete_Seq(lds1_1, l1_11, x_i) pre_schedule                    
+/*}*/                                           
+
+/****End of sequential*******************************************************/
+/* } */
+
+
+l_ready schedule(l1_11) l1_11 
+/*atomic {*/                                        
+l1_11 unlockNode(l1_11, l1_ver, curr) l1_ver                      
+l1_ver verifySameRes(l1_ver, l1_exit) l1_exit               /*local action  */     
+/*l1_exit Clear(TN) l1_end */                   /*local action  */     
+l1_exit Clear(l1_exit, l1_0) pre_schedule                          /*local action  */     
+/*}*/                                           
+
+/*in all operations: res expectd to be null*/
+
+/*insert */
+l_ready schedule(li1_1) li1_1 
+/*atomic {*/                                                    
+li1_1 isDataEq(li1_1, li1_5, curr,x_i) li1_5                  /*local action */                  
+li1_1 isDataNotEq(li1_1, li1_2, curr,x_i) li1_2               /*local action */                  
+li1_2 updateNext(li1_2, li1_3a, x_i,curr) li1_3a               /*local action - new node not accessible by other threads */ 
+                                                        
+li1_3a assignNextNull(li1_3a, li1_3, pred) li1_3               /*atomic with updateNext */            
+li1_3 updateNext(li1_3, li1_4, pred,x_i) li1_4                /*Vafeiadis lp */                  
+                                                        
+li1_4 assignRef(li1_4, l1_10, res,x_i) l1_10                  /*local action */                  
+li1_5 assignNull(li1_5, l1_10, res) l1_10                     /*local action   / Vafeiadis lp */         
+/*}*/                                                       
+
+/*delete*/
+l_ready schedule(ld1_1) ld1_1 
+l_ready schedule(ld1_3a) ld1_3a 
+l_ready schedule(ld1_6) ld1_6 
+/*atomic {*/                                                    
+ld1_1 isDataNotEq(ld1_1, ld1_5, curr,x_i) ld1_5              /*local action */                   
+ld1_1 isDataEq(ld1_1, ld1_2, curr,x_i) ld1_2                  /*local action */                  
+ld1_2 assignFromNextField(ld1_2, ld1_3a, next,curr) pre_schedule    /*next expected to be null  / Vafeiadis lp   */ 
+/*}*/                                                       
+/*atomic {*/                                                    
+ld1_3a assignNextNull(ld1_3a, ld1_3, pred) ld1_3              /*atomic with updateNext */         
+ld1_3 updateNext(ld1_3, ld1_4, pred,next) ld1_4                                  
+                                                        
+ld1_4 assignRef(ld1_4, ld1_6, res,curr) pre_schedule                /*local action */                   
+ld1_5 assignNull(ld1_5, l1_10, res) pre_schedule                   /*local action  / Vafeiadis lp  */          
+/*}*/                                                       
+// The fact that this is done after ld_13 is very difficult because
+// 1) It causes sharing 
+// 2) Because of the counter abstraction we can never get rid of the sharing...
+ld1_6 assignNextNull(ld1_6, l1_10, curr) pre_schedule          
+
+
+/**********************    Thread Creation **********************/
+
+//general client
+/*%thread general {                                  */ 
+/*nondeterministic choice of transaction*/              
+    l1_dispatch setChoice(l1_dispatch, li1_1, insert) pre_schedule          /*local action */             
+    l1_dispatch setChoice(l1_dispatch, ld1_1, delete) pre_schedule          /*local action  /DEBUG COMMENT  */    
+/*}*/                                                       
+/*}*/                                                   
+

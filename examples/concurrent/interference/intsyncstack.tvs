@@ -1,0 +1,50 @@
+
+#ifndef POP_ALONE
+#ifndef PUSH_ALONE
+%t = { tpsh(pusher), tpop(popper) }
+%n = { u, u0, st }
+%p = {
+    #ifdef UNBOUND_THREADS
+    sm = { u: 1/2, tpsh : 1/2, tpop : 1/2 }
+    #else
+    sm = { u: 1/2 }
+    #endif
+    is_lock = { u, u0, st } 
+    ready = { tpsh, tpop }
+    rvalue[next] = { u -> u : 1/2, u0 -> u : 1/2 }
+    r_by[next] = { u : 1/2 }
+    global[top] = { u0 }
+    global[stack] = { st }
+    rg[top] = { u0, u }
+    rg[stack] = { st }
+}
+#endif
+#endif
+
+#ifdef POP_ALONE
+%t = { tpop(popper) }
+%n = { u, u0 }
+%p = {
+    sm = { u: 1/2 }
+    is_lock = { u, u0 } 
+    ready = { tpop }
+    rvalue[next] = { u -> u : 1/2, u0 -> u : 1/2 }
+    r_by[next] = { u : 1/2 }
+    global[top] = { u0 }
+
+}
+#endif
+
+#ifdef PUSH_ALONE
+%t = { tpsh(pusher) }
+%n = { u, u0 }
+%p = {
+    sm = { u: 1/2 }
+    //rvalue[top] = { tpsh -> u0 }
+    is_lock = { u, u0 } 
+    ready = { tpsh }
+    rvalue[next] = { u -> u : 1/2, u0 -> u : 1/2 }
+    r_by[next] = { u : 1/2 }
+    global[top] = { u0 }
+}
+#endif

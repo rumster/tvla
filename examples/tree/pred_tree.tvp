@@ -1,0 +1,85 @@
+//////////////////
+// Core Predicates
+
+// For every program variable z there is a unary predicate that holds for
+// list elements pointed by z.
+// The unique property is used to convey the fact that the predicate can hold
+// for at most one individual.
+// The pointer property is a visualization hint for graphical renderers.
+foreach (z in PVar) {
+    %p z(v_1) unique pointer
+}
+
+// For every field there is a corresponding binary predicate.
+foreach (sel in TSel) {
+  %p sel(v_1, v_2) function invfunction // assume treeness
+}
+
+/////////////////////////////
+// Instrumentation Predicates
+
+// The down predicate represents the union of selector predicates.
+%i down(v1, v2) = |/{ sel(v1, v2) : sel in TSel } invfunction 
+   /* use specialized TC */ acyclic {}
+
+// The downStar predicate records reflexive transitive reachability
+// between tree nodes along the union of the selector fields.
+%i downStar(v1, v2) = down*(v1, v2) transitive reflexive antisymmetric
+
+// For every program variable z the predicate r[z] holds for individual
+// v when v is reachable from variable z along the selector fields.
+foreach (x in PVar) {
+  %i r[x](v) = E(v1) (x(v1) & downStar(v1, v))
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////
+// Additional integrity constraints
+
+// down predicate
+foreach (sel in TSel) {
+  %r !down(v_1, v_2) ==> !sel(v_1, v_2)
+}
+
+// Binary reachability (downStar predicate)
+%r !downStar(v_1, v_2) ==> !down(v_1, v_2)
+%r (E(v_1) downStar(v_1, v_2) & !downStar(v_1, v_3)) ==> !downStar(v_2, v_3)
+
+// Unary reachability (r[z] predicates)
+foreach (x in PVar) {
+      %r r[x](v_1) & !r[x](v_2) ==> !downStar(v_1, v_2)
+      %r r[x](v_1) & !r[x](v_2) ==> !down(v_1, v_2)
+}
+
+// The treeness conditions
+foreach (sel in TSel) {
+ foreach (complementSel in TSel- {sel}) {
+  // %r (E(v_1, v_2, v_3) sel(v_1, v_2)& complementSel(v_1, v_3) & 
+  //                      downStar(v_2, v_4) & downStar(v_3, v_5)) ==> v_4 != v_5
+  // commented-out for efficiency
+  // Useful consequences of the above rule which TVLA did not generate
+  %r (E(v_2, v_4) sel(v_1, v_2) & downStar(v_2, v_4) & downStar(v_3, v_4))
+    ==> !complementSel(v_1, v_3)
+  %r (E(v_2) sel(v_1, v_2) & downStar(v_2, v_3))
+    ==> !complementSel(v_1, v_3)
+  %r sel(v_1, v_2) ==> !complementSel(v_1, v_2)
+  }
+%r (E(v_1, v_2) sel(v_1, v_2) & downStar(v_2, v_3) &
+                downStar(v_1, v_4) & v_4 != v_1 & !downStar(v_2, v_4))
+    ==> !downStar(v_4, v_3)
+%r (E(v_1, v_2) sel(v_1, v_2) & downStar(v_2, v_3) &
+                downStar(v_1, v_4) & v_4 != v_1 & !downStar(v_2, v_4))
+     ==> !downStar(v_3, v_4)
+}
+
+// consequences of the acyclicity assumption
+%r downStar(v_1, v_2) ==> !down(v_2, v_1)
+foreach (sel in TSel) {
+  %r sel(v_1, v_2) ==> !downStar(v_2, v_1)
+  foreach (complementSel in TSel- {sel}) {
+    %r sel(v_1, v_2) ==> !complementSel(v_2, v_1)
+  }
+}

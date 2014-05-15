@@ -1,0 +1,256 @@
+/************************************************************************
+ * stack.tvm
+ * Treiber's non-blocking stack
+ ***********************************************************************/
+
+//#define SANITY
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+#if(0 < GNUM)
+%s StaticThreadNames {g1}
+#endif
+#if(1 < GNUM)
+%s StaticThreadNames {g1,g2}
+#endif
+#if(2 < GNUM)
+%s StaticThreadNames {g1,g2,g3}
+#endif
+#if(3 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4}
+#endif
+#if(4 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4,g5}
+#endif
+
+//// Consumer Producer
+#if(0 < KNUM)
+%s StaticThreadNames {c1,p1}
+#endif
+#if(1 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2}
+#endif
+#if(2 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3}
+#endif
+#if(3 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3,c4,p4}
+#endif
+//////////////////////////////////////////////////////////////
+
+%s locations { 
+    li_1, li_2, li_3, li_4, lis_1, lis_2, lis_3, li_exit, l_dispatch, 
+    ld_1, lds_1a, ld_2, ld_3, ld_3b, lds_1, lds_2, lds_3, ld_4, ld_exit 
+}
+
+/*********************** Sets ******************************/
+
+//%s FieldsAndParameters {Top,Top_seq,x_i,this,n,n_seq,top,top_seq,next}
+
+// generally, every variable in the concurrent implementation has a corresponding
+// sequential variables, unless it doesn't appear in the sequenatial version.
+%s StackFields {Top,Top_seq}
+
+%s LocalFields {x_i,next,top,top_seq} 
+%s LocalFieldsAbs {x_i,next} 
+%s LocalFieldsNonAbs {top,top_seq}
+
+// local variables for the push procedure
+%s PushLocals {x_i,top}
+%s OnlyPushLocals {x_i}
+
+// local variables for the pop procedure
+%s PopLocals {top,top_seq,next}
+%s OnlyPopLocals {top_seq,next}
+
+%s NextFields {n,n_seq}
+
+/**************** Predicates **************/
+
+#include "stack_pred.tvp"
+
+//%r v_1 == v_2 ==> !rv[n](v_1, v_2) // No self loops
+
+%dname (rest(v) | |/{ r_by[fld](v) : fld in StackFields}) &
+  (&/{ !at[loc](v) : loc in locations} & 
+   &/{&/{ !r_by[fld,tn](v) : fld in LocalFields} : tn in StaticThreadNames}) rest
+
+foreach (tn in StaticThreadNames) {
+  %dname (tn(v) | |/{ r_by[fld,tn](v) : fld in LocalFields} | |/{ r_by[fld](v) : fld in StackFields})  & 
+  &/{&/{ !r_by[fld,tn2](v) : fld in LocalFields} : tn2 in StaticThreadNames-{ tn }}  tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "stack_stat.tvp"
+
+%action schedule(loc, trnm) {
+  %t "schedule " + loc
+  %f { tr_scheduled(tr), tr_scheduled(tr) & trnm(tr) & at[loc](tr) }
+  %p tr_scheduled(tr) & trnm(tr) & at[loc](tr)  
+}
+
+%action unschedule() {
+  %t "unschedule"
+#ifdef SANITY
+  %message (E(v) !(r_by[Top](v) <-> r_by[Top_seq](v)))
+  	-> "Top and Top_seq should always be visibly equal"
+#endif
+  {
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+//init verifyProperty() pre_schedule
+
+pre_schedule unschedule() l_ready
+
+/***************** CFG for thread one *********************************/
+
+#define PRD(TN) \
+/* Push() */ \
+/* concurrent */ \
+l_ready schedule(li_1, TN) li_1_##TN \
+l_ready schedule(li_4, TN) li_4_##TN \
+/* atomic { */\
+li_1_##TN assignNew(li_1, li_2, x_i,TN) li_2_##TN \
+li_2_##TN assignFromGlbField(li_2, li_3, top,Top,TN) li_3_##TN \
+li_3_##TN assignNext_Con(li_3, li_4, x_i,top,TN) pre_schedule \
+/* } */\
+/* atomic { */\
+li_4_##TN FailCAS(li_4, li_2, Top,top,x_i,TN) pre_schedule \
+li_4_##TN SuccCAS(li_4, lis_1, Top,top,x_i,TN) lis_1_##TN  /*commit point*/ \
+/* sequential */ \
+lis_1_##TN assignNew_Seq(lis_1, lis_2, x_i,TN) lis_2_##TN \
+lis_2_##TN assignNextFromField_Seq(lis_2, lis_3, x_i,Top_seq,TN) lis_3_##TN \
+lis_3_##TN assignField(lis_3, li_exit, Top_seq,x_i,TN) li_exit_##TN \
+/* li_corr verifyCorrelation() li_exit */ \
+li_exit_##TN Clear_Push(li_exit, l_dispatch, TN) pre_schedule   /*local action - added to atomic block*/ \
+/* } */\
+
+#define CNS(TN) \
+/* Pop() */ \
+l_ready schedule(ld_1, TN) ld_1_##TN \
+l_ready schedule(ld_3b, TN) ld_3b_##TN \
+l_ready schedule(ld_3, TN) ld_3_##TN \
+/*atomic { */\
+ld_1_##TN assignFromGlbField(ld_1, lds_1a, top,Top,TN) lds_1a_##TN           /*first commit point*/ \
+lds_1a_##TN assignFromGlbField(lds_1a, ld_2, top_seq,Top_seq,TN) ld_2_##TN   /*"atomic action"*/ \
+ld_2_##TN isNull(ld_2, ld_4, top,TN) pre_schedule       /*local action - added to atomic block*/ \
+ld_2_##TN isNotNull(ld_2, ld_3b, top,TN) pre_schedule   /*local action - added to atomic block*/ \
+/*} */\
+ld_3b_##TN assignFromNextField(ld_3b, ld_3, next,top,TN) pre_schedule \
+/*atomic { */\
+ld_3_##TN FailCAS(ld_3, ld_1, Top,top,next,TN) pre_schedule \
+ld_3_##TN SuccCAS(ld_3, lds_1, Top,top,next,TN) lds_1_##TN      /*second commit point*/ \
+/* sequential */ \
+lds_1_##TN assignFromGlbField(lds_1, lds_2, top_seq,Top_seq,TN) lds_2_##TN \
+lds_2_##TN isNull(lds_2, ld_4, top_seq,TN) ld_4_##TN \
+lds_2_##TN isNotNull(lds_2, lds_3, top_seq,TN) lds_3_##TN \
+lds_3_##TN assignNextToField_Seq(lds_3, ld_4, Top_seq,top_seq,TN) ld_4_##TN \
+/* ld_corr verifyCorrelation() ld_4 */ \
+ld_4_##TN verifySamePopRes(ld_4, ld_exit, TN) ld_exit_##TN   /*lin test, local action added to block*/ \
+ld_exit_##TN Clear_Pop(ld_exit, l_dispatch, TN) pre_schedule /*local action - added to atomic block*/ \
+/*} */\
+
+/**********************    Thread Creation **********************/
+
+//producer
+#define CREATE_P(TN) \
+/*%thread producer_##TN { */\
+l_ready schedule(l_dispatch, TN) l_dispatch_##TN \
+l_dispatch_##TN skip(l_dispatch, li_1, TN) li_1_##TN \
+ \
+PRD(TN) \
+ \
+/*}*/ \
+
+//consumer
+#define CREATE_C(TN) \
+/*%thread consumer_##TN { */\
+l_ready schedule(l_dispatch, TN) l_dispatch_##TN \
+l_dispatch_##TN skip(l_dispatch, ld_1, TN) ld_1_##TN \
+ \
+CNS(TN) \
+ \
+/*}*/ \
+
+//general client
+#define CREATE_G(TN) \
+/*%thread general_##TN { */\
+/*nondeterministic choice of transaction*/ \
+l_ready schedule(l_dispatch, TN) l_dispatch_##TN \
+l_dispatch_##TN skip(l_dispatch, li_1, TN) li_1_##TN \
+l_dispatch_##TN skip(l_dispatch, ld_1, TN) ld_1_##TN \
+ \
+PRD(TN) \
+ \
+CNS(TN) \
+ \
+/*}*/ \
+
+//create producer types
+#if(0 < KNUM)
+CREATE_P(p1)
+#endif
+
+#if(1 < KNUM)
+CREATE_P(p2)
+#endif
+
+#if(2 < KNUM)
+CREATE_P(p3)
+#endif
+
+#if(3 < KNUM)
+CREATE_P(p4)
+#endif
+
+//create consumer types
+#if(0 < KNUM)
+CREATE_C(c1)
+#endif
+
+#if(1 < KNUM)
+CREATE_C(c2)
+#endif
+
+#if(2 < KNUM)
+CREATE_C(c3)
+#endif
+
+#if(3 < KNUM)
+CREATE_C(c4)
+#endif
+
+//create general types
+#if(0 < GNUM)
+CREATE_G(g1)
+#endif
+
+#if(1 < GNUM)
+CREATE_G(g2)
+#endif
+
+#if(2 < GNUM)
+CREATE_G(g3)
+#endif
+
+#if(3 < GNUM)
+CREATE_G(g4)
+#endif
+
+#if(4 < GNUM)
+CREATE_G(g5)
+#endif
+
+//%%
+

@@ -1,0 +1,26 @@
+// Two acyclic singly-linked lists pointed by p and q.
+// The lists are disjoint and contain two or more elements.
+%n = {head1, tail1, head2, tail2}
+%p = {
+       sm = {tail1:1/2, tail2:1/2}
+       p = {head1}
+       q = {head2}
+       CUList[n,p] = {tail1}
+       CUList[n,q] = {tail2}
+       n = {head1->tail1:1/2, tail1->tail1:1/2,
+            head2->tail2:1/2, tail2->tail2:1/2}
+	   UList = { 
+	   	head1->tail1, tail1->tail1:1/2,
+	   	head2->tail2, tail2->tail2:1/2
+	   }
+#ifndef DISABLE_INCOMING       
+	   incoming[n] = {tail1, tail2}
+#endif
+#ifndef DISABLE_NON_NULL       
+	   nonNull[p] = 1
+	   nonNull[q] = 1
+#endif
+#ifdef REFINE
+	pqnn = 1
+#endif
+}

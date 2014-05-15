@@ -1,0 +1,21 @@
+\begin{thebibliography}{SRW02}
+
+\bibitem[LA00]{Master:LevAmi00}
+T.~Lev-Ami.
+\newblock {TVLA}: {A} framework for {K}leene based static analysis.
+\newblock Master's thesis, Tel-Aviv University, Tel-Aviv, Israel, 2000.
+
+\bibitem[LAS00]{kn:TalSAS00}
+T.~Lev-Ami and M.~Sagiv.
+\newblock {TVLA}: {A} framework for {K}leene based static analysis.
+\newblock In Jens Palsberg, editor, {\em Proc. Static Analysis Symp.}, volume
+  1824 of {\em Lecture Notes in Computer Science}, pages 280--301.
+  Springer-Verlag, 2000.
+
+\bibitem[SRW02]{TOPLAS:SRW02}
+M.~Sagiv, T.~Reps, and R.~Wilhelm.
+\newblock Parametric shape analysis via 3-valued logic.
+\newblock {\em ACM Transactions on Programming Languages and Systems},
+  24(3):217--298, 2002.
+
+\end{thebibliography}

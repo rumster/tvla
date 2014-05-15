@@ -1,0 +1,50 @@
+/***********************************************************
+* shape_pred.tvm
+* include file for shape analysis predicates
+***********************************************************/
+
+/**********************************************/
+/*************** Core Predicates **************/
+foreach (v in FieldsAndParameters) {
+    %p rvalue[v](o_1, o_2) function 
+    }
+
+foreach (g in Globals) {
+    %p global[g](o_1) unique pointer
+    }
+
+/*********************************************************/
+/*************** Instrumentation Predicates **************/
+
+#ifdef RBY
+foreach (v in FieldsAndParameters) {
+    %i r_by[v](o) = E(o_1) rvalue[v](o_1,o)
+    }
+#endif
+
+#ifdef REACH
+foreach (glb in Globals) {
+        %i rg[glb](o_1) = 
+            (E(o_g) (global[glb](o_g) 
+                & ( |/{ rvalue[fld]*(o_g,o_1) : fld in FieldsAndParameters})))
+}
+
+foreach (v in FieldsAndParameters) {
+    %i rt[v,next](t,o) = isthread(t) & E(o_t) rvalue[v](t,o_t) & rvalue[next]*(o_t,o)
+}
+#endif // REACH
+
+#ifdef SHARE
+
+
+//%i is[next](o) = E(o_1,o_2) (o_1 != o_2) & (rvalue[next](o_1,o) & rvalue[next](o_2,o))
+foreach (v in FieldsAndParameters) {
+    %i is[v](o) = E(o_1,o_2) (o_1 != o_2) & (rvalue[v](o_1,o) & rvalue[v](o_2,o))
+    
+    %i is(o) = (E(o_1,o_2) (o_1 != o_2) & ((|/{rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ((|/{rvalue[f](o_2,o) : f in FieldsAndParameters})))) | 
+            E(o_1) (|/{rvalue[f](o_1,o) : f in FieldsAndParameters}) & 
+            (|/{global[g](o) : g in Globals})
+    }
+    
+#endif // SHARE

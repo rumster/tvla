@@ -1,0 +1,138 @@
+\newcommand{\IdSwitch}{{\bf sw}\={\bf itch\/}}
+\newcommand{\semp}[1]{\lsyn #1 \rsyn}
+\def\bigsqcap{\mathop{\mathchoice{\mbox{\rule[-1ex]{0.05em}{3.35ex}\rule[2.1ex]{0.8em}{0.1em}\rule[-1ex]{0.05em}{3.35ex}}}
+  {\mbox{\rule[-.5ex]{0.05em}{2.25ex}\rule[1.65ex]{.55em}{0.05em}\rule[-.5ex]{0.04em}{2.25ex}}}
+  {\mbox{\rule[-.5ex]{0.05em}{2.25ex}\rule[1.65ex]{.55em}{0.05em}\rule[-.5ex]{0.04em}{2.25ex}}}
+  {\mbox{\rule[-.5ex]{0.05em}{2.25ex}\rule[1.65ex]{.55em}{0.05em}\rule[-.5ex]{0.04em}{2.25ex}}}
+}}
+\newcommand{\IdDeclare}{{\bf d}\={\bf eclare\/}}
+\newcommand{\IdCase}{{\bf c}\={\bf ase\/}}
+\newcommand{\IdDefault}{{\bf d}\={\bf efault}}
+\newcommand{\IdFor}{{\bf f}\={\bf rr\/}}
+\newcommand{\IdWhile}{{\bf w}\={\bf hile\/}}
+\newcommand{\IdBegin}{{\bf b}\={\bf egin\/}}
+\newcommand{\IdIf}{{\bf i}\={\bf f\/}}
+\newcommand{\IdElse}{{\bf e}\={\bf lse}}
+%%% Theorem Like Definitions
+\newcounter{my_counter}
+\newcounter{tmy_counter}
+\newcommand{\MyRoman}[1]%
+        {\setcounter{my_counter}{#1}\roman{my_counter}}
+\newcommand{\PMyRoman}[1]%
+        {\rm (\MyRoman{#1})}
+\newtheorem{MyTheorem}{Theorem}[section]
+\newenvironment{The}{%
+                \begin{MyTheorem}}{$\QED$\end{MyTheorem}}
+\newenvironment{SThe}[1]%
+{\par\noindent{\bf Theorem~\ref{The:#1}\/}\begin{em}}%
+{\end{em}$\QED$}
+\newtheorem{Proposition}[MyTheorem]{Proposition}
+\newenvironment{Pro}{%
+                \begin{Proposition}}{$\QED$\end{Proposition}}
+\newenvironment{SPro}[1]%
+{\par\noindent{\bf Proposition~\ref{Pro:#1}\/}\begin{em}}%
+{\end{em}$\QED$}
+\newtheorem{Lemma}[MyTheorem]{Lemma}
+\newenvironment{Lem}{%
+                \begin{Lemma}}{$\QED$\end{Lemma}}
+\newenvironment{SLem}[1]%
+{\par\noindent{\bf Lemma~\ref{Lem:#1}\/}\begin{em}}%
+{\end{em}$\QED$}
+\newenvironment{Claim}[1]%
+{\par\noindent\begin{rm}{\em Claim\/}:~#1}%
+{\end{rm}}
+\newenvironment{CProof}[1]{\par\noindent %
+\begin{rm}{\em Proof of Claim\/}#1:}{\end{rm}}
+\newtheorem{Corollary}[MyTheorem]{Corollary}
+\newenvironment{Cor}{\begin{Corollary}}{$\QED$\end{Corollary}}
+\newtheorem{Conjecture}[MyTheorem]{Conjecture}
+\newenvironment{Con}{\begin{Conjecture}}{$\QED$\end{Conjecture}}
+\newtheorem{Observation}[MyTheorem]{Observation}
+\newenvironment{Obs}{%
+                \begin{Observation}}{$\QED$\end{Observation}}
+\newtheorem{Definition}[MyTheorem]{Definition}
+\newenvironment{Def}{\begin{Definition}}{$\QED$\end{Definition}}
+\newtheorem{Example}[MyTheorem]{Example}
+\newenvironment{Exa}{\begin{Example}\begin{rm}}%
+                        {\end{rm}$\QED$\end{Example}}
+\newenvironment{Ex}{\begin{quote}{\bf Example}.}%
+                        {$\QED$\end{quote}}
+\newenvironment{Note}{\par\noindent{\em Note\/}:}{}
+\newenvironment{Remark}{\par\noindent{\bf Remark\/}.}{$\QED$}
+\newenvironment{Proof}{\par\noindent %
+{\em Proof:\/}\begin{rm}}{\end{rm}}
+\newenvironment{ProofA}{%
+\begin{rm}{\em Proof:\/}}{\end{rm}}
+\newenvironment{ProofW}{\newline %
+\begin{rm}{\em Proof:\/}}{\end{rm}}
+\newenvironment{ProofIfA}{%
+\begin{rm}{\em Proof of the if direction:\/}}{\end{rm}}
+\newenvironment{ProofIf}{\newline %
+\begin{rm}{\em Proof of the if direction:\/}}{\end{rm}}
+\newenvironment{ProofOnlyIfA}{%
+\begin{rm}{\em Proof of the only-if direction:\/}}{\end{rm}}
+\newenvironment{ProofOnlyIf}{\newline %
+\begin{rm}{\em Proof of the only-if direction:\/}}{\end{rm}}
+\newenvironment{Sketch}{\par\noindent %
+\begin{rm}{\em Sketch of Proof:\/}}{\end{rm}}
+\newenvironment{Name}{\begin{bf}(}{)\end{bf}}
+\newenvironment{Basis}{\newline {\em Basis\/}:}{}
+\newenvironment{Hypothesis}{\newline {\em Induction hypothesis\/}:}{}
+\newenvironment{Step}{\newline {\em Induction step\/}:}{}
+\newenvironment{CSD}%
+{\par\noindent{\rm Categories and Subject Descriptors\/}:}%
+{}
+\newenvironment{GT}%
+{\par\noindent{\rm General Terms\/}:}%
+{}
+\newenvironment{AKW}%
+{\par\noindent{\rm Additional Key Words\/}:}%
+{}
+ 
+%%% Math Macros
+%%% Vectors a-la Micky
+\newcommand{\mve}[1]{{\bf #1}}
+\newcommand{\A}[1]{{{#1}^\sharp}}
+\newcommand{\C}[1]{{{#1}^\natural}}
+\newcommand{\CSub}[2]{{{#1}^\natural_{#2}}}
+\newcommand{\eqsharp}{\buildrel \sharp \over =}
+\newcommand{\neqsharp}{\buildrel \sharp \over \neq}
+\newcommand{\eqdef}{\buildrel \mbox{\tiny\rm def} \over =}
+\newcommand{\dto}{\buildrel d \over \to}
+\newcommand{\Derives}{\buildrel * \over \Rightarrow}
+\newcommand{\meet}{\wedge}
+\newcommand{\Bigmeet}{\bigwedge}
+\newcommand{\Land}{\bigwedge}
+\newcommand{\Lor}{\bigvee}
+%\newcommand{\QED}{\mbox{$\Box$}}
+\newcommand{\QED}{}
+\newcommand{\join}{\vee}
+\newcommand{\Sqcap}{\bigsqcap}
+\newcommand{\Sqcup}{\bigsqcup}
+\newcommand{\Bigjoin}{\bigvee}
+\newcommand{\bigjoin}{\bigvee}
+\newcommand{\composition}{\: \circ \:}
+\newcommand{\Composition}{\mbox{\boldmath $\: \circ \:$}}
+\newcommand{\Bot}{\mbox{\boldmath $\bot$}}
+\newcommand{\Top}{\mbox{$\lambda l . \top$}}
+\newcommand{\fv}[1]{\mbox{$\overline #1$}}
+\newcommand{\bottom}{\bot}
+\newcommand{\lsyn}{\lbrack\!\lbrack}
+\newcommand{\rsyn}{\rbrack\!\rbrack}
+\newcommand{\project}{\!\downarrow\!}
+\newcommand{\lift}{\!\uparrow\!}
+\newcommand{\Tau}{T}
+\newcommand{\NP}{\mbox{\rm NP}}
+\newcommand{\JOP}{\mbox{\it JOP}}
+\newcommand{\ST}{s.t.\ }
+\newcommand{\addindent}{program \= \+ \kill}
+\newcommand{\takes}{\leftarrow}
+\newcommand{\impliesBothWays}{\Leftrightarrow}
+%\newcommand{\implies}{\Rightarrow}
+%\batchmode
+\newcommand{\B}[1]{\langle{#1}\rangle}
+\newcommand{\RegularSum}{\mbox{\it Rsum}}
+\newcommand{\IfThenElse}[3]{\left \{%
+                             \begin{array}{ll}
+                           #2 & \mbox{if}~#1\\%%
+                           #3 & \mbox{otherwise} \end{array} \right.}

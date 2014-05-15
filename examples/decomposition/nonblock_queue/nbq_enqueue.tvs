@@ -1,0 +1,57 @@
+// note -
+// when UBT is defined, this initial configuration does not represents the case
+// of a single thread due to values of is/ivs predicates (sharing) which imply that more than
+// a single thread exists.
+#ifdef ALLOC
+%t = { tprd(producer),talp(producer_allocator) }
+#else
+%t = { tprd(producer) }
+#endif
+%n = { z, s_succ, queue, dummyNode }
+%p = {
+
+    #ifdef ALLOC
+    ready = { tprd, talp }
+    #else
+    ready = { tprd }
+    #endif
+
+    #ifdef UBT
+    sm = { s_succ : 1/2, tprd : 1/2 }
+    #else
+    sm = { s_succ : 1/2 }
+    #endif
+    succ = { z -> s_succ : 1/2 , s_succ -> s_succ : 1/2}
+    //rt[z,succ] = { z, s_succ }
+    rv[this] = { tprd->queue }
+    r_by[this] = { queue }
+    reach[this] = { queue }
+    is_nat = { z, s_succ }
+    zero = { z }
+    rv[Tail] = { queue -> dummyNode }
+    rv[Head] = { queue -> dummyNode }
+    iv[Tail] = { queue -> z }
+    iv[Head] = { queue -> z }
+
+    i_by[Tail] = { z }
+    i_by[Head] = { z }
+
+    reach[Tail] = { dummyNode }
+    reach[Head] = { dummyNode }
+    r[Head,n] =   { dummyNode }
+    r_by[Tail] = { dummyNode }
+    r_by[Head] = { dummyNode }
+    tn = { dummyNode -> dummyNode,  queue -> queue }
+
+
+    #ifdef UBT
+    is[this] = { queue }
+    #endif
+
+    #ifdef ALLOC
+    rv[sharedQueue] = { talp -> queue }
+    r_by[sharedQueue] = { queue }
+    reach[sharedQueue] = { queue }
+    #endif
+
+}

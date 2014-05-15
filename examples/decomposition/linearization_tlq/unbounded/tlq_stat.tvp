@@ -1,0 +1,388 @@
+/******************************************************************
+* tlq_stat.tvm
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+#define CondAssign(cond,pred,result) pred = ((cond) ? (result) : (pred))
+#define UPDATE_AT(from,to,trnm)\
+    CondAssign(tr_scheduled(v) & trnm(v), at[from](v), 0)\
+    CondAssign(tr_scheduled(v) & trnm(v), at[to](v), 1)\
+
+/*******************
+* skip()
+********************/
+%action skip(from, to) {
+    %param trnm in Threads
+    %t "skip" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+      UPDATE_AT(from,to,trnm)
+    }
+}
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* Allocation to local variable.
+* note - the type is currently ignored.
+********************/
+//ref isn't assumed to be null before allocation.
+//NEED TO FIX: allocation is specific to x_i, not general allocation to local
+%action assignNew(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "= new T()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %new
+    {
+        r_by[ref,trnm](v) = isNew(v)
+
+        dnode(v) = dnode(v) | isNew(v)
+
+        //updates due to universe-changing action:
+
+        foreach (fld in NextFields) {
+              rv[fld](v1,v2) = rv[fld](v1,v2)
+        }
+
+        foreach (fld in QFields) {
+              r_by[fld](v) = r_by[fld](v)
+        }
+
+        foreach (nm in Threads-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](v) = r_by[fld,nm](v)
+             }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+        }
+
+        dnext(v) = dnext(v)
+
+        rest(v) = rest(v)
+
+		foreach (var in {x_i}) {
+		  is[var](v) = is[var](v)
+		}
+		
+        foreach (l in Locks) {
+           holds[l](t) = holds[l](t)
+        }
+       UPDATE_AT(from,to,trnm)
+    }
+}
+
+
+//allocating in sequential heap a node that already appears in concurrent heap.
+%action assignNew_Seq(from, to, ref) {
+    %param trnm in Threads
+    %t "assignNew_Seq(" + ref + ")" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2)
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+     {
+        dnode(v) = dnode(v) & !r_by[ref,trnm](v)
+
+        //Before the action, the node pointed-to by ref didn't exist in the sequential heap
+        //and hence didn't have a sequential successor and also wasn't dnext
+        //(when allocating a node and when updating its next field (in con or seq),
+        // the node shouldn't become dnext if it's dnode).
+        //If it had a successor in the concurrent heap it becomes dnext.
+        dnext(v) = dnext(v) | (r_by[ref,trnm](v) & E(u) rv[n](v,u))
+
+        //update to nextcon left to differencing
+
+       UPDATE_AT(from,to,trnm)
+     }
+     %decompose
+}
+
+
+/***
+* assignFromGlbField(ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a QUEUE field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromGlbField(from, to, ref,fld) {
+    %param trnm in Threads
+    %t ref + " = " + fld + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+        r_by[ref,trnm](v) = r_by[fld](v)
+		foreach (ref2 in {ref}-(LocalFields-{x_i})) {                                       
+			is[ref2](v) = (r_by[fld](v) ? 1/2 : is[ref2](v))
+		} 
+       UPDATE_AT(from,to,trnm)
+    }
+}
+
+/***
+* assignFromNextField(ref,obj,trnm)
+* ref = obj.n where ref is a local field and obj is a local field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromNextField(from, to, ref,obj) {
+    %param trnm in Threads
+    %t ref + " = " + obj + "." + n + " [" + trnm + "]"
+    %compose trnm(v1) & rest(v2) 
+   //focus needed becuase we read a successor
+    %f { r_by[obj,trnm](v1) & rv[n](v1,v2) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    // [trnm(v) & rest(v2)]
+    %message [trnm(v) & rest(v2)] (!(E(v) r_by[obj,trnm](v))) -> "possible null dereference of " + obj + " for " + trnm
+    {
+        r_by[ref,trnm](v) = E(u) r_by[obj,trnm](u) & rv[n](u,v)
+		foreach (ref2 in {ref}-(LocalFields-{x_i})) {                                       
+			is[ref2](v) = ((E(u) r_by[obj,trnm](u) & rv[n](u,v)) ? 1/2 : is[ref2](v))
+		} 
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/***
+* updateNext(obj,ref,trnm)
+* obj->n = ref where obj and ref are thread-local variables.
+***/
+//Similar to SuccCAS_Next in nbq, but without the condition on oldVal.
+//obj->n is not assumed to be null before assignment.
+%action updateNext(from, to, obj,ref) {
+    %param trnm in Threads
+    %t obj + ".n = " + ref + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2)
+    %f { r_by[obj,trnm](o_t) & rv[n](o_t,o_f),
+         r_by[obj,trnm](o_t) & rv[n_seq](o_t,o_f) }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v1) & rest(v2)] (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    %message [trnm(v1) & rest(v2)] (E(o_1, o_2) r_by[obj,trnm](o_1) & r_by[ref,trnm](o_2) & rv[n](o_2,o_1))
+    	-> "Creating simple loop!"
+    {
+       UPDATE_AT(from,to,trnm)
+
+        rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                           r_by[ref,trnm](o_2) : rv[n](o_1,o_2) ) 
+        
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                               !dnode(o_1) & 
+                               (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2)))
+                               & !r_by[ref,trnm](o_2) :  
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !dnode(o_1) & 
+                       !A(o_2) ((rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) <->
+                                r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+
+        rest(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !dnode(o_1) &
+                       A(o_2) ((rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) <->
+                                r_by[ref,trnm](o_2)) :
+                       rest(o_1) )
+    }
+    %decompose
+}
+
+
+
+
+/***
+* updateFieldNext_Seq(fld,ref,trnm)
+* fld.next = ref, in sequential ds.
+* fld is a global field, ref is a local field.
+***/
+
+%action updateFieldNext_Seq(from, to, fld, ref) {
+    %param trnm in Threads
+    %t fld + "." + n + "=" + ref + "(sequential)" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2)
+    %f { r_by[fld](o_f) & rv[n](o_f,dst) }
+    //is focus formula needed? is focus formula for n_seq also needed?
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message (!(E(o_f) r_by[fld](o_f))) -> "possible null dereference of " + fld
+    %message [trnm(v1) & rest(v2)] (E(o_1, o_2) r_by[fld](o_1) & r_by[ref,trnm](o_2) & rv[n](o_2,o_1))
+    	-> "Creating simple loop!"
+    {
+       UPDATE_AT(from,to,trnm)
+
+        rv[n_seq](o_1,o_2) = ( r_by[fld](o_1) ?           
+                               r_by[ref,trnm](o_2) & !rv[n](o_1,o_2) : 
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[fld](o_1) ?
+                       !A(o_2) (rv[n](o_1,o_2) <-> r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+        rest(o_1) = ( r_by[fld](o_1) ?
+        				!dnode(o_1) &
+                       A(o_2) (rv[n](o_1,o_2) <-> r_by[ref,trnm](o_2)) :
+                       rest(o_1) )
+    }
+    %decompose
+}
+
+
+/***
+* assignField(from, to, fld,ref,trnm)
+* fld = ref where fld is a QUEUE field
+***/
+//We don't assume fld==null before assignment.
+%action assignField(from, to, fld,ref) {
+    %param trnm in Threads
+    %t fld + "=" + ref + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2) | trnm(v1) & holds[Hl](v2)
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+        r_by[fld](v) = r_by[ref,trnm](v)
+       UPDATE_AT(from,to,trnm)
+    }
+	%decompose
+}
+
+/*******************
+* Clear(trnm) 
+* null assignment to all local variables
+********************/
+//We clear all local fields, no matter which action was performed (Enq or Deq).
+%action Clear(from, to) {
+    %param trnm in Threads
+    %t "Clear()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    {
+        foreach (fld in LocalFields) {
+            r_by[fld,trnm](v) = 0
+        }
+        foreach (fld in {x_i}) {
+			is[fld](v) = (r_by[fld,trnm](v) ? is[fld](v) & 1/2 : is[fld](v))
+		} 
+       UPDATE_AT(from,to,trnm)
+    }
+}
+
+/***
+* selectFieldNext_Seq(ref,fld,trnm)
+* ref = fld.next, in sequential ds.
+* ref is a local field and fld is a global field.
+***/
+//ref is NOT assumed to be null before assignment.
+%action selectFieldNext_Seq(from, to, ref,fld) {
+    %param trnm in Threads
+    %t ref + " = " + fld + "." + n + "(sequential)" + " [" + trnm + "]"
+    %compose trnm(v1) & rest(v2) 
+    %f { r_by[fld](o_f) & rv[n](o_f,dst),
+         r_by[fld](o_f) & rv[n_seq](o_f,dst)
+       }
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v1) & rest(v2)] (!(E(o_f) r_by[fld](o_f))) -> "possible null dereference of " + fld
+    {
+       UPDATE_AT(from,to,trnm)
+        r_by[ref,trnm](o_1) = E(o_f) (r_by[fld](o_f) &
+                                      ((!dnext(o_f) & rv[n](o_f,o_1)) |
+                                       (dnext(o_f) & rv[n_seq](o_f,o_1)))) 
+		foreach (ref2 in {ref}-(LocalFields-{x_i})) {                                       
+			is[ref2](v) = (E(o_f) (r_by[fld](o_f) &
+                              ((!dnext(o_f) & rv[n](o_f,v)) |
+                              (dnext(o_f) & rv[n_seq](o_f,v)))) ? 1/2 : is[ref2](v))
+		}        
+    }
+    %decompose 
+}
+
+
+/*******************
+* isNull(ref,trnm)
+* (ref == null)
+********************/
+
+%action isNull(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "== null" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2) | trnm(v1) & holds[Hl](v2)
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & !E(v) r_by[ref,trnm](v) 
+    {
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+
+/*******************
+* isNotNull(ref,trnm)
+* (ref != null)
+********************/
+
+%action isNotNull(from, to, ref) {
+    %param trnm in Threads
+    %t ref + "!= null" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}} 
+    	| trnm(v1) & rest(v2) | trnm(v1) & holds[Hl](v2)
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & E(v) r_by[ref,trnm](v)
+    {
+       UPDATE_AT(from,to,trnm)
+    }
+    %decompose
+}
+
+/****************************
+* verifySameDeqRes(trnm)
+* (new_head == new_head_seq)
+*****************************/
+%action verifySameDeqRes(from, to) {
+    %param trnm in Threads
+	%t "verify " + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v)] (!A(v) (r_by[new_head,trnm](v) <-> r_by[new_head_seq,trnm](v)))
+             -> "deq results may differ\n"
+    {
+       UPDATE_AT(from,to,trnm)
+    }
+}
+
+/***
+* succLockField(l,trnm)
+* Succesful locking of global lock l.
+***/
+%action succLockField(from, to, l) {
+    %param trnm in Threads
+    %t "succLockField (" + l + ")" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) & holds[Hl](v3) : otrnm in Threads-{trnm}}
+    	|  trnm(v1) & rest(v2) & holds[Hl](v3)
+    %p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr) & !E(t) (holds[l](t) & t != tr)
+    %message [trnm(v1) & rest(v2) & holds[l](v3)] (E(tr) tr_scheduled(tr) & holds[l](tr)) -> "thread may relock a lock [" + l + "] it already holds"
+    { 
+       UPDATE_AT(from,to,trnm)
+       holds[l](t_1) = tr_scheduled(t_1)
+    }
+    %decompose
+}
+
+/***
+* unlockField(l,trnm)
+* Unlocking global lock l.
+***/
+%action unlockField(from, to, l) {
+    %param trnm in Threads
+    %t "unlockField (" + l + "," + trnm + ")"
+    %compose |/{trnm(v1) & otrnm(v2) & holds[Hl](v3) : otrnm in Threads-{trnm}}
+    	|  trnm(v1) & rest(v2) & holds[Hl](v3)
+	%p E(tr) tr_scheduled(tr) & at[from](tr) & trnm(tr)
+    %message [trnm(v1) & rest(v2) & holds[Hl](v3)] (E(tr) tr_scheduled(tr) & !holds[l](tr)) -> "thread may unlock a lock [" + l + "] it doesn't hold"
+    {
+       UPDATE_AT(from,to,trnm)
+       holds[l](t_1) = 0
+    }
+    %decompose
+}

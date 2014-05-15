@@ -1,0 +1,658 @@
+/******************************************************************
+* set_stat.tvm
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+//DEBUG 
+%action verifyProperty() {
+    %t "debug"
+    %message (E(v) (!isthread(v) & !r_by[x_i,one](v) & !r_by[Head](v) & 
+                   !(E(t) (at[li1_3](t) | at[l1_end](t))) & !rt[Head,n](v))) -> "rt debug"
+    %message (E(v) (!isthread(v) & !inSOrder[dle,n](v))) -> "dle debug"
+}
+
+/*******************
+* skip()
+********************/
+%action skip() {
+    %t "skip"
+    %f { runnable(tr) }
+}
+
+
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* Allocation to local variable.
+* note - the type is currently ignored.
+********************/
+//ref IS assumed to be null before allocation.
+
+%action assignNew(ref,trnm) {
+    %t ref + "= new T()"
+    %f { runnable(tr) }
+    %message (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field" 
+    %new 
+    {
+
+        r_by[ref,trnm](v) = isNew(v)
+
+        dnode(v) = dnode(v) | isNew(v)
+
+        //new node holds some value val s.t. -inf < val < +inf
+        dle(v_1, v_2) = 
+	   (((isNew(v_1) & isNew(v_2)) | 
+             (r_by[Head](v_1) & isNew(v_2)) | 
+             (isNew(v_1) & r_by[Tail](v_2))) ? 1 :
+                (((isNew(v_1) & !r_by[Head](v_2) & !isthread(v_2)) | 
+                  (isNew(v_2) & !r_by[Tail](v_1) & !isthread(v_1))) ? 1/2 : 
+                 dle(v_1, v_2))) 
+
+        inSOrder[dle,n](v) = inSOrder[dle,n](v) | isNew(v)
+
+        bn[n](o_1,o_2) = bn[n](o_1,o_2) | (isNew(o_1) & isNew(o_2))
+
+        
+
+        //updates due to universe-changing action:
+
+        foreach (fld in NextFields) {
+              rv[fld](o_1,o_2) = rv[fld](o_1,o_2)
+        }
+
+        foreach (fld in GlobalFields) {
+              r_by[fld](o) = r_by[fld](o)
+        }
+
+        foreach (nm in StaticThreadNames-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](o) = r_by[fld,nm](o)
+             }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+        }
+
+        
+        //dnext(v) = dnext(v)
+
+        foreach (nm in StaticThreadNames) {
+             locked_by[nm](v) = locked_by[nm](v)
+        }
+
+        foreach (op in Operations) {
+             choice[op](t) = choice[op](t) 
+        }
+
+        //bn[n](o_1,o_2) = bn[n](o_1,o_2)      //irreflexive
+
+        foreach (fld in GlobalRt) {
+             rt[fld,n](o) = rt[fld,n](o)
+        }
+
+        //If bn[n] is reflexive, this update is correct provided ref not in LocalRt
+        foreach (nm in StaticThreadNames) {
+             foreach (fld in LocalRt) {
+                  rt[fld,nm,n](o) = rt[fld,nm,n](o)    //irreflexive, hence no rt from ref
+             }        
+        }
+
+
+        //c[n](v) = c[n](v)
+
+        is[n](v) = is[n](v)
+
+    }
+}
+
+
+//allocating in sequential heap a node that already appears in concurrent heap.
+%action assignNew_Seq(ref,trnm) {
+     %t "assignNew_Seq(ref)"
+     %f { runnable(tr) }
+     {
+        dnode(v) = dnode(v) & !r_by[ref,trnm](v)
+
+        //Before the action, the node pointed-to by ref didn't exist in the sequential heap
+        //and hence didn't have a sequential successor and also wasn't dnext
+        //(when allocating a node and when updating its next field (in con or seq),
+        // the node shouldn't become dnext if it's dnode).
+        //If it had a successor in the concurrent heap it becomes dnext.
+        //dnext(v) = dnext(v) | (r_by[ref,trnm](v) & E(u) rv[n](v,u))
+        
+        //update to nextcon left to differencing 
+     }
+}
+
+/***
+* succLockNode(ref,trnm)
+* Succesful locking of node pointed-to by local variable ref.
+***/
+%action succLockNode(ref,trnm) {
+    %t "succLockNode (" + ref + "," + trnm + ")"
+    %f  { runnable(tr) } 
+    %p A(v) (r_by[ref,trnm](v) -> &/{(!locked_by[nm](v)) : nm in StaticThreadNames-{trnm}})
+    %message (E(v_1) (r_by[ref,trnm](v_1) & locked_by[trnm](v_1))) 
+              -> "thread may relock a node it already holds"
+    { 
+        locked_by[trnm](v_1) = locked_by[trnm](v_1) | r_by[ref,trnm](v_1)
+            
+    }
+}
+
+/***
+* unlockNode(ref,trnm)
+* Unlocking node pointed-to by local variable ref.
+***/
+%action unlockNode(ref,trnm) {
+    %t "unlockNode (" + ref + "," + trnm + ")"
+    %f { runnable(tr) }
+    %message (E(v_1) (r_by[ref,trnm](v_1) & !locked_by[trnm](v_1))) 
+             -> "thread may unlock a node it doesn't hold"
+    {
+        locked_by[trnm](v_1) = locked_by[trnm](v_1) & !r_by[ref,trnm](v_1)
+
+    }
+}
+
+/***
+* assignFromGlbField(ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a global field
+***/
+//ref IS assumed to be null before assignment.
+%action assignFromGlbField(ref,fld,trnm) {
+    %t ref + " = " + obj + "." + fld 
+    %f { runnable(tr) }
+    %message (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    {   
+        r_by[ref,trnm](o_1) = r_by[fld](o_1)
+        
+    }
+}
+
+/***
+* assignFromNextField(ref,obj,trnm)
+* ref = obj.n where ref is a local field and obj is a local field
+***/
+//ref IS assumed to be null before assignment.
+%action assignFromNextField(ref,obj,trnm) {
+    %t ref + " = " + obj + "." + n 
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v) }
+    //focus needed becuase we read a successor
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    %message (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    {   
+        r_by[ref,trnm](o_1) = E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_1) 
+        
+    }
+}
+
+/***
+* assignFromNextField_Seq(ref,obj,trnm)
+* ref = obj.next, in sequential ds,
+* where ref is a local field and obj is a local field.
+***/
+/*
+//ref IS assumed to be null before assignment.
+%action assignFromNextField_Seq(ref,obj,trnm) {
+    %t ref + " = " + obj + "." + n + "(sequential)"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v),
+         runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,dst) & bn[n](dst,v)
+       }
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    %message (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    {   
+        r_by[ref,trnm](o_1) = E(o_t) (r_by[obj,trnm](o_t) & 
+                                      ((!dnext(o_t) & rv[n](o_t,o_1)) |
+                                       (dnext(o_t) & rv[n_seq](o_t,o_1)))) 
+       
+    }
+}
+*/
+
+/***
+* isDataGreaterEq(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 greater-or-equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataGreaterEq(ref1,ref2,trnm) {
+    %t "tr." + ref1 + "->data >= " + tr + "." + ref2 + "->data"     
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1)}
+    %p A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> dle(v_2, v_1))
+    %message (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+}
+
+/***
+* isDataLess(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 less than
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataLess(ref1,ref2,trnm) {
+    %t "tr." + ref1 + "->data < " + tr + "." + ref2 + "->data"     
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1)}
+    %p !A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> dle(v_2, v_1))
+    //%p A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> !dle(v_2, v_1))
+    %message (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+}
+
+/***
+* isDataEq(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataEq(ref1,ref2,trnm) {
+    %t "tr." + ref1 + "->data == " + tr + "." + ref2 + "->data"     
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1) & dle(v_1,v_2)}
+    %p A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> 
+                   (dle(v_2, v_1) & dle(v_1,v_2)))
+    %message (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+}
+
+/***
+* isDataNotEq(ref1,ref2,trnm)
+* Is the value of the node pointed-to by local variable ref1 not equal to
+* the value of the node pointed-to by local variable ref2.
+***/
+%action isDataNotEq(ref1,ref2,trnm) {
+    %t "tr." + ref1 + "->data != " + tr + "." + ref2 + "->data"     
+    %f {r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2) & dle(v_2, v_1) & dle(v_1,v_2)}
+    %p !A(v_1,v_2) ((r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2)) -> 
+                    (dle(v_2, v_1) & dle(v_1,v_2)))
+    %message (!E(v_1,v_2) (r_by[ref1,trnm](v_1) & r_by[ref2,trnm](v_2))) ->
+             "possible null dereference of " + ref1 + " or " + ref2
+}
+
+/***
+* assignNull(ref,trnm)
+* ref = null where ref is a local field
+***/
+%action assignNull(ref,trnm) {
+    %t ref + " = null"
+    %f { runnable(tr) }
+    {   
+        r_by[ref,trnm](o_1) = 0
+        
+    }
+}
+
+/***
+* assignRef(ref1,ref2,trnm)
+* ref1 = ref2 where ref1 and ref2 are local fields
+***/
+//ref1 IS assumed to be null before assignment
+%action assignRef(ref1,ref2,trnm) {
+    %t ref1 + " = " + ref2
+    %f { runnable(tr) }
+    %message (E(v) r_by[ref1,trnm](v)) -> "possible assignment to non-null field"
+    {   
+        r_by[ref1,trnm](o_1) = r_by[ref2,trnm](o_1)
+        
+    }
+}
+
+/****
+* setChoice(op,trnm)
+* Set operation choice to op.
+***/
+%action setChoice(op,trnm) {
+    %t "setChoice(" + op + ")"
+    %f { runnable(tr) }
+    {
+        choice[op](t) = choice[op](t) | (t == tr)
+        
+    }
+}
+
+/****
+* isChoice(op,trnm)
+* Is op the operation choice of tr.
+***/
+%action isChoice(op,trnm) {
+    %t "isChoice(" + op + ")"
+    %f { runnable(tr) }
+    %p choice[op](tr)
+}
+
+/*******************
+* Clear(trnm) 
+* null assignment to all local variables and clear to operation choice.
+********************/
+//We clear all local fields, no matter which action was performed.
+%action Clear(trnm) {
+    %t "Clear()"
+    %f { runnable(tr) }
+    {
+        foreach (fld in LocalFields) {
+            r_by[fld,trnm](o_1) = 0
+        }
+
+        foreach (op in Operations) {
+            choice[op](t) = choice[op](t) & (t != tr)
+        }
+
+    }
+}
+
+/****************************
+* verifySameRes(trnm)
+* (res == res_seq)
+*****************************/
+%action verifySameRes(trnm) {
+    %f { runnable(tr) }
+    %message (!A(v) (r_by[res,trnm](v) <-> r_by[res_seq,trnm](v))) 
+             -> "operation results may differ\n"
+}
+
+/***
+* updateNext(obj,ref,trnm)
+* obj->n = ref where obj and ref are thread-local variables.
+***/
+//Similar to SuccCAS_Next in nbq, but without the condition on oldVal.
+//obj->n IS assumed to be null before assignment.
+//Note: Updates are simplified due to this assumption. Is focus still needed?
+%action updateNext(obj,ref,trnm) {
+    %t "updateNext(" + obj + "," + ref + "," + trnm + ")"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v)
+         //, runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,dst) & bn[n](dst,v)
+         , runnable(tr) & r_by[ref,trnm](o_r) & bn[n](o_r,u)  //with E? 
+       }
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    %message (E(o_t,dst) r_by[obj,trnm](o_t) & rv[n](o_t,dst)) 
+             -> "possible assignment to non-null field"
+    {
+  
+        //rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+        //                   r_by[ref,trnm](o_2) : rv[n](o_1,o_2) ) 
+
+        rv[n](o_1,o_2) = (rv[n](o_1,o_2) | (r_by[obj,trnm](o_1) & r_by[ref,trnm](o_2)))
+                           
+        //rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ? 
+        //                       rv[n_seq](o_1,o_2)
+        //                       & !r_by[ref,trnm](o_2) :  
+        //                       rv[n_seq](o_1,o_2) )
+
+        //dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+        //               !dnode(o_1) & 
+        //               !A(o_2) (rv[n_seq](o_1,o_2) <->
+        //                        r_by[ref,trnm](o_2)) :
+        //               dnext(o_1) )
+
+        //updates without the assumption that obj->n=null:
+        /*
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                               !dnode(o_1) & 
+                               (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2)))
+                               & !r_by[ref,trnm](o_2) :  
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !dnode(o_1) & 
+                       !A(o_2) ((rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) <->
+                                r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+        */
+        
+    }   
+}
+
+/***
+* updateNext_Seq(obj,ref,trnm)
+* obj->next = ref, in sequential ds, 
+* where obj and ref are thread-local variables.
+***/
+/*
+//No need to assume (and check by message) that obj->next-null is seq ds 
+//since rt only refers to n, not n_seq?
+%action updateNext_Seq(obj,ref,trnm) {
+    %t obj + "." + n + "=" + ref + "(sequential)"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v),
+         runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,dst) & bn[n](dst,v),
+         runnable(tr) & r_by[ref,trnm](o_r) & bn[n](o_r,u)  //with E?
+       }
+    //is focus formula needed? is focus formula for n_seq also needed?
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj                  
+    {
+
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?           
+                               r_by[ref,trnm](o_2) & !rv[n](o_1,o_2) : 
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !A(o_2) (rv[n](o_1,o_2) <-> r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+        
+    }   
+}
+*/
+
+/***
+* assignNextNull(obj,trnm)
+* obj->n = null where obj is a thread-local variable.
+***/ 
+%action assignNextNull(obj,trnm) {
+    %t "assignNextNull(" + obj + "," + trnm + ")"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v)
+         //, runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,dst)& bn[n](dst,v) 
+       }
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+  
+        //rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+        //                   0 : rv[n](o_1,o_2) ) 
+
+        rv[n](o_1,o_2) = (rv[n](o_1,o_2) & !r_by[obj,trnm](o_1))
+        
+        //rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+        //                       !dnode(o_1) & 
+        //                       (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2)))
+        //                       :  
+        //                       rv[n_seq](o_1,o_2) )
+
+        //dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+        //               !dnode(o_1) & 
+        //               E(o_2) (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) 
+        //               :
+        //               dnext(o_1) )
+        
+    }   
+}
+
+/***
+* assignNextNull_Seq(obj,trnm)
+* obj->next = null, in sequential ds, 
+* where obj is a thread-local variable.
+***/
+/*
+//needed? (see comment in updateNext_Seq)
+%action assignNextNull_Seq(obj,trnm) {
+    %t obj + "." + n + "=" + null + "(sequential)"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) & bn[n](dst,v),
+         runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,dst) & bn[n](dst,v) }
+    //is focus formula needed? is focus formula for n_seq also needed?
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj                  
+    {
+
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?           
+                               0 : 
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       E(o_2) (rv[n](o_1,o_2)) :
+                       dnext(o_1) )
+        
+    }   
+}
+*/
+
+/***
+* Successful_Insert_Seq(ref,trnm)
+* Successful insertion of (the value of) the node pointed-to by local variable ref
+* to sequential set. Insertion is successful provided the set doesn't already include
+* an equal value.
+***/
+%action Successful_Insert_Seq(ref,trnm) {
+    %t "successful insert seq"
+    //focus formula correct?
+    %f {r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)}
+    %p A(v,u) ((r_by[ref,trnm](v) & member(u)) -> !(dle(v,u) & dle(u,v)))
+    //message given if ref==null since the action uses the value of the node
+    //pointed-to by ref
+    %message (!(E(o_t) r_by[ref,trnm](o_t))) -> "possible null dereference of " + ref
+    {
+
+        member(o_1) = member(o_1) | r_by[ref,trnm](o_1)
+
+        r_by[res_seq,trnm](o_1) = r_by[ref,trnm](o_1)
+
+    }
+}
+
+/***
+* Failed_Insert_Seq(ref,trnm)
+* Failed insertion of (the value of) the node pointed-to by local variable ref
+* to sequential set. Insertion fails when the set already includes
+* an equal value.
+***/
+%action Failed_Insert_Seq(ref,trnm) {
+    %t "failed insert seq"
+    //focus formula correct?
+    %f {r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)}
+    %p !A(v,u) ((r_by[ref,trnm](v) & member(u)) -> !(dle(v,u) & dle(u,v)))
+    //message given if ref==null since the action uses the value of the node
+    //pointed-to by ref
+    %message (!(E(o_t) r_by[ref,trnm](o_t))) -> "possible null dereference of " + ref
+    {
+
+        r_by[res_seq,trnm](o_1) = 0
+
+    }
+}
+
+/***
+* Delete_Seq(ref,trnm)
+* Deletion of THE VALUE OF the node pointed-to by local variable ref
+* from the sequential set. 
+* Action includes both successful and failed deletion (failed = value not in set).
+***/
+%action Delete_Seq(ref,trnm) {
+    %t "delete seq"
+    //focus formula correct?
+    %f {r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)}
+    //message given if ref==null since the action uses the value of the node
+    //pointed-to by ref
+    %message (!(E(o_t) r_by[ref,trnm](o_t))) -> "possible null dereference of " + ref
+    //DEBUG message
+    %message (E(v_1,u_1,u_2) 
+                  (r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)
+                                       & member(u_2) & dle(v_1,u_2) & dle(u_2,v_1)
+                                       & u_1!=u_2 )) 
+             -> "possible duplicate values in sequential set" 
+    {
+
+        member(o_1) = member(o_1) & !E(o_2)(r_by[ref,trnm](o_2) & dle(o_2,o_1) & dle(o_1,o_2))
+
+        r_by[res_seq,trnm](o_1) = 
+                      member(o_1) & E(o_2)(r_by[ref,trnm](o_2) & dle(o_2,o_1) & dle(o_1,o_2))
+
+    }
+}
+
+/***
+* Successful_Delete_Seq(ref,trnm)
+* Successful deletion of THE VALUE OF the node pointed-to by local variable ref
+* from the sequential set. Deletion is successful provided the set includes the value.
+* Note that we delete all members with the given value, without checking
+* there is exactly one (correctness of declerative specification assumed).
+***/
+%action Successful_Delete_Seq(ref,trnm) {
+    %t "successful delete seq"
+    //focus formula correct?
+    %f {r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)}
+    %p E(v,u) (r_by[ref,trnm](v) & member(u) & dle(v,u) & dle(u,v))
+    //message given if ref==null since the action uses the value of the node
+    //pointed-to by ref
+    %message (!(E(o_t) r_by[ref,trnm](o_t))) -> "possible null dereference of " + ref
+    {
+
+        member(o_1) = member(o_1) & !E(o_2)(r_by[ref,trnm](o_2) & dle(o_2,o_1) & dle(o_1,o_2))
+
+        r_by[res_seq,trnm](o_1) = 
+                      member(o_1) & E(o_2)(r_by[ref,trnm](o_2) & dle(o_2,o_1) & dle(o_1,o_2))
+
+    }
+}
+
+/***
+* Failed_Delete_Seq(ref,trnm)
+* Failed deletion of THE VALUE OF the node pointed-to by local variable ref
+* from the sequential set. Deletion fails when the set doesn't include the value.
+***/
+%action Failed_Delete_Seq(ref,trnm) {
+    %t "failed delete seq"
+    //focus formula correct?
+    %f {r_by[ref,trnm](v_1) & member(u_1) & dle(v_1,u_1) & dle(u_1,v_1)}
+    %p !E(v,u) (r_by[ref,trnm](v) & member(u) & dle(v,u) & dle(u,v))
+    //message given if ref==null since the action uses the value of the node
+    //pointed-to by ref
+    %message (!(E(o_t) r_by[ref,trnm](o_t))) -> "possible null dereference of " + ref
+    {
+
+        r_by[res_seq,trnm](o_1) = 0
+
+    }
+}
+
+//*************************************************************************************
+
+/***
+* assignField(fld,ref,trnm)
+* fld = ref where fld is a QUEUE field
+***/
+/*
+//We don't assume fld==null before assignment.
+%action assignField(fld,ref,trnm) {
+    %t fld + "=" + ref
+    %f { runnable(tr) }
+    {
+        r_by[fld](o_d) = r_by[ref,trnm](o_d)
+   
+    }   
+}
+*/
+
+
+/*******************
+* isNull(ref,trnm)
+* (ref == null)
+********************/
+/*
+%action isNull(ref,trnm) {
+    %t ref + "== null"  
+    %f { runnable(tr) }
+    %p !E(o_ref) r_by[ref,trnm](o_ref)
+}
+*/
+
+
+/*******************
+* isNotNull(ref,trnm)
+* (ref != null)
+********************/
+/*
+%action isNotNull(ref,trnm) {
+    %t ref + "!= null"  
+    %f { runnable(tr) }
+    %p E(o_ref) r_by[ref,trnm](o_ref)
+}
+*/

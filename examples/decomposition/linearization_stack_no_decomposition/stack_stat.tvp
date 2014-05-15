@@ -1,0 +1,418 @@
+/******************************************************************
+* stack_stat.tvp
+******************************************************************/
+
+#define CondAssign(cond,pred,result) pred = ((cond) ? (result) : (pred))
+#define UPDATE_AT(from,to)\
+    CondAssign(tr_scheduled(tr),at[from](tr),0)\
+    CondAssign(tr_scheduled(tr),at[to](tr),1)\
+
+
+//NOTE: We need separate actions for commands involving next fields
+//and commands involving regular fields, because of the delta representation
+//of next fields.
+
+/*******************
+* skip()
+********************/
+%action skip(from, to) {
+    %t "skip"
+    //%f { runnable(tr) }
+    {
+      UPDATE_AT(from,to)
+    }
+}
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* note - the type is currently ignored.
+********************/
+//ref isn't assumed to be null before allocation.
+//NEED TO FIX: allocation is specific to x_i, not general allocation to local
+%action assignNew(from, to, ref,trnm) {
+    %t ref + "= new T()"
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    %new
+    {
+        //rv[ref](t_1,o_t) = ( t_1 == tr ? isNew(o_t) : rv[ref](t_1,o_t) )
+
+        r_by[ref,trnm](v) = isNew(v)
+
+        //is_node(v) = is_node(v) | isNew(v)
+
+        dnode(v) = dnode(v) | isNew(v)
+
+        //updates due to universe-changing action:
+
+        foreach (fld in NextFields) {
+              rv[fld](o_1,o_2) = rv[fld](o_1,o_2)
+        }
+
+        foreach (fld in StackFields) {
+              r_by[fld](o) = r_by[fld](o)
+        }
+
+        foreach (nm in StaticThreadNames-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](o) = r_by[fld,nm](o)
+             }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+        }
+
+
+        dnext(v) = dnext(v)
+
+        //nextcon(u) = nextcon(u)
+
+        //nextseq(u) = nextseq(u)
+
+        //foreach (nm in StaticThreadNames) {
+        //     is_name[nm](t) = is_name[nm](t)
+        //}
+
+        //is_stack(o_1) = is_stack(o_1)
+       UPDATE_AT(from,to)
+    }
+}
+
+
+//allocating in sequential heap a node that already appears in concurrent heap.
+%action assignNew_Seq(from, to, ref,trnm) {
+     %t "assignNew_Seq(ref)"
+     //%f { runnable(tr) & rv[ref](tr,v) }
+     //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+     {
+        dnode(v) = dnode(v) & !r_by[ref,trnm](v)
+
+        //Before the action, the node pointed-to by ref didn't exist in the sequential heap
+        //and hence didn't have a sequential successor and also wasn't dnext
+        //(when allocating a node and when updating its next field (in con or seq),
+        // the node shouldn't become dnext if it's dnode).
+        //If it had a successor in the concurrent heap it becomes dnext.
+        dnext(v) = dnext(v) | (r_by[ref,trnm](v) & E(u) rv[n](v,u))
+
+        //update to nextcon left to differencing
+
+       UPDATE_AT(from,to)
+     }
+}
+
+
+//This action can be simplified for the stack case by assuming (and checking by message)
+//that the node pointed-to by obj is dnode, and then only the update to rv[n] is needed.
+/***
+* assignNext_Con(obj,ref)
+* obj->n = ref where obj and ref are thread-local variables.
+***/
+//obj->n, obj->n_seq not assumed to be null before assignment.
+%action assignNext_Con(from, to, obj,ref,trnm) {
+    %t obj + "->" + n + "=" + ref
+    //%f { runnable(tr) & rv[obj](tr,o_t) & rv[ref](tr,dst),
+    //     runnable(tr) & rv[obj](tr,o_t) & rv[n](o_t,u),
+    //     runnable(tr) & rv[obj](tr,o_t) & rv[n_seq](o_t,u) }
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+
+        rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                           r_by[ref,trnm](o_2) : rv[n](o_1,o_2) )
+
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                               !dnode(o_1) &
+                               (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2)))
+                               & !r_by[ref,trnm](o_2) :
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !dnode(o_1) &
+                       !A(o_2) ((rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) <->
+                                r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+       UPDATE_AT(from,to)
+    }
+}
+
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+//Therefore, in the update to dnext we don't check if the node is !dnode.
+/***
+* assignNextFromField_Seq(obj,fld,trnm)
+* obj->next = fld where obj is a thread-local variable and fld is a STACK field.
+***/
+%action assignNextFromField_Seq(from, to, obj,fld,trnm) {
+    %t obj + "."  + n + "=" + ref + "." + fld + "(sequential)"
+    //%f { runnable(tr) & rv[ref](tr,o_t) & rv[fld](o_t,o_1),
+    //     runnable(tr) & rv[obj](tr,o_t) & rv[n](o_t,u),
+    //     runnable(tr) & rv[obj](tr,o_t) & rv[n_seq](o_t,u) }
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    //%message (!(E(o_t) rv[ref](tr,o_t))) -> "possible null dereference of " + ref
+    {
+
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                               r_by[fld](o_2) & !rv[n](o_1,o_2) :
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !A(o_2) (rv[n](o_1,o_2) <-> r_by[fld](o_2)) :
+                       dnext(o_1) )
+       UPDATE_AT(from,to)
+    }
+}
+
+/***
+* SuccCAS(fld,oldVal,ref,trnm)
+* Successful CAS where fld is a STACK field.
+* fld == oldVal and we assign fld = ref.
+***/
+//obj.fld is not assumed to be null before assignment.
+%action SuccCAS(from, to, fld,oldVal,ref,trnm) {
+    %t "SuccCAS(" + obj + "," + fld + "," + oldVal + "," + ref + ")"
+    //%f { runnable(tr) & rv[obj](tr,o_t) & rv[fld](o_t,o_f) & rv[oldVal](tr,o_v) & rv[ref](tr,dst)
+    //   }
+    //%f { runnable(tr) }
+    %p A(o_f) (r_by[fld](o_f) <-> r_by[oldVal,trnm](o_f)) & tr_scheduled(tr)
+    //%message (!(E(o_t) rv[obj](tr,o_t))) -> "possible null dereference of " + obj
+    {
+        //rv[fld](o_s,o_d) = (rv[obj](tr,o_s) ? rv[ref](tr,o_d) : rv[fld](o_s,o_d))
+        r_by[fld](o_d) = r_by[ref,trnm](o_d)
+       UPDATE_AT(from,to)
+    }
+}
+
+/***
+* FailCAS(fld,oldVal,ref,trnm)
+* Failed CAS where fld is a STACK field, since fld != oldVal.
+***/
+%action FailCAS(from, to, fld,oldVal,ref,trnm) {
+    %t "FailCAS(" + obj + "," + fld + "," + oldVal + "," + ref + ")"
+    //%f { runnable(tr) & rv[obj](tr,o_t) & rv[fld](o_t,o_f) & rv[oldVal](tr,o_v) & rv[ref](tr,dst)
+    //   }
+    //%f { runnable(tr) }
+    %p !(A(o_f) (r_by[fld](o_f) <-> r_by[oldVal,trnm](o_f))) & tr_scheduled(tr)
+    //%message (!(E(o_t) rv[obj](tr,o_t))) -> "possible null dereference of " + obj
+    //DEBUG
+    //%message (!(at[li1_4](tr) | at[ld1_3](tr) | at[li2_4](tr) | at[ld2_3](tr))) -> "debug message"
+    {
+        foreach (f in {top,top_seq,next}) {
+            r_by[f,trnm](o_1) = 0
+        }
+       UPDATE_AT(from,to)
+    }
+    //END DEBUG
+}
+
+/***
+* assignField(fld,ref,trnm)
+* fld = ref where fld is a STACK field
+***/
+//We don't assume obj.fld==null before assignment.
+%action assignField(from, to, fld,ref,trnm) {
+    %t obj + "." + fld + "=" + ref
+    //%f { runnable(tr) & rv[obj](tr,o_t) & rv[ref](tr,dst) }
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    //%message (!(E(o_t) rv[obj](tr,o_t))) -> "possible null dereference of " + obj
+    {
+        r_by[fld](o_d) = r_by[ref,trnm](o_d)
+       UPDATE_AT(from,to)
+    }
+}
+
+/*******************
+* Clear_Push(trnm)
+* null assignment (exit scope) to all local variables
+********************/
+%action Clear_Push(from, to, trnm) {
+    %t "Clear_Push()"
+    //%f { runnable(tr) & rv[x_i](tr,dst),
+    //     runnable(tr) & rv[top](tr,dst) }
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    /*
+    %message ((A(t) (isthread(t) -> (at[li1_exit](t) | at[li2_exit](t) |
+                                     at[ld1_exit](t) | at[ld2_exit](t)))) &
+              !(A(v) (r_by[Top](v) <-> r_by[Top_seq](v))))
+             -> " note: tops may differ at quiescent point"
+    %message ((A(t) (isthread(t) -> (at[li1_exit](t) | at[li2_exit](t) |
+                                     at[ld1_exit](t) | at[ld2_exit](t)))) &
+              E(v) (dnode(v) | dnext(v)))
+             -> " note: heaps may differ at quiescent point"
+    */
+    {
+        foreach (fld in PushLocals) {
+            r_by[fld,trnm](o_1) = 0
+        }
+       UPDATE_AT(from,to)
+    }
+}
+
+
+/*******************
+* Clear_Pop(trnm)
+* null assignment (exit scope) to all local variables
+********************/
+%action Clear_Pop(from, to, trnm) {
+    %t "Clear_Pop()"
+    //%f { runnable(tr) & rv[top](tr,dst),
+    //     runnable(tr) & rv[top_seq](tr,dst),
+    //     runnable(tr) & rv[next](tr,dst) }
+   // %f { runnable(tr) }
+    %p tr_scheduled(tr)
+    /*
+    %message ((A(t) (isthread(t) -> (at[li1_exit](t) | at[li2_exit](t) |
+                                     at[ld1_exit](t) | at[ld2_exit](t)))) &
+              !(A(v) (r_by[Top](v) <-> r_by[Top_seq](v))))
+             -> " note: tops may differ at quiescent point"
+    %message ((A(t) (isthread(t) -> (at[li1_exit](t) | at[li2_exit](t) |
+                                     at[ld1_exit](t) | at[ld2_exit](t)))) &
+              E(v) (dnode(v) | dnext(v)))
+             -> " note: heaps may differ at quiescent point"
+    */
+    {
+        foreach (fld in PopLocals) {
+            r_by[fld,trnm](o_1) = 0
+        }
+       UPDATE_AT(from,to)
+    }
+}
+
+/***
+* assignFromGlbField(ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a STACK field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromGlbField(from, to, ref,fld,trnm) {
+    %t ref + " = " + obj + "." + fld
+    //%f { runnable(tr) & rv[obj](tr,o_t) & rv[fld](o_t,dst) }
+    //%f { runnable(tr) }
+    %p tr_scheduled(tr)
+    //%message (!(E(o_t) rv[obj](tr,o_t))) -> "possible null dereference of " + obj
+    {
+        r_by[ref,trnm](o_1) = r_by[fld](o_1)
+       UPDATE_AT(from,to)
+    }
+}
+
+/***
+* assignFromNextField(ref,obj,trnm)
+* ref = obj.n where ref is a local field and obj is a local field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromNextField(from, to, ref,obj,trnm) {
+    %t ref + " = " + obj + "." + fld
+    %f { E(tr) tr_scheduled(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) }
+    %p tr_scheduled(tr)
+   //focus needed becuase we read a successor
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+        r_by[ref,trnm](o_1) = E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_1)
+       UPDATE_AT(from,to)
+    }
+}
+
+
+/***
+* assignNextToField_Seq(fld,ref,trnm)
+* fld = ref.next where fld is a STACK field and ref is a local field
+***/
+//We don't assume obj.fld==null before assignment.
+%action assignNextToField_Seq(from, to, fld,ref,trnm) {
+    %t obj + "." + fld + "=" + ref + ".next" + "(sequential)"
+    %f { tr_scheduled(tr) &
+         runnable(tr) & r_by[ref,trnm](dst) & rv[n](dst,n_dst),
+         runnable(tr) & r_by[ref,trnm](dst) & rv[n_seq](dst,n_dst) }
+    %p tr_scheduled(tr)
+    //focus needed becuase we read a successor
+    //%message (!(E(o_t) rv[obj](tr,o_t))) -> "possible null dereference of " + obj
+    %message (!(E(dst) r_by[ref,trnm](dst))) -> "possible null dereference of " + ref
+    {
+
+        r_by[fld](o_d) = E(dst) (r_by[ref,trnm](dst) &
+                                    ((!dnext(dst) & rv[n](dst,o_d)) |
+                                     (dnext(dst) & rv[n_seq](dst,o_d))))
+
+       UPDATE_AT(from,to)
+    }
+}
+
+
+/*******************
+* isNull(ref,trnm)
+* (ref == null)
+********************/
+
+%action isNull(from, to, ref,trnm) {
+    %t ref + "== null"
+    //%f { runnable(tr) & rv[ref](tr,o_ref) }
+    //%f { runnable(tr) }
+    %p !E(o_ref) r_by[ref,trnm](o_ref)
+    {
+       UPDATE_AT(from,to)
+    }
+}
+
+
+/*******************
+* isNotNull(ref,trnm)
+* (ref != null)
+********************/
+
+%action isNotNull(from, to, ref,trnm) {
+    %t ref + "!= null"
+    //%f { runnable(tr) & rv[ref](tr,o_ref) }
+    //%f { runnable(tr) }
+    %p E(o_ref) r_by[ref,trnm](o_ref)
+    {
+       UPDATE_AT(from,to)
+    }
+}
+
+
+/****************************
+* verifySamePopRes(trnm)
+* (top == top_seq)
+*****************************/
+%action verifySamePopRes(from, to, trnm) {
+    //%f { runnable(tr) }
+    %message (!A(v)(r_by[top,trnm](v) <-> r_by[top_seq,trnm](v))) -> "pop results may differ\n"
+    {
+       UPDATE_AT(from,to)
+    }
+}
+
+/****************************
+* verifyCorrelation()
+* tests similarity/identity of sequential and concurrent data structures.
+* Note: should be in the same atomic block with concurrent du and sequential action
+*       (since correlation is only expected to hold at the end of this block).
+*****************************/
+/*
+%action verifyCorrelation() {
+    //%f { runnable(tr) }
+    //Verify this.Top==this.Top_seq
+    %message (!A(v)((E(s) rv[this](tr,s) & rv[Top](s,v))  <->
+                    (E(s) rv[this](tr,s) & rv[Top_seq](s,v))))
+             -> "concurrent and sequential Top may differ\n"
+    //Verify that if some node v satisfies dnode(v) or dnext(v) then it is not
+    //reachable from the node pointed-to by Top and Top_seq (both in the concurrent
+    //and the sequential heap).
+    //(Message condition below contains this condition).
+    //(Above message already checks that Top and Top_seq point to the same node).
+    %message (E(v) ( (dnode(v) | dnext(v)) &
+                     ((E(s) rv[this](tr,s) & rv[Top](s,v)) |
+                      (E(u) (rv[n](u,v) | rv[n_seq](u,v))))))
+             -> "concurrent and sequential stacks may differ"
+}
+*/

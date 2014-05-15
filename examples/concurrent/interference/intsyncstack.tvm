@@ -1,0 +1,100 @@
+/************************************************************************ 
+ * A Concurrent TVM program for concurrent synchronized stack manipulations 
+ * Name: syncpushpop.tvp
+ * Created: 30/04/2000
+ * Modified: 03/02/2001
+ * Description: Two thread types - pusher and popper, both working on the same Stack top.
+ * This is a synchronized version of the non-synchronized program pushpop.tvp
+ *
+ ***********************************************************************/
+
+
+/*********************** Property Condition ******************************/
+
+#define PROPERTY_COND (E(tai,tad) at[li_end](tai) & at[ld_end](tad)) & (E(x) is_lock(x) &  \
+                        !rg[top](x) & !r_by[x_d](x) & !global[stack](x))
+#define PROPERTY_FOCUS { E(y) runnable(tr) & rvalue[x_i](tr,y) }
+#define PROPERTY_MESSAGE "item may be lost"
+
+
+/*********************** Macros ******************************/
+
+//#define RECORD_RW
+#define RBY
+#define REACH
+
+#include "..\con_macro.tvm"
+
+
+/*********************** Sets ******************************/
+
+%s FieldsAndParameters { x_i,x_d, newTop, next }
+%s Globals { top, stack  } 
+
+/**************** Predicates **************/
+
+#include "int_pred.tvm"
+#include "..\con_pred.tvm"
+#include "..\shape_pred.tvm"
+
+%%
+/********************* Actions *******************/
+
+#include "..\con_stat.tvm"
+#include "..\shape_stat.tvm"
+
+%action verifyProperty() { 
+    %f  PROPERTY_FOCUS
+    %p  !property_occured() 
+    %message PROPERTY_COND -> PROPERTY_MESSAGE
+}
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Pusher Threads ****************/
+%thread pusher {
+li_1 assignNew(x_i) li_2                        // x_i = new Item()     (1->2)
+li_2 succLockGlobal(stack) li_3                 // lock (stack)         (2->3)
+li_2 blockLockGlobal(stack) li_2                //                      (2->3)
+li_3 isGlobalNull(top) li_4                     // if (top == null)     (3->4)
+li_4 assignGlobal(top,x_i) li_8                 //    top  = x_i        (4->8)
+li_3 isGlobalNotNull(top) li_5                  // else                 (3->5)
+li_5 updateNextFromGlobal(x_i,top) li_6         //    x_i.next = top    (5->6)
+atomic {
+    li_6 killGlobal(top) li_7                       //    top = null; top = x_i (6->7) (atom)
+    li_7 assignGlobal(top,x_i) li_8                 //                          (7->8) (endatom) 
+}
+li_8 unlockGlobal(stack) li_9                   //
+li_9 assignNull(x_i) li_end                     // exit scope, x_i becomes null
+//li_end skip() li_1                             // loop back
+}
+
+
+/***********************************************/
+/************** Popper Threads ****************/
+
+%thread popper {
+ld_1 succLockGlobal(stack) ld_2                 //   lock(stack)         (1->2)
+ld_1 blockLockGlobal(stack) ld_1                //                       (1->2)
+ld_2 isGlobalNotNull(top) ld_3                  // if (top != null)      (2->3)
+ld_2 isGlobalNull(top) ld_11                    // otherwise goto ld_end (2->11)
+ld_3 selectGlobalNext(newTop,top) ld_4          // newTop = top.next     (3->4)
+ld_4 assignFromGlobal(x_d,top) ld_5             // x_d = top             (4->5)
+ld_5 isNotNull(newTop) ld_6                     // if (newTop != null) { (5->6)
+atomic {
+    ld_6 killGlobal(top) ld_7                       //    top = null ;       (6->7)
+    ld_7 assignGlobal(top,newTop) ld_9              //    top = newTop }     (7->9)
+}
+ld_5 isNull(newTop) ld_8                        // else {                (5->8)
+ld_8 assignNullToGlobal(top) ld_9               //    top = null }       (8->9)
+ld_9 assignNextFieldNull(x_d) ld_10             // x_d = null           (9->10)
+ld_10 assignNull(newTop) ld_11                  // newTop = null        (10->11)
+ld_11 unlockGlobal(stack) ld_end                // unlock(stack)        (11->end)
+//all skip() all                               // loop back            (end->1)
+} 
+
+%%
+verifyProperty()

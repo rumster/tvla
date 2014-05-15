@@ -1,0 +1,30 @@
+// $Id: uninitialized.tvs 1848 2007-11-01 14:15:07Z rumster $
+// note -
+// when UBT is defined, this initial configuration does not represents the case
+// of a single thread due to values of is/ivs predicates (sharing) which imply that more than 
+// a single thread exists.
+
+%t = { tprd(producer) }
+%n = { z, s_succ, queue }
+%p = {
+    ready = { tprd }
+    #ifdef UBT
+    sm = { s_succ : 1/2, tprd : 1/2 }
+    #else 
+    sm = { s_succ : 1/2 }
+    #endif 
+    succ = { z -> s_succ : 1/2 , s_succ -> s_succ : 1/2}
+    ///rt[z,successor] = { z, s_succ }
+    rv[this] = { tprd->queue }
+    r_by[this] = { queue }
+    reach[this] = { queue }
+    is_nat = { z, s_succ }
+    zero = { z }
+    iv[Tail] = { queue -> z }
+    iv[Head] = { queue -> z }
+    iv[Head] = { queue -> z }
+
+    #ifdef UBT
+    is[this] = { queue }
+    #endif
+}

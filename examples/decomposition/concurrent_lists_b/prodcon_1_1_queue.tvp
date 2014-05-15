@@ -1,0 +1,175 @@
+////////////////////////////////////////////////////////////////
+// Sets
+////////////////////////////////////////////////////////////////
+
+%s types            {QueueItem}
+%s globalpointers   {head, tail}
+%s localpointers    {q_i, p, c, cn}
+%s recfields        {n}
+%s nonrecfields     {}
+%s fields recfields + nonrecfields
+%s globalbools      {}
+%s localbools       {}
+
+// Fixed thread ids
+%s threadIds {tid1, tid2}
+
+%s locations {
+              p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_exit,
+              p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9, p2_10, p2_11,
+              p2_exit
+              }
+
+////////////////////////////////////////////////////////////////
+// Predicates
+////////////////////////////////////////////////////////////////
+
+#include "predicates.tvp"
+
+//////////////////////////////////////
+// Program specific typing constraints
+// Theoretically, these could be automatically generated.
+
+// Every two types are disjoint
+foreach (tp1 in types) {
+  %r isthread(v) ==> !t[tp1](v)
+  %r t[tp1](v) ==> !isthread(v)
+  foreach (tp2 in types-{tp1}) {
+    %r t[tp2](v) ==> !t[tp1](v)
+  }
+}
+%r acq(u,v) ==> isthread(v)
+%r n(u,v) ==> !isthread(u)
+%r n(u,v) ==> !isthread(v)
+
+foreach (var in localpointers) {
+  %r rv[var](u,v) ==> isthread(u)
+  %r rv[var](u,v) ==> !isthread(v)
+}
+
+////////////////////////////////////////////////////////////////
+// Decomposition names
+////////////////////////////////////////////////////////////////
+
+#include "dnames.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////
+// Actions
+////////////////////////////////////////////////////////////////
+
+#include "actions.tvp"
+
+%action verifyProperty() {
+  %t "verify property"
+//r[lock1,n](v3) & r[lock2,n](v4) &
+//  %compose tid1(v1) //& tmain(v2) //r[head,n](v1) & r[packetList2,n](v2) & alloc[m_1](t)
+//  %messagecompose tid1(v1) //& tmain(v2) //r[head,n](v1) & r[packetList2,n](v2) & alloc[m_1](t)
+
+//  %message (E(t) at[m_14](t) & at[m_13](t) & !outside(t)) -> "at[] is imprecise\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[head](v)) -> "head is null\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[packetList2](v)) -> "packetList2 is null\n"
+//  %message (E(v) !isthread(v) & !(|/{ r[gvar,n](v) : gvar in globalpointers }) & !(|/{ r_rv[var](v) : var in localpointers}))
+//                -> "Possible memory leak detected!"
+//   %message (E(o,t) acq(o,t) & !acq(o,t)) -> "acq is imprecise\n"
+//
+//   %message (E(v) is[n](v) &  !is[n](v)) -> "is[n] is imprecise\n"
+//   %message (E(v) r_in[n](v) &  !r_in[n](v)) -> "r_in[n] is imprecise\n"
+//   %message (E(v) r_out[n](v) &  !r_out[n](v)) -> "r_out[n] is imprecise\n"
+//   %message (E(o,t) |/{rv[var](t,o) & !rv[var](t,o) : var in localpointers}) -> "rv[var](t,o) is imprecise\n"
+//
+//   %message (E(v) r[head,n](v) &  !r[head,n](v)) -> "r[head,n] is imprecise\n"
+//   %message (E(v) r[packetList2,n](v) &  !r[packetList2,n](v)) -> "r[packetList2,n] is imprecise\n"
+
+// //  %message (A(v) global[S_Top](v)->global[S_tail](v)) -> "tail is not reachable from Top\n"
+// //  %message (E(v) !isthread(v) & !(|/{ r[g,n](v) : g in globals}) & !(|/{ r_in[z](v) : z in locals}) ) -> "garbage detected\n"
+}
+
+%%
+
+/***********************************
+// Pseudo-code
+QueueItem * head;
+QueueItem * tail;
+
+void producer1() {
+  while (nondet()) {
+    lock(head);
+      QueueItem * q_i = new QueueItem(...);
+      tail->next = qi;
+      tail = q_i;
+    release(head);
+  }
+}
+
+void consumer1() {
+  while (nondet()) {
+    lock(head);
+      c = head->next;
+      if (c != null) {
+        cn = c->next;
+        head->next = cn;
+        c->next = null;
+        free(c);
+      }
+    release(head);
+  }
+}
+************************************/
+
+////////////////////////////////////////////////////////////////
+// Thread scheduling mechanism and global property checking
+init verifyProperty() init
+init unschedule() pre_schedule
+pre_schedule unschedule() l_ready
+
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// Transition system for each function
+////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// CFG
+// Threads are created in the .tvs file
+// A schedule transition to every label where interleaving can happen
+l_ready schedule(tid1, p1_1) p1_1
+l_ready schedule(tid1, p1_2) p1_2
+l_ready schedule(tid1, p1_3) p1_3
+l_ready schedule(tid1, p1_4) p1_4
+l_ready schedule(tid1, p1_5) p1_5
+//l_ready schedule(tid1, p1_7) p1_7
+l_ready schedule(tid1, p1_8) p1_8
+//
+p1_1  ifNonDet(tid1, p1_1, p1_2) init // while (nondet())
+p1_1  ifNonDet(tid1, p1_1, p1_exit) init
+p1_2  acquireGlobal_succeded(tid1, p1_2, p1_3, head) init // acquire(head)
+p1_2  acquireGlobal_failed(tid1, p1_2, p1_2, head) init
+p1_3  newObject(tid1, p1_3, p1_4, q_i, QueueItem) init
+p1_4  assignFieldLocalToGlobal(tid1, p1_4, p1_5, tail, n, q_i) init
+p1_5  assignNullToGlobal(tid1, p1_5, p1_6, tail) p1_6
+p1_6  assignLocalToGlobal(tid1, p1_6, p1_7, tail, q_i) p1_7
+p1_7  assignNullToLocal(tid1, p1_7, p1_8, q_i) p1_8
+p1_8  releaseGlobal(tid1, p1_8, p1_1, head) init    // release(head)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Consumer thread
+//
+p2_1  ifNonDet(tid2, p2_1, p2_2) init // while (nondet())
+p2_1  ifNonDet(tid2, p2_1, p2_exit) init
+p2_2  acquireGlobal_succeded(tid2, p2_2, p2_3, head) init // acquire(head)
+p2_2  acquireGlobal_failed(tid2, p2_2, p2_2, head) init
+p2_3  getFieldGlobalToLocal(tid2, p2_3, p2_4, c, head, n) init
+p2_4  ifNullLocal(tid2, p2_4, p2_11, c) init
+p2_4  ifNotNullLocal(tid2, p2_4, p2_5, c) init
+p2_5  getField(tid2, p2_5, p2_6, cn, c, n) init
+p2_6  assignFieldNullGlobal(tid2, p2_6, p2_7, head, n) p2_7
+p2_7  assignFieldLocalToGlobal(tid2, p2_7, p2_8, head, n, cn) p2_8
+p2_8  assignFieldNull(tid2, p2_8, p2_9, c, n) p2_9
+p2_9  assignNullToLocal(tid2, p2_9, p2_10, c) p2_10
+p2_10 assignNullToLocal(tid2, p2_10, p2_11, cn) p2_11
+p2_11 releaseGlobal(tid2, p2_11, p2_1, head) init  // release(head)
+
+//%%
+//l_ready

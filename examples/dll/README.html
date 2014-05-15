@@ -1,0 +1,25 @@
+<HTML>
+<HEAD>
+<META http-equiv=content-type content="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+
+<H2>Shape Analysis of Acyclic Doubly-Linked Lists</H2>
+
+This directory contains an example analyses for a program that 
+splices a new element into an unsahred acyclic doubly-linked list
+lists of the form
+<PRE><CODE>
+typedef struct node {
+   struct node *f;
+   struct node *b;
+   int data;
+} *DL;
+</CODE></PRE>
+
+<H3>Goal</H3>
+The aim of the analyses is to verify the absence of null dereferences.
+
+<P>
+Run the example with the following command: tvla splice
+</P>

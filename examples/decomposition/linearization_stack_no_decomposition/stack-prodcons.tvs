@@ -1,0 +1,75 @@
+/*****
+* stack.tvs
+*****/
+
+//Concurrent and sequential stack initially the same.
+//All thread-local variables initially null.
+
+//empty stack: Top = Top_seq = null
+
+%n = {
+    // thread nodes
+    tOneP
+    , tOneC
+       #if(1 < KNUM)
+        , tTwoP
+        , tTwoC
+       #endif
+       #if(2 < KNUM)
+        , tThreeP
+        , tThreeC
+       #endif
+       #if(3 < KNUM)
+        , tFourP
+        , tFourC
+       #endif
+}
+
+%p = {
+
+    ready = { tOneP, tOneC
+              #if(1 < KNUM)
+              , tTwoP
+              , tTwoC
+              #endif
+              #if(2 < KNUM)
+              , tThreeP
+              , tThreeC
+              #endif
+              #if(3 < KNUM)
+              , tFourP
+              , tFourC
+              #endif
+            }
+     producer_p1 = {tOneP}
+     consumer_p1 = {tOneC}
+              #if(1 < KNUM)
+     producer_p2 = {tTwoP}
+     consumer_p2 = {tTwoC}
+              #endif
+              #if(2 < KNUM)
+     producer_p3 = {tThreeP}
+     consumer_p3 = {tThreeC}
+              #endif
+              #if(3 < KNUM)
+     producer_p4 = {tFourP}
+     consumer_p4 = {tFourC}
+              #endif
+
+     isthread = {
+                tOneP,
+                tOneC
+              #if(1 < KNUM)
+                ,tTwoP
+                ,tTwoC
+              #endif
+              #if(2 < KNUM)
+                ,tThreeP
+                ,tThreeC
+              #endif
+              #if(3 < KNUM)
+                ,tFourP
+                ,tFourC
+              #endif
+     }
+}

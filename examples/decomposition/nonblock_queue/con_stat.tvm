@@ -1,0 +1,212 @@
+/***********************************************************
+* con_stat.tvm
+* include file for concurrency
+***********************************************************/
+
+
+%action skip() { 
+    %t "skip ()"
+    %p  !property_occured() 
+}
+
+%action succLockField(obj,fld) {
+    %t "SuccesfulLockField (" + obj + "." + fld + ")"
+    %f  { is_acquired(l), runnable(tr) & rv[obj](tr,o_s) & rv[fld](o_s,l) } 
+    %p  !property_occured() & rv[obj](tr,o_s) & rv[fld](o_s,l) & (!is_acquired(l) | held_by(l, tr))
+    { 
+        held_by(l_1, t_1) = held_by(l_1, t_1) | (t_1 == tr & l_1 == l)
+            
+        blocked(t_1,l_1) = blocked(t_1,l_1) & ((t_1 != tr) | (l_1 != l))
+            
+        is_acquired(l_1) = is_acquired(l_1) | (l_1 == l) 
+        
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) & (t_1 != tr)
+        #endif
+        
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif // slock
+   }
+}
+
+%action blockLockField(obj,fld) {
+    %t "blockLocField (" + obj + "." + fld + ")"
+    %f { runnable(tr) & rv[obj](tr,o_s) & rv[fld](o_s,l) & is_acquired(l) }
+    %p  !property_occured() & rv[obj](tr,o_s) & rv[fld](o_s,l) & is_acquired(l) & !held_by(l,tr)
+    {
+        blocked(t_1, l_1) = blocked(t_1, l_1) | (t_1 == tr & l_1 == l) 
+            
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) | (t_1 == tr)
+        #endif
+            
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) | ((t_1==tr) 
+          & |/{ (E(l_v) rv[v_1](t_1,l_v) & held_by(l_v,t_1) & fidlt[v,v_1](tr))
+            : v_1 in FieldsAndParameters - {v}})
+        #endif // slock
+
+   }
+}
+
+%action unlockField(obj,fld) {
+    %t "unLocGlobal (" + obj + "." + fld + ")"
+    %f { is_acquired(l), runnable(tr) & rv[obj](tr,o_s) & rv[fld](o_s,l) }
+    %p  !property_occured() & runnable(tr) & rv[obj](tr,o_s) & rv[fld](o_s,l)
+    {
+        held_by(l_1, t_1) = held_by(l_1, t_1) &  (t_1 != tr | l_1 != l) 
+        is_acquired(l_1) = is_acquired(l_1) & (l_1 != l)
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif
+   }
+}
+
+//%action newThread(ref,nl) {
+//    %t "new Thread()"  
+//    %newthread  
+//    {
+//        rv[ref](t,o_t) = rv[ref](t,o_t) | isNew(o_t)
+//        ts_created(t_1) = ts_created(t_1) | isNew(t_1)
+//        is_thread(t_1) = is_thread(t_1) | isNew(t_1)
+//        at[nl](t_1) = at[nl](t_1) | isNew(t_1)
+//    }
+//
+//}
+
+
+%action succLock(v) {
+    %t "SuccesfulLock (" + v + ")"
+    %f  { is_acquired(l), runnable(tr) & rv[v](tr, l) } 
+    %p  !property_occured() & rv[v](tr, l) & (!is_acquired(l) | held_by(l, tr))
+    {
+        held_by(l_1, t_1) = held_by(l_1, t_1) | (t_1 == tr & l_1 == l)
+        is_acquired(l_1) = is_acquired(l_1) | (l_1 == l) 
+
+        blocked(t_1,l_1) = blocked(t_1,l_1) & ((t_1 != tr) | (l_1 != l))
+
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) & (t_1 != tr)
+        #endif
+        
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif // slock
+   }
+}
+
+%action blockLock(v) {
+    %t "blockLoc (" + v + ")"
+    %f { runnable(tr) & rv[v](tr, l) & is_acquired(l) }
+    %p  !property_occured() & rv[v](tr, l) & is_acquired(l) & !held_by(l,tr)
+    {
+        blocked(t_1, l_1) = blocked(t_1, l_1) | (t_1 == tr & l_1 == l) 
+            
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) | (t_1 == tr)
+        #endif
+            
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) | ((t_1==tr) 
+          & |/{ (E(l_v) rv[v_1](t_1,l_v) & held_by(l_v,t_1) & fidlt[v,v_1](tr))
+            : v_1 in FieldsAndParameters - {v}})
+        #endif // slock
+   }
+}
+
+%action unlock(v) {
+    %t "unlock (" + v + ")"
+    %f { is_acquired(l), runnable(tr) & rv[v](tr, l) }
+    %p  !property_occured() & rv[v](tr, l)   
+    {
+        held_by(l_1, t_1) = held_by(l_1, t_1) &  (t_1 != tr | l_1 != l) 
+        is_acquired(l_1) = is_acquired(l_1) & (l_1 != l)
+        
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif
+   }
+}
+
+
+#ifdef WAIT_NOTIFY
+
+%action wait(v) {
+    %t "wait (" + v + ")"
+    %f { is_acquired(l), runnable(tr) & rv[v](tr, l) & held_by(l,tr)}
+    %p !property_occured() & rv[v](tr, l) 
+    %message !held_by(l,tr) -> "missing ownership"
+    {
+        // release the lock - should only release last lock.
+        held_by(l_1, t_1) = held_by(l_1,t_1) & (t_1 != tr | l_1 != l) 
+        is_acquired(l_1) = is_acquired(l_1) & (l_1 != l)
+        tw(t_1) = tw(t_1) | (t_1 == tr)
+        // insert t into wait-set
+        waiting(t_1,l_1) = waiting(t_1,l_1) | (t_1 == tr & l_1 == l)
+        
+        #ifdef THREAD_STATE
+        ts_waiting(t_1) = ts_waiting(t_1) | (t_1 == tr)
+        #endif
+        
+        /// UNSCHEDULE_AND_WAIT
+    }
+}
+
+%action notify(v) {
+    %t "notify (" + v + ")"
+    %f { runnable(tr) & rv[v](tr, l) & held_by(l,tr)}
+    %p !property_occured() & rv[v](tr, l) & E(t_w) waiting(t_w,l)
+    %message !held_by(l,tr) -> "missing ownership"
+    {
+        // move a single thread tw from wait-set to block-set
+        waiting(t_1,l_1) = waiting(t_1,l_1) & (t_1 != t_w | l_1 != l)
+        blocked(t_1,l_1) = blocked(t_1,l_1) | (t_1 == t_w & l_1 == l)
+        tw(t_1) = tw(t_1) & (t_1 != t_w)
+
+        #ifdef THREAD_STATE
+        ts_waiting(t_1) = ts_waiting(t_1) & (t_1 != t_w)
+        #endif
+        
+        UNSCHEDULE
+    }
+}
+
+%action ignoredNotify(v) {
+    %t "ignoredNotify (" + v + ")"
+    %f { runnable(tr) & rv[v](tr, l) & held_by(l,tr)}
+    %p !property_occured() & rv[v](tr, l) & held_by(l,tr) 
+        & !E(t_w) waiting(t_w,l)
+    %message 1 -> "Ignored notify"
+}
+
+
+%action notifyAll(v) {
+    %t "notifyAll (" + v + ")"
+    %f { runnable(tr) & rv[v](tr, l) & held_by(l,tr) }
+    %p !property_occured() & rv[v](tr, l) & held_by(l,tr) 
+        & E(t_w) waiting(t_w,l)
+    {
+        // move all threads from wait-set to block-set
+        blocked(t_1,l_1) = blocked(t_1,l_1) | (waiting(t_1,l_1) & (l_1 == l))
+        waiting(t_1,l_1) = waiting(t_1,l_1) & (l_1 != l)
+        tw(t_1) = tw(t_1) & E(l_w) is_lock(l_w) & (l_w != l) & waiting(t_1,l_w)
+        
+        runnable(t_1) = runnable(t_1) | (waiting(t_1,l_1) & (l_1 == l) & 1/2)
+        
+        #ifdef THREAD_STATE
+            ts_waiting(t_1) = ts_waiting(t_1) & 
+                E(l_w) is_lock(l_w) & (l_w != l) & waiting(t_1,l_w)
+        #endif
+        
+        UNSCHEDULE
+    }
+}
+    %action ignoredNotifyAll(v) {
+    %t "ignoredNotifyAll (" + v + ")"
+    %f { runnable(tr) & rv[v](tr, l) & held_by(l,tr) }
+    %p !property_occured() & rv[v](tr, l) & held_by(l,tr) 
+        & !E(t_w) waiting(t_w,l)
+    %message 1 -> "ignored notifyAll"
+}
+#endif // if define WAIT_NOTIFY

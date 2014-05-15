@@ -1,0 +1,30 @@
+///////
+// Sets
+
+%s PVar {x, last}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////////
+// Transition system for a function that moves the first N element to the
+// position following the last element, temporarily making the list cyclic.
+
+L1 Is_Null_Var(x)         exit // if (x != NULL) {
+L1 Is_Not_Null_Var(x)     L2
+L2 Set_Next_Null_L(last)  L3   //   last->n = NULL;
+L3 Set_Next_L(last, x)    L4   //   last->n = x;
+L4 uninterpreted()        L7   //   for (i = 0; i < N; i++) {
+L4 uninterpreted()        L5
+L5 Get_Next_L(x, x)       L6   //     x = x->n;
+L6 Get_Next_L(last, last) L7   //     last = last->n;
+                               //   }
+L7 Set_Next_Null_L(last)  exit //   last->n = NULL;
+                               // }
+exit Assert_ListInvariants(x) error
+exit Assert_No_Leak(x)        error  

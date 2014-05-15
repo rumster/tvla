@@ -1,0 +1,6 @@
+// nbq_allocators.tvm
+
+%thread producer_allocator {
+pa1 allocateNewProducer(sharedQueue) pa2
+pa2 skip() pa1
+}

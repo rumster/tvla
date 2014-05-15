@@ -1,0 +1,84 @@
+%s PVar {cur, prev, t, tmp, 
+root1
+#if(TNUM > 1)
+,root2
+#endif
+#if(TNUM > 2)
+,root3
+#endif
+#if(TNUM > 3)
+,root4
+#endif
+}
+%s TSel {left, right}
+
+#include "pred_tree.tvp"
+%%
+#include "actions_tree.tvp"
+%%
+ start skip() n0
+// while (true) do {
+ n0 Malloc_T(t) n0a //  t = new TreeNode(data) ;
+ n0a Copy_Var_T(cur, root1) n1
+#if(TNUM > 1)
+ n0a Copy_Var_T(cur, root2) n1
+#endif
+#if(TNUM > 2)
+ n0a Copy_Var_T(cur, root3) n1
+#endif
+#if(TNUM > 3)
+ n0a Copy_Var_T(cur, root4) n1
+#endif
+ n1 Assert_Not_Null_Var(cur) n2 // expecting non null roots
+// while (cur != NULL && cur->data != t->data) {
+   n2 Is_Not_Null_Var(cur) n3
+   n2 Is_Null_Var(cur) n8
+   // Uninterpret data values  cur->data != t->data
+   n3 uninterpreted() n4
+   n3 uninterpreted() n8
+
+   // prev = cur;
+   n4 Set_Null_T(prev) n4a
+   n4a Copy_Var_T(prev, cur) n5
+
+   // if (t->data < cur->data) // {
+      n5 uninterpreted() n6L
+      n5 uninterpreted() n6R
+    // cur = cur->left;
+      n6L Get_Sel_T(tmp, cur, left) n6aL
+      n6aL Set_Null_T(cur) n6bL
+      n6bL Copy_Var_T(cur, tmp) n6cL
+      n6cL Set_Null_T(tmp) n7L
+		// if (cur == NULL) {
+		n7L Is_Null_Var(cur) n8L
+		n7L Is_Not_Null_Var(cur) n2
+			// prev->left = t;
+			n8L Set_Sel_Null_T(prev, left) n9L
+			n9L Set_Sel_T(prev, left, t) n10L
+		    n10L Set_Null_T(t) n7
+			// break;      
+		// }
+   // } else {
+   	  // cur = cur->right;
+      n6R Get_Sel_T(tmp, cur, right) n6aR
+      n6aR Set_Null_T(cur) n6bR
+      n6bR Copy_Var_T(cur, tmp) n6cR
+      n6cR Set_Null_T(tmp) n7R
+		// if (cur == NULL) {
+		n7R Is_Null_Var(cur) n8R
+		n7R Is_Not_Null_Var(cur) n2
+			// prev->right = t;
+			n8R Set_Sel_Null_T(prev, right) n9R
+			n9R Set_Sel_T(prev, right, t) n10R
+		    n10R Set_Null_T(t) n7
+			// break;
+		// }
+	// }
+// }
+// Null out cur and prev, as an optimizer could.
+   n7 Set_Null_T(prev) n8
+   n8 Is_Not_Null_Var(cur) n9
+   n8 Is_Null_Var(cur) n0   
+   n9 Set_Null_T(cur) n10
+   n10 Free_T(t) n0
+// }

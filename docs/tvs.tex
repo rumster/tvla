@@ -1,0 +1,42 @@
+\section{TVS}
+
+The input structures for the analysis are described in a format
+called TVS (Three Valued Structure). For example, the TVS for
+input structure used in the analysis of the reverse function is
+given in \figref{ManReverseTVS}. A TVS file name should end with
+the extension '.tvs'. The syntax of a TVS file is given in
+\figref{TVSSyntax}.
+
+\begin{figure}
+\framebox{
+\begin{minipage}{1in}
+\begin{tabbing}
+\param{tvs} ::= \param{structure}$^*$\\
+\param{structure} ::= \param{universe} \param{predicates}\\
+\param{universe} ::= \textbf{\%n}\ \bassign\ \blcb\ \csep{\param{node}}\ \brcb\\
+\param{predicates} ::= \textbf{\%p}\ \bassign\ \blcb\ \param{predicate}$^*$\ \brcb\\
+\param{predicate} ::\=\+= \ppred\ \bassign\ \param{kleene} /* Nullary */\\
+$|$ \ppred\ \bassign\ \blcb\ \csep{(\param{node} \lb\param{value}\rb)}\ \brcb\ /* Unary */\\
+$|$ \ppred\ \bassign\ \blcb\
+\csep{(\param{leftnode}\deref\param{rightnode}
+\lb\param{value}\rb)}\ \brcb\ /* Binary */\\
+$|$ \ppred\ \bassign\ \blcb\ \csep{(\csep{\pid})
+\lb\param{value}\rb
+}\ \brcb\ /* Arbitrary */\-\\
+\param{node} ::=\+\=\ \pid\ \-\\
+%%%%%%%%% -significant is no longer supported %%%%%%%%%%
+%$|$ \blb\ \csep{\param{node}}\ \brb\\
+%$|$ \param{node}\textbf{.}(\textbf{0}$|$\textbf{1})\-\\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\param{value} ::= \textbf{:} \param{kleene}
+\end{tabbing}
+\end{minipage}
+} \caption{\label{Fi:TVSSyntax}The syntax of a TVS file.}
+\end{figure}
+
+The value of a predicate defaults to false unless otherwise
+specified in the TVS structure. All the node names used in the
+predicates must be predefined. All the predicate names used must
+be declared in the TVP file. If a node (or a node pair) is
+specified without a value, the default of true (1) is taken. TVS
+supports the same commenting style as TVP.

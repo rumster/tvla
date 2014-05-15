@@ -1,0 +1,72 @@
+//P(Semaphore s)
+//{
+//  wait until s > 0, then s := s-1;
+//  /* must be atomic once s > 0 is detected */
+//}
+
+%action P_fail(semaphore) {
+  %t "P(" + semaphore + ") fail"
+  %p !semaphore()
+}
+
+%action P_success(semaphore) {
+  %t "P(" + semaphore + ") success"
+//  %f {runnable(tr)}
+  %p semaphore()
+  {
+    semaphore() = !semaphore()
+  }
+}
+
+//V(Semaphore s)
+//{
+//  s := s+1;   /* must be atomic */
+//}
+%action V(semaphore) {
+  %t "V(" + semaphore + ")"
+  %message (semaphore()) -> "Attempt to increment binary semaphore " + semaphore + " beyond 1"
+  {
+    semaphore() = 1
+  }
+}
+
+%action increment(counter) {
+  %t counter + "=" + counter + "+1"
+//  %f {counter(n), counter(n) & successor(n,n_1), counter(n) & successor(n_1,n)}
+  {
+    counter(n) = E(n_1) counter(n_1) & successor(n_1,n)
+  }
+}
+
+%action decrement(counter) {
+  %t counter + "=" + counter + "-1"
+//  %f {counter(n), counter(n) & successor(n_1,n), counter(n) & successor(n,n_1)}
+  %message (E(n) counter(n) & num0(n)) -> "Attempt to decrement a 0-valued counter: " + counter
+  {
+    counter(n) = E(n_1) counter(n_1) & successor(n,n_1)
+  }
+}
+
+%action if_equal(counter,value) {
+  %t counter + "==" + value
+//  %f {counter(n), value(n),
+//      counter(n) & successor(n,n_1), counter(n) & successor(n_1,n),
+//      value(n) & successor(n,n_1), value(n) & successor(n_1,n)}
+  %p E(n) counter(n) & value(n)
+}
+
+%action if_not_equal(counter,value) {
+  %t counter + "!=" + value
+//  %f {counter(n), value(n),
+//      counter(n) & successor(n,n_1), counter(n) & successor(n_1,n),
+//      value(n) & successor(n,n_1), value(n) & successor(n_1,n)}
+  %p !(E(n) counter(n) & value(n))
+}
+
+%action read() {
+  %t "reading"
+}
+
+%action write() {
+  %t "writing"
+}

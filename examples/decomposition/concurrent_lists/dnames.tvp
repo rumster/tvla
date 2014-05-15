@@ -1,0 +1,28 @@
+// Take all thread nodes at a given labels,
+// all heap objects that are reachable from them,
+// and all locks acquired by them.
+foreach (label in locations) {
+  %dname at[label](v) | heap_at[label](v) | locked_at[label](v) | |/{r[gvar,n](v) : gvar in globalpointers}
+}
+
+// Take the heap objects reachable from each variable.
+foreach (gvar in globalpointers) {
+  %dname r[gvar,n](v)
+}
+
+//%dname alloc[m_1](v)
+
+//
+// foreach (label in locations) {
+//   %dname at[label](v) | heap[tid](v) //| (E(t) tid(v) & acq(v,t))
+// }
+//
+// foreach (var in globalpointers) {
+//   foreach (fld in recfields) {
+//     %dname r[var,fld](v)
+//   }
+// }
+
+// foreach (tid in threadIds) {
+//   %dname tid(v) | heap[tid](v) //| (E(t) tid(v) & acq(v,t))
+// }

@@ -1,0 +1,29 @@
+// nbq_dequeue.tvm
+// $Id: nbq_dequeue.tvm 1848 2007-11-01 14:15:07Z rumster $
+// Non Blocking Queue Implementation a-la PODC96 paper
+#define REACH
+
+/*********************** Sets ******************************/
+%s FieldsAndParameters { this, head, tail, Tail, Head, n, node, next, newCount }
+
+/**************** Predicates **************/
+#include "nonblockq_pred.tvm"
+
+%%
+/********************* Actions *******************/
+#include "nonblockq_stat.tvm"
+#include "nonblockq_properties.tvm"
+
+/**************** Program *********************/
+
+%%
+
+/******************  Threads *******************/
+
+#include "enqueue.tvm"
+#include "dequeue.tvm"
+
+%%
+
+/**************  Claims        ****************/
+verifyProperty()

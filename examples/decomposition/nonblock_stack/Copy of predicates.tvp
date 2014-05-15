@@ -1,0 +1,70 @@
+// Core predicates
+
+//%p isThread(v)
+%p tr(v) unique
+foreach (loc in locations) {
+  %p at[loc](thread)
+  %r at[loc](v) ==> isthread(v)
+}
+
+foreach (var in locals) {
+  %p rval[var](thread,object) function
+}
+
+foreach (g in globals) {
+  %p global[g](object) unique pointer
+}
+
+foreach (fld in fields) {
+  %p fld(u,v) function acyclic
+}
+
+%p tid1(v) unique
+%p tid2(v) unique
+%p tid3(v) unique
+
+// Instrumentation predicates
+
+// The t[n] predicate records transitive reflexive reachability between
+// list elements along the n field.
+%i t[n](v_1, v_2) = n*(v_1, v_2) transitive reflexive
+
+// Integrity constraints for transitive reachability
+%r !t[n](v_1, v_2) ==> !n(v_1, v_2)
+%r !t[n](v_1, v_2) ==> v_1 != v_2
+%r E(v_1) (t[n](v_1, v_2) & t[n](v_1, v_3) & !t[n](v_2, v_3)) ==> t[n](v_3, v_2)
+
+foreach (g in globals) {
+  %i r[g,n](v) = E(u) global[g](u) & t[n](u,v)
+}
+
+foreach (z in locals) {
+  %i rt[z,n](v) = E(t,o) isthread(t) & rval[z](t,o) & t[n](o,v)
+}
+
+foreach (fld in fields) {
+  %i is[n](v) = E(v_1,v_2) v_1 != v_2 & n(v_1,v) & n(v_2,v)
+  %i r_in[n](v) = E(u) n(u,v)
+  %i r_out[n](v) = E(u) n(v,u)
+}
+
+foreach (var in locals) {
+  %i is[var](v) = E(v_1,v_2) v_1 != v_2 & rval[var](v_1,v) & rval[var](v_2,v)
+  %i r_in[var](v) = E(t) rval[var](t,v)
+//  %i r_in[var](v) = E(t) rval[var](t,v) & A(t_2) t_2!=t -> !rval[var](t_2,v)
+  %r r_in[var](v) ==> rt[var,n](v)
+  %i r_out[var](t) = E(v) rval[var](t,v)
+}
+%i rval_unique[x](v) = E(t) rval[x](t,v) & (A(t_2) ((t_2!=t) -> !rval[x](t_2,v)))
+
+foreach (var in locals) {
+  %i pt[var](v) = E(t) isthread(t) & rval[var](t,v)
+  foreach (g in globals) {
+    %i ptng[var,g](v) = E(u,t) isthread(t) & rval[var](t,v) & global[g](u) & n(v,u)
+  }
+}
+
+// This is same as r_out
+foreach (var in locals) {
+  %i nn[var](t) = E(v) rval[var](t,v)
+}

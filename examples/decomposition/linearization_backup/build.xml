@@ -1,0 +1,195 @@
+<?xml version="1.0"?>
+
+<!-- 
+  =======================================================================
+    Equality under abstraction tests
+  ======================================================================= 
+-->
+<project name="Equality under abstraction regression tests" default="run_full_test" basedir=".">
+  <import file="testSuites.xml"/>  
+
+  <taskdef name="dot"  classname="DotTask"  classpath="build"/>
+  <taskdef name="tvla" classname="TVLATask" classpath="build"/>
+
+  <property name="reference_tvla_home"   value="${basedir}/reference_tvla"/>
+  <property name="reference_results_dir" value="${basedir}/results"/>
+  <property name="summary_results_dir"   value="${basedir}/summary"/>
+
+  <property name="test_dir" value=""/>
+  <property name="test_tvp" value=""/>
+  <property name="test_tvs" value=""/>
+  <property name="java_max_mem" value="1500m"/>
+  <property name="test_suite" value="test_suite_all"/>
+
+
+<!--
+  =======================================================================
+    Runs tests TVLA, then summarize results.
+  =======================================================================
+-->
+  <target name="run_full_test" depends="init" description=" --> runs a full test cycle">
+    <antcall target="create_expected"/>
+    <antcall target="summarize"/>
+  </target>
+  
+
+  
+<!--
+  =======================================================================
+    Initializes internal values
+  =======================================================================
+-->
+  <target name="init" description=" --> initializes internal values">
+    <property environment="env"/>
+    
+    <tstamp>
+      <format property="DATE" pattern="d-MMMM-yyyy hh:mm aa" locale="en"/>
+    </tstamp>
+    <echo message="Started on ${DATE}"/>    
+    
+    <echo message="java_max_mem=${java_max_mem}"/>
+    <echo message="test_suite=${test_suite}"/>
+
+    <condition property="reference_tvla.present">
+      <available file="tvla.jar" filepath="${reference_tvla_home}/lib"/>
+    </condition>
+    <fail unless="reference_tvla.present" message="tvla.jar is not present at ${reference_tvla_home}/lib!"/>
+  </target>
+
+
+<!--
+  =======================================================================
+    Creates results for the specified test suite
+  =======================================================================
+-->
+  <target name="create_expected" depends="init" description=" -> creates expected results">
+    <antcall target="${test_suite}">
+      <param name="apply_target" value="create_expected_single"/>
+    </antcall>
+  </target>
+
+
+<!--
+  =======================================================================
+    Summarize results 
+  =======================================================================
+-->
+  <target name="summarize" depends="init" description=" -> Summarize results">
+    <mkdir dir="${summary_results_dir}"/>
+    <antcall target="${test_suite}">
+      <param name="apply_target" value="summarize_single"/>
+    </antcall>
+  </target>
+
+
+<!--
+  =======================================================================
+    Runs TVLA on a single benchmark.
+    This target expects the following parameters to be set:
+    - test_dir : the relative name of the directory containing the input
+                 files.  This is where TVLA executes.
+    - test_tvp : name of the input TVP file.
+    - test_tvs : name of the input TVS file.
+    - props    : optional name of a properties file to use.
+  =======================================================================
+-->
+  <target name="create_expected_single" description=" --> runs the reference TVLA on a single benchmark">
+    <mkdir dir="${reference_results_dir}/${test_dir}"/>
+    <echo message="Running reference TVLA at ${test_dir} with TVP=${test_tvp} TVS=${test_tvs}  Threads=${cpparg}"/>
+
+    <condition property="tvp.present">
+      <or>
+        <available file="${test_tvp}.tvp" filepath="${test_dir}"/>
+        <available file="${test_tvp}.tvm" filepath="${test_dir}"/>
+        <available file="${test_tvp}.pts" filepath="${test_dir}"/>
+      </or>
+    </condition>
+    <fail unless="tvp.present" message="${test_tvp}.tvp/${test_tvp}.tvm/${test_tvp}.pts  is not present at ${test_dir}!"/>
+    <condition property="tvs.present">
+      <available file="${test_tvs}.tvs" filepath="${test_dir}"/>
+    </condition>
+    <fail unless="tvs.present" message="${test_tvs}.tvs is not present at ${test_dir}!"/>
+
+    <condition property="propertisfile" value="${props}">
+      <isset property="props"/>
+    </condition>
+    <condition property="propertisfile" value="">
+      <not>
+        <isset property="props"/>
+      </not>
+    </condition>
+    
+
+    <condition property="propertisfile" value="${props}">
+      <isset property="props"/>
+    </condition>
+
+
+    <condition property="dotoutfileCond" value="" else="${reference_results_dir}/${test_dir}/${test_tvp}_${cpparg}_${test_tvs}.reference.dt">
+      <not>
+        <isset property="print"/>	
+      </not>
+    </condition>
+	
+    <condition property="tvsoutfileCond" value="" else="${reference_results_dir}/${test_dir}/${test_tvp}_${cpparg}_${test_tvs}.reference.tvs">
+      <not>
+        <isset property="print"/>	
+      </not>
+    </condition>
+	
+
+    <tvla classpath="reference_tvla/lib"
+	  home="${reference_tvla_home}"
+	  dir="${test_dir}"
+	  tvp="${test_tvp}"
+	  tvs="${test_tvs}"
+	  cpparg="${cpparg}"
+	  propertiesfile="${propertisfile}"
+	  logfile="${reference_results_dir}/${test_dir}/${test_tvp}_${cpparg}_${test_tvs}.reference.log"
+	  tvsoutfile="${tvsoutfileCond}"
+	  dotfile="${dotoutfileCond}"
+	  jvmmaxmemory="${java_max_mem}"/>
+    
+  </target>
+
+
+ 
+  
+<!--
+  =======================================================================
+    Runs the summary utility to summarize results.
+    This target expects the following parameters to be set:
+    - test_dir : the relative name of the directory containing the input
+                 files.  This is where TVLA executes.
+    - test_tvp : name of the input TVP file.
+    - test_tvs : name of the input TVS file.  This name is used to form
+                 the name of the expected TVS output file; the new
+                 output TVS file; and the name of the output TVS and DOT
+                 diff files.
+    - props    : optional name of a properties file to use.                
+  =======================================================================
+-->
+  <target name="summarize_single" description=" --> runs the results summary">
+    <echo message="Running summarizer with TVP=${test_tvp}"/>
+
+    <condition property="tvp.present">
+      <or>
+        <available file="${test_tvp}.tvp" filepath="${test_dir}"/>
+        <available file="${test_tvp}.tvm" filepath="${test_dir}"/>
+        <available file="${test_tvp}.pts" filepath="${test_dir}"/>
+      </or>
+    </condition>
+    <fail unless="tvp.present" message="${test_tvp}.tvp/${test_tvp}.tvm/${test_tvp}.pts is not present at ${test_dir}!"/>
+
+    <condition property="propertisfile" value="${props}">
+      <isset property="props"/>
+    </condition>
+    <condition property="propertisfile" value="">
+      <not>
+        <isset property="props"/>
+      </not>
+    </condition>
+
+  </target>
+      
+</project>

@@ -1,0 +1,201 @@
+\section{Three-Valued Models}
+
+A three-valued model defines the behavior of the program to be
+verified. It defines the effect of \emph{actions} and how actions
+are applied to configurations. A three-valued model consists of
+the following:
+\begin{itemize}
+\item Declarations
+\item Action Definitions
+\item Thread Types Definitions
+\item Properties
+\item Output Modifiers
+\end{itemize}
+
+\input{tmutex_tvm}
+
+\figref{TmutexTVM} shows the TVM file for the mutual exclusion
+example program.
+
+\subsection{Declarations}
+
+The declarations section of a three-valued model may consist of
+declarations of \emph{core predicates}, \emph{intrumentation
+predicates}, sets and consistency rules. The reader is referred to
+\cite{kn:TalSAS00} for more details.
+
+$\tvmc$ automatically defines the predicates above the two-line
+separator of \tableref{Predicates}. In addition, $\tvmc$ defines
+the set $Labels$ which contains all labels in the program.
+
+
+\subsection{Action Definitions}
+
+Informally, an action is characterized by the following kinds of
+information:
+\begin{itemize}
+\item A {\em precondition\/} under which the action is \emph{enabled} expressed
+as logical formula. This formula may also include a designated
+free variable $t_r$ to denote the ``scheduled'' thread on which
+the action is performed. Our operational semantics is
+non-deterministic in the sense that many actions can be enabled
+simultaneously and one of them is chosen for execution. In
+particular, it selects the scheduled thread by an assignment to
+$t_r$.
+
+\item An \emph{enabled} action creates a new configuration where the
+interpretations of every predicate $p$ of arity $k$ is determined
+by evaluating a formula $\varphi_p(v_1, \ldots, v_k)$ which may
+use $v_1, \ldots, v_k$ and $t_r$ as well as all other predicates
+in $P$.
+\end{itemize}
+
+A program statement may be modeled by several alternative actions
+corresponding to the different behaviors of the statement. A
+single action to be taken is determined by evaluation of the
+preconditions.
+
+Technically, an action consists of the following:
+\begin{itemize}
+\item Title - ($\tvtitle$) a textual title for the action.
+\item Focus formulae ($\tvfocus$) - focus formulae for the action, applied
+before the precondition is evaluated.
+\item Precondition formula ($\tvprecond$) - evaluated to determine if the action
+is \emph{enabled} (could be applied) for a given configuration.
+The precondition formula may have free variables, in which case,
+the action is applied for every assignment that may satisfy the
+formula. A special free variable $t_r$ denotes the ``scheduled''
+thread on which the action is performed.
+\item Universe modifiers ($\new$, $\newthread$, $\retain$) - universe modifiers allow to add/remove
+individuals and thread-individuals to the universe of the
+configuration.
+\item Thread state modifiers ($\tstart$, $\tstop$)- allow to start and stop a thread.
+An unary formula must be supplied to identify threads to be
+affected by the modifier.
+\item Analysis Control ($\tvhalt$) - halts the analysis.
+\item Update formulae - update the configuration to model the
+effect of the action.
+\end{itemize}
+
+
+
+\subsection{Thread Types}
+
+$\tvmc$ allows the user to define thread-types. A thread-type is
+defined using the keyword \texttt{\%thread} followed by the
+thread-type name and the control-flow for the thread-type. A
+thread-type can be later instantiated as explained in the
+following section.
+
+\figref{ThreadDef} shows a definition of a thread-type named
+\emph{main} which consists of 4 actions.
+
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+
+\%thread \= main \{ \+ \\                     \=
+        $gl_1$ blockLockGlobal(aLock) $gl_1$        \` // lock(aLock) \\
+        $gl_1$ succLockGlobal(aLock) $gl_2$         \`              \\
+        $gl_2$ skip() $gl_3$                        \`              \\
+        $gl_3$ unlockGlobal(aLock) $gl_4$           \` // unlock(aLock) \- \\
+\} \\
+
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:ThreadDef}Definition of a thread type.}
+\end{figure}
+
+
+\subsubsection{Thread Control-flow}
+
+Control flow in a thread-type is expressed in terms of
+transitions. A transition consists of a source-label, an action,
+and a target-label. CFG nodes are implicitly defined for each
+label when a transition using these labels is defined. $\tvmc$
+supports non-determinism when more than one enabled transition
+exists from a single CFG node.
+
+$\tvmc$ assumes that threads are scheduled arbitrarily, and thus
+thread actions may be arbitrarily interleaved with actions of
+other threads. A special keyword \textbf{atomic} may be used to
+define atomic blocks as explained in Section~\ref{Se:Atomic}.
+
+The values of the predicates $at[lab](tr)$ are automatically
+updated when an action is applied to express the change of
+$at[lab](tr)$ according to the transition. It is possible to
+disable automatic update of $at[lab](tr)$ predicates by using the
+keyword \tvexplicitat in the action definition header. When
+explicit update is enable (automatic update disabled), the user
+should provide predicate-update formulae for $at[lab](tr)$ as part
+of the action's update formulae.
+
+\subsubsection{Instantiation of Threads}
+
+A new thread can be instantiated using the universe-modifier
+$\newthread$. The universe modifier $\newthread$ takes a name of a
+thread-type as parameter and create a new thread individual of the
+given type. The predicate $isNew(v)$ evaluates to true for the
+newly created thread node. The predicate $isNew(v)$ can be used by
+the action's update formulae. A created thread is initially not
+ready for scheduling.
+
+\subsubsection{Thread Scheduling}
+
+The thread-state modifiers $\tstart$ and $\tstop$ allow to add
+thread control in an action. The modifiers require an unary
+formula to identify threads to be affected by the modifier. The
+unary predicate $ready(v)$ evaluates to $true$ for thread
+individuals that are ready for scheduling.
+
+\subsubsection{Analysis Control}
+
+The $\tvhalt$ modifier allows an action to be used to halt the
+analysis. When an action with the $\tvhalt$ modifier is applied,
+the analysis terminates \emph{immediately}.
+
+
+\subsection{Atomic Blocks}\label{Se:Atomic}
+
+The keyword \textbf{atomic} is used to define a sequence of
+actions that should be performed atomically. An atomic block is
+defined using the atomic keyword followed by the block in curly
+braces. An atomic block should have a single exit.
+
+\subsection{Assertions}
+
+The keywords \textbf{\%assert} and \textbf{hardassert} can be used
+to define assertion statements. If the formula $f$ supplied to
+\textbf{\%assert(f)} evaluates to \emph{true} or \emph{unknown},
+the statement has no effect. If the formula evaluates to
+\emph{false}, the statement will yield an error. The
+\textbf{\%hardassert(f)} statement is similar to
+\textbf{\%assert(f)}, but yields an error when $f$ evaluates to
+\emph{unknown} in addition to \emph{false}.
+
+Note that assertion statements simply save the need for
+declaration of \emph{halting actions}.
+
+
+\subsection{Properties}
+
+Properties are implemented more generally as \emph{global
+actions}. Global actions are evaluated on every step of the
+analysis regardless of current active threads, current location
+and current thread scheduling. A global action may perform any
+required action, but it is common to use it only for evaluating a
+required property.
+
+\subsection{Output Modifiers}
+
+The output modifiers section allows the user to define which
+configurations are written to the output file. The keywords
+$\tvinclude$ and $\tvexclude$ are used to define configurations
+that should be included in the output or excluded from it.
+$\tvinclude$ and $\tvexclude$ take a closed formula as a
+parameter. Only configurations for which the formula may evaluate
+to \emph{true} are included/excluded. (NYI)

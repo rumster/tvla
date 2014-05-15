@@ -1,0 +1,20 @@
+// Doubly linked list pointed to by variable l with variable p pointing to the
+// middle of the list.
+%n = {u1, u2, u3, u4}
+%p = {
+       sm = {u2:1/2, u4:1/2}
+       l = {u1}
+       p = {u3}
+       r[b,p] = {u1,u2,u3}
+       r[f,p] = {u3,u4}
+       r[b,l] = {u1}
+       r[f,l] = {u1,u2,u3,u4}
+       c[f,b] = {u1,u2,u3,u4}
+       c[b,f] = {u1,u2,u3,u4}
+       f = {u1->u2:1/2, u2->u2:1/2, u2->u3:1/2, u3->u4:1/2, u4->u4:1/2}
+       t[f] = {u1->u1, u1->u2, u1->u3, u1->u4, u2->u2:1/2, u2->u3, u2->u4,
+               u3->u3, u3->u4, u4->u4:1/2}
+       b = {u2->u1:1/2, u2->u2:1/2, u3->u2:1/2, u4->u3:1/2, u4->u4:1/2}
+       t[b] = {u4->u4:1/2, u4->u3, u4->u2, u4->u1, u3->u3, u3->u2, u3->u1,
+               u2->u2:1/2, u2->u1, u1->u1}
+}

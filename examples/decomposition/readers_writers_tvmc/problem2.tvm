@@ -1,0 +1,101 @@
+///////
+// Sets
+
+%s semaphores {mutex1, mutex2, mutex3, w, r}
+%s counters {readcount, readersInCrit, writecount, writersInCrit}
+
+#include "predicates.tvm"
+
+%r E(v,t) num0(v) & readersInCrit(v) & reader(t) & (at[rl_10](t) | at[rl_11](t)) ==> 0
+%r E(v) num0(v)  & !readersInCrit(v) & A(t) reader(t) & !(at[rl_10](t) | at[rl_11](t)) ==> 0
+%r E(v) num1(v) & readersInCrit(v) & !E(t) reader(t) & (at[rl_10](t) | at[rl_11](t)) ==> 0
+%r E(v) num1(v) & readersInCrit(v) & reader(t1) & (at[rl_10](t1) | at[rl_11](t1)) & reader(t2) & (at[rl_10](t2) | at[rl_11](t2)) ==> t1==t2
+
+%r E(v,t) num0(v) & writersInCrit(v) & writer(t) & (at[rl_7](t) | at[rl_8](t)) ==> 0
+%r E(v,t1,t2) num1(v) & writersInCrit(v) & writer(t1) & (at[wl_7](t1) | at[wl_8](t1)) & writer(t2) & (at[wl_7](t2) | at[wl_8](t2)) & t1 != t2 ==> 0
+
+%%
+
+#include "actions.tvm"
+
+%action verifyProperty() {
+    // There are no readers doing reading while a writer is writing
+    %message (E(t1,t2) reader(t1) & writer(t2) & (at[rl_10](t1) | at[rl_11](t1)) & (at[wl_7](t2) | at[wl_8](t2)))
+        -> "possible datarace detected"
+    %message (E(t1,t2) writer(t1) & writer(t2) & t1!=t2 & (at[wl_7](t1) | at[wl_8](t1)) & (at[wl_7](t2) | at[wl_8](t2)))
+        -> "There is possible more than one writer writing"
+}
+
+%%
+
+//////////
+// Threads
+
+%thread reader {
+    rl_1  P_fail(mutex3) rl_1
+    rl_1  P_success(mutex3) rl_2
+    rl_2    P_fail(r) rl_2
+    rl_2    P_success(r) rl_3
+    rl_3      P_fail(mutex1) rl_3
+    rl_3      P_success(mutex1) rl_4
+    rl_4      increment(readcount) rl_5
+    rl_5      if_equal(readcount,num1) rl_6
+    rl_5      if_not_equal(readcount,num1) rl_7
+    rl_6      P_fail(w) rl_6
+    rl_6      P_success(w) rl_7
+    rl_7      V(mutex1) rl_8
+    rl_8    V(r) rl_9
+atomic {
+    rl_9  V(mutex3) rl_9_1
+    rl_9_1 increment(readersInCrit) rl_10
+}
+    rl_10 read() rl_11
+
+    rl_11 P_fail(mutex1) rl_11
+atomic {
+    rl_11 P_success(mutex1) rl_11_1
+    rl_11_1 decrement(readersInCrit) rl_12
+}
+    rl_12 decrement(readcount) rl_13
+    rl_13 if_equal(readcount,num0) rl_14
+    rl_13 if_not_equal(readcount,num0) rl_15
+    rl_14 V(w) rl_15
+    rl_15 V(mutex1) rl_1
+}
+
+%thread writer {
+    wl_1  P_fail(mutex2) wl_1
+    wl_1  P_success(mutex2) wl_2
+    wl_2  increment(writecount) wl_3
+    wl_3  if_equal(writecount, num1) wl_4
+    wl_3  if_not_equal(writecount, num1) wl_5
+    wl_4  P_fail(r) wl_4
+    wl_4  P_success(r) wl_5
+    wl_5  V(mutex2) wl_6
+    wl_6  P_fail(w) wl_6
+atomic {
+    wl_6  P_success(w) wl_6_1
+    wl_6_1 increment(writersInCrit) wl_7
+}
+
+    wl_7  write() wl_8
+
+atomic {
+    wl_8  V(w) wl_8_1
+    wl_8_1 decrement(writersInCrit) wl_9
+}
+    wl_9  P_fail(mutex2) wl_9
+    wl_9  P_success(mutex2) wl_10
+    wl_10 decrement(writecount) wl_11
+    wl_11 if_equal(writecount,num0) wl_12
+    wl_11 if_not_equal(writecount,num0) wl_13
+    wl_12 V(r) wl_13
+    wl_13 V(mutex2) wl_1
+}
+
+%%
+
+/////////
+// Claims
+
+verifyProperty()

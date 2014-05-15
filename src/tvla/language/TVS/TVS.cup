@@ -1,0 +1,441 @@
+// @author Tal Lev-Ami.
+// @since 9.5.2001 Added the characters '$' and '.' to identifiers (Roman).
+package tvla.language.TVS;
+
+import tvla.core.*;
+import tvla.language.*;
+import tvla.logic.*;
+import tvla.predicates.*;
+import tvla.transitionSystem.*;
+import tvla.util.*;
+import tvla.analysis.multithreading.*;
+import tvla.analysis.multithreading.buchi.*;
+import com.ibm.dk.dps.io.CPreProcessorStream;
+import java.io.*;
+import java.util.*;
+
+/** A scanner for TVS formatted files.
+ * @author Tal Lev-Ami
+ */
+
+action code {:
+    TVS structure;
+    String predicateName;
+    Predicate predicate;
+    Map nodes = new HashMap();
+    List locations;
+    Map structuresMessages = new HashMap();
+:}
+
+parser code {:
+    static TVSLex scanner;
+    static CPreProcessorStream stream;
+
+    static BuchiAutomaton property;
+    public void report_error(String message, Object info) {
+	Logger.println(message + " in line " + stream.getLine(scanner.line_count) + 
+			" of file " + stream.getFile(scanner.line_count));
+    }
+    
+     /** Reads a list of locations from a TVS formatted input file.
+     * @author Roman Manevich
+     */
+    @SuppressWarnings("unchecked")
+    public static List<Location> readLocations(String file) throws Exception {
+		String infileName = file;
+		if (!infileName.endsWith(".tvs")) {
+			infileName = infileName + ".tvs";
+		}
+		stream = new CPreProcessorStream(infileName);
+		AddMacrosToPreProcessor.add(stream);
+		
+		scanner = new TVSLex(new InputStreamReader(stream));
+		TVSParser parser = new TVSParser(scanner);
+		List<Location> answer = (List<Location>) parser.parse().value;
+
+		// do cleanups
+		scanner = null;
+		stream = null;
+
+		return answer;
+    }	
+
+    /** Reads a list of structures from a TVS formatted input file.
+     * @author Tal Lev-Ami
+     */
+    @SuppressWarnings("unchecked")
+    public static List<HighLevelTVS> readStructures(String file) throws Exception {
+		String infileName = file;
+		if (!infileName.endsWith(".tvs")) {
+			infileName = infileName + ".tvs";
+		}
+		stream = new CPreProcessorStream(infileName);
+		AddMacrosToPreProcessor.add(stream);
+
+		// We can dump the result of applying the C preprocessor
+		// to make debugging easier.
+		if (ProgramProperties.getBooleanProperty("tvla.dumpPreprocessedTvs", false)) {
+			FileWriter writer = new FileWriter(infileName + ".cpp.tvs");
+			int c;
+			while ((c = stream.read()) != -1) {
+				writer.write(c);
+			}
+			writer.flush();
+			writer.close();
+			stream = new CPreProcessorStream(infileName);
+		}
+		
+		scanner = new TVSLex(new InputStreamReader(stream));
+		TVSParser parser = new TVSParser(scanner);
+		List<HighLevelTVS> answer = (List<HighLevelTVS>) parser.parse().value;
+
+		// do cleanups
+		scanner = null;
+		stream = null;
+
+		return answer;
+	}
+		
+	/** @author Eran Yahav
+	*/	
+    public void initRunnableFromReady(TVS st) {
+         for (Iterator i = st.nodes().iterator(); i.hasNext(); ) {
+            Node n = (Node) i.next();
+            if (st.eval(Vocabulary.isThread, n) == Kleene.trueKleene &&
+				st.eval(Vocabulary.ready, n) == Kleene.trueKleene)
+                st.update(Vocabulary.runnable, n, Kleene.unknownKleene);
+        }
+    }
+    
+	/** @author Eran Yahav
+	*/	
+    public static void setProperty(BuchiAutomaton ba) {
+        property = ba;
+    }
+
+	/** @author Eran Yahav
+	*/	
+    public void setInitialState(TVS st,String stateName) {
+        Predicate initStatePredicate = null;
+        if (property != null) {
+            if (stateName != null)
+                initStatePredicate = property.getState(stateName).predicate();
+            else
+                initStatePredicate = property.getState(property.initialState()).predicate();
+            
+            st.update(initStatePredicate, Kleene.trueKleene);
+        }    
+    }	
+:}
+
+terminal DESCRIPTION;
+terminal String ID, STRING;
+terminal Kleene TRUE, FALSE, UNKNOWN;
+terminal NODES, ASSIGN, LCBR, RCBR, ONE, ZERO, COMMA, LBR, RBR, COLON, ARROW, PREDICATES, LOCATION, MESSAGE;
+terminal LP,RP;
+terminal THREADS;
+terminal AUTINIT;
+
+non terminal List tvs, locations, structures, messages, node_list, element_list, pred_list, thread_list;
+non terminal Location location;
+non terminal structure, nodes, iota;
+non terminal String node, element, pred, message;
+non terminal entry, optional_entry_list, entry_list, pred_val, pred_vals;
+non terminal Kleene value, val;
+non terminal String label;
+
+non terminal String state_node,optional_aut_init;
+
+non terminal threads;
+non terminal ThreadAST thread_inst;
+non terminal String thread_name, thread_type, thread_label;
+start with tvs;
+
+tvs	::=	structures:s	/* a possibly empty list of structures */
+	{: RESULT = s; :}
+	|	locations:l		/* a non-empty list of locations */
+	{: RESULT = l; :}
+	;
+
+/***********************************************************/
+
+locations	::= location:loc
+		{: if (locations == null)
+			locations = new ArrayList();
+		   locations.add(loc); 
+		   RESULT = locations;
+		:}
+		| locations:list location:loc
+		{: RESULT=locations; RESULT.add(loc); :}
+		;
+
+location	::= LOCATION label:name ASSIGN LCBR structures:stores RCBR
+		{: RESULT = new Location(name); 
+		   for (Iterator i = stores.iterator(); i.hasNext(); )
+		       RESULT.structures.mergeWith( (HighLevelTVS)i.next() );
+		   RESULT.addMessages(structuresMessages);
+		   structuresMessages = new HashMap();
+		:}
+		;
+		
+structures	::=	/* empty */
+		{: RESULT = new ArrayList(); :}
+        	|	structures:list structure
+		{: RESULT = list; RESULT.add(structure); structure = null; :}
+                |	structures:list COMMA structure
+		{: RESULT = list; RESULT.add(structure); structure = null; :}
+	        ;
+
+structure ::=   {: structure = TVSFactory.getInstance().makeEmptyTVS(); :} messages:msgs threads nodes iota optional_aut_init:is
+                {:	if (msgs.isEmpty() == false) 
+						structuresMessages.put(structure, msgs);
+					parser.initRunnableFromReady(structure);
+					parser.setInitialState(structure,is);
+				:}
+				| 	{: structure = TVSFactory.getInstance().makeEmptyTVS(); :}
+					DESCRIPTION ASSIGN LCBR STRING RCBR nodes iota
+	  ;
+
+nodes::=	NODES ASSIGN LCBR RCBR
+	|	NODES ASSIGN LCBR node_list:list RCBR
+	{:
+		for (Iterator i = list.iterator(); i.hasNext(); ) {
+			String e = (String)i.next();
+			Node node = (Node) nodes.get(e);
+			if (node == null) {	
+				node = structure.newNode();
+				nodes.put(e, node);
+			}
+			else {
+				node = structure.newNode();
+				nodes.put(e, node);
+			}
+	    }
+	:}
+	;
+
+threads     ::= /* empty */
+	|	THREADS ASSIGN LCBR RCBR
+    |   THREADS ASSIGN LCBR thread_list:list RCBR
+    {:
+        for (Iterator i = list.iterator(); i.hasNext(); ) {
+			ThreadAST t = (ThreadAST) i.next();
+			String e = t.threadName();
+			Node node = (Node) nodes.get(e);
+			if (node == null) { 
+				node = TVMCMacros.newThreadNode(structure, t.entryLabel());
+				nodes.put(e, node);
+			}
+        }
+    :}
+    ;
+
+optional_aut_init ::= /*empty*/
+                | AUTINIT ASSIGN state_node:init_state
+                {: RESULT = init_state; :}
+    ;
+
+state_node ::= LP ID:label RP
+                {: RESULT = label; :}
+    |           ID:label
+                {: RESULT = label; :}
+    ;
+
+
+thread_list ::= thread_inst:t
+        {: RESULT = new ArrayList(); RESULT.add(t); :}
+        | thread_list:prev COMMA thread_inst:t
+        {: RESULT = prev; RESULT.add(t); :}
+        ;
+
+node_list	::= node:e
+		{: RESULT = new ArrayList(); RESULT.add(e); :}
+          	| node_list:prev COMMA node:e
+		{: RESULT = prev; RESULT.add(e); :}
+	  	;
+
+element_list	::= element:e
+		{: RESULT = new ArrayList(); RESULT.add(e); :}
+          	| element_list:prev COMMA  element:e
+		{: RESULT = prev; RESULT.add(e); :}
+	  	;
+
+thread_inst ::= thread_name:e LP thread_type:tt RP
+        {: RESULT = new ThreadAST(e,tt); :}
+        | thread_name:e LP thread_type:tt COMMA thread_label:tl RP
+        {: RESULT = new ThreadAST(e,tt,tl); :}
+    ;
+
+thread_name     ::= ID:id
+    {: RESULT = id; :}
+    ;
+
+thread_type     ::= ID:id
+    {: RESULT = id; :}
+    ;
+
+thread_label    ::= ID:id
+    {: RESULT = id; :}
+    ;
+
+node	  ::= element:e
+	{: RESULT = e; :}
+	;
+
+element   ::= ID:id
+	  {: RESULT = id; :}
+          | element:e ONE
+	  {: RESULT = e + ".1"; :}
+          | element:e ZERO
+	  {: RESULT = e + ".0"; :}
+          | LBR element_list:list RBR
+	  {: RESULT = "[";
+	     String sep = "";
+	     for (Iterator i = list.iterator(); i.hasNext(); ) {
+		String e = (String) i.next();
+		RESULT = RESULT + sep + e;
+		sep = ",";
+	     }
+	     RESULT = RESULT + "]";
+	  :}
+          ;   
+
+
+
+/*******************************************************/
+
+label ::= 		ID:id
+                {: RESULT = id; :}
+	|			STRING:id
+				{: RESULT = id; :}
+	;		
+
+iota     ::= PREDICATES ASSIGN LCBR pred_vals RCBR
+         ;
+
+pred_vals ::=  /* empty */
+         |  pred_vals pred_val 	
+	 ;
+
+pred   ::= ID:id
+	  {: RESULT = id; :}
+          | ID:id LBR pred_list:list RBR
+	  {: RESULT = id + "[";
+	     String sep = "";
+	     for (Iterator i = list.iterator(); i.hasNext(); ) {
+		String e = (String) i.next();
+		RESULT = RESULT + sep + e;
+		sep = ",";
+	     }
+	     RESULT = RESULT + "]";
+	  :}
+          ;   
+
+pred_list ::=	pred:p
+		{: RESULT = new ArrayList(); RESULT.add(p); :}
+          	| pred_list:prev COMMA  pred:p
+		{: RESULT = prev; RESULT.add(p); :}
+	  	;
+
+pred_val::= pred:p ASSIGN {: predicateName = p; :} LCBR optional_entry_list RCBR
+	{: predicate = null; :}
+        | pred:p ASSIGN val:k /* a nullary predicate */
+	{:  Predicate nullaryPredicate = Vocabulary.getPredicateByName(p);
+	    if (nullaryPredicate == null || nullaryPredicate.arity() != 0)
+			parser.report_fatal_error("Predicate " + p + 
+			" was used but not declared as a nullary predicate", null);
+	    structure.update(nullaryPredicate, k); 
+	:}
+        ;
+
+optional_entry_list ::= /* empty */
+	| entry_list
+	;
+
+entry_list ::= entry
+          | entry_list COMMA entry
+          ;
+
+entry    ::= node:n  value:k /* a unary predicate */
+	{: if (predicate == null) {
+	    predicate = Vocabulary.getPredicateByName(predicateName);
+	    if (predicate == null || predicate.arity() != 1)
+			parser.report_fatal_error("Predicate " + predicateName + 
+			" was used but not declared as a unary predicate", null);
+	   } 
+	   else if (predicate.arity() != 1) {
+		parser.report_fatal_error("Using " + predicate.arity() + 
+					  "-ary predicate with unary assignments", null);
+	   }
+	   Node node = (Node) nodes.get(n);
+	   if (node == null)
+		parser.report_fatal_error("Node " + n + " was not declared.", null); 
+	   structure.update(predicate, node, k);
+	:}
+         | node:l ARROW node:r value:k /* a binary predicate (support old syntax) */
+	{: if (predicate == null) {
+	    predicate = Vocabulary.getPredicateByName(predicateName);
+	    if (predicate == null || predicate.arity() != 2)
+			parser.report_fatal_error("Predicate " + predicateName + 
+			" was used but not declared as a binary predicate", null);
+	   } 
+	   else if (predicate.arity() != 2) {
+		parser.report_fatal_error("Using " + predicate.arity() + 
+					  "-ary predicate with binary assignments", null);
+	   }
+	   Node left = (Node) nodes.get(l);
+	   if (left == null)
+		parser.report_fatal_error("Node " + l + " was not declared.", null); 
+	   Node right = (Node) nodes.get(r);
+	   if (right == null)
+		parser.report_fatal_error("Node " + r + " was not declared.", null); 
+	   structure.update(predicate, left, right, k);
+	:}
+		| LP node_list:nl RP value:v /* a k-ary predicate */
+	{:
+		if (predicate == null) {
+			predicate = Vocabulary.getPredicateByName(predicateName);
+			if (predicate == null || predicate.arity() != nl.size())
+				parser.report_fatal_error("Predicate " + predicateName + 
+				" was used but not declared as a " + nl.size() + "-ary predicate", null);
+		}
+		List nodeList = new ArrayList();
+		String nodeName;
+		for(ListIterator li = nl.listIterator(); li.hasNext();) {
+			nodeName = (String)li.next();
+			Node currNode = (Node) nodes.get(nodeName);
+			if (currNode != null) {
+				nodeList.add(currNode);
+			} 
+			else {
+				parser.report_fatal_error("Node " + nodeName + " was not declared.", null); 
+			}
+		}
+		NodeTuple nodeTuple = NodeTuple.createTuple(nodeList);
+		structure.update(predicate,nodeTuple,v);
+	:}
+         ;
+
+value    ::= /* A default true value */
+	{: RESULT = Kleene.trueKleene; :}
+         | COLON val:v
+	{: RESULT = v; :}
+         ;
+
+val      ::= TRUE
+	{: RESULT = Kleene.trueKleene; :}
+         | FALSE
+	{: RESULT = Kleene.falseKleene; :}
+         | UNKNOWN
+	{: RESULT = Kleene.unknownKleene; :}
+         ;
+
+messages ::= /* empty */
+	{: RESULT = new ArrayList(); :}
+	| messages:list message:msg
+	{: RESULT = list; RESULT.add(msg); :}
+	;
+
+message	 ::= MESSAGE STRING:str
+         {: RESULT = str; :}
+         ;

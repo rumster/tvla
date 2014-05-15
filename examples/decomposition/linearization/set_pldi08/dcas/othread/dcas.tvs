@@ -1,0 +1,81 @@
+/*****
+* set.tvs
+* Initial structure for set implementation.
+* The list has two dummy node: Head with value -inf and Tail with value +inf.
+*****/
+
+//All local variables initially null.
+//Both locks initially unacquired.
+
+//empty set
+%n = { t1, t2, uh, ut, other }
+%p = {
+
+    ready = {t1, t2}
+    isthread = {t1, t2, other}
+
+    at[l_dispatch] = {t1, t2, other:1/2}
+    at[l_ready] = {other:1/2}
+    at[li_check_lin] = {other:1/2} 
+    at[ld_check_lin] = {other:1/2} 
+    at[l_0] = {other:1/2} 
+    at[l_00] = {other:1/2} 
+    at[l_00a] = {other:1/2} 
+    at[l_1] = {other:1/2} 
+    at[l_2] = {other:1/2} 
+    at[l_3] = {other:1/2} 
+    at[l_4] = {other:1/2} 
+    at[l_5] = {other:1/2} 
+    at[l_6] = {other:1/2} 
+    at[l_7] = {other:1/2} 
+    at[l_8] = {other:1/2} 
+    at[l_ver] = {other:1/2} 
+    at[l_exit] = {other:1/2} 
+    at[lis_0] = {other:1/2} 
+    at[lds_0] = {other:1/2} 
+    at[lfs_0] = {other:1/2} 
+    at[lis_1] = {other:1/2} 
+    at[lfs_1] = {other:1/2} 
+    at[lds_1] = {other:1/2} 
+    at[lf_1] = {other:1/2} 
+    at[li_1] = {other:1/2} 
+    at[li_2] = {other:1/2} 
+    at[li_3] = {other:1/2} 
+    at[li_4] = {other:1/2} 
+    at[li_5] = {other:1/2} 
+    at[li_6] = {other:1/2} 
+    at[ld_1] = {other:1/2} 
+    at[ld_2] = {other:1/2} 
+    at[ld_3] = {other:1/2} 
+    at[ld_4] = {other:1/2} 
+    at[ld_5] = {other:1/2} 
+    at[ld_6] = {other:1/2} 
+    at[l_dispatch] = {other:1/2} 
+    at[ll_dispatch] = {other:1/2} 
+    choice[insert] = {other:1/2}
+    choice[delete] = {other:1/2}
+    choice[find] = {other:1/2}
+
+	
+    t1 = {t1}
+    t2 = {t2}
+
+    r_by[Head] = {uh}
+    r_by[Tail] = {ut}
+
+    rt[Head] = {uh, ut}
+
+    rv[n] = {uh -> ut}
+
+    dle = {uh->uh, uh->ut, ut->ut, other->other:1/2,
+           t1->t1, t2->t2}
+
+    inSOrder[dle,n] = {uh,ut}
+
+    bn[n] = {uh->uh, ut->ut, uh->ut
+              , t1->t1
+              , t2->t2
+              , other->other:1/2
+    }
+}
+

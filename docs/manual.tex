@@ -1,0 +1,62 @@
+\documentclass[11pt]{article}
+
+% Settings to be used with dvips followed by ps2pdf
+\usepackage[dvips,
+    pdftitle={TVLA User Manual},
+    pdfauthor={Roman Manevich and Mooly Sagiv},
+    pdfsubject={TVLA User Manual},
+    hyperindex,
+    backref,
+    hyperfigures,
+    colorlinks,
+    bookmarks,
+    bookmarksnumbered,
+    bookmarksopen,
+    citecolor=blue,
+    urlcolor=blue,
+    pdfstartview={FitH}
+]{hyperref}
+
+\usepackage{amsmath,alltt,epsfig}
+
+\input{macros}
+
+\begin{document}
+
+\hfuzz 2pt % Don't bother to report over-full boxes if over-edge is < 2pt
+\textheight 20cm
+
+\title{TVLA 3: User's Manual\\(Working Draft)}
+
+\author{Tal Lev-Ami\thanks{\url{mailto:tla@post.tau.ac.il}}
+\and Roman Manevich\thanks{\url{mailto:roman.manevich@cs.tau.ac.il}} \and
+Mooly Sagiv\thanks{\url{mailto:msagiv@post.tau.ac.il}}}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\input{introduction}
+\input{reverse_program}
+\input{graphical_representation}
+\input{tvp}
+\input{tvs}
+\newpage
+\input{command_line}
+\input{property_files}
+%\input{TVLA_semantics}
+%\input{TVLA_analysis}
+%\input{additional}
+\input{additional_references}
+%\input{credits}
+
+\newpage
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{alpha}
+\bibliography{tvla_references}
+
+\appendix
+\input{changes_since_091}
+
+\end{document}

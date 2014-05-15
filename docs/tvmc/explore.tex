@@ -1,0 +1,31 @@
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+
+init\=ialize($C_{0}$) \{ \+ \\
+    for \=each $C \in C_{0}$ \+ \\
+        push(stack,C) \- \- \\
+\} \\
+
+
+ex\=plore() \{ \+ \\
+  wh\=ile stack is not empty \{ \+ \\
+    $C$ = pop(stack) \\
+    \emph{verify(C)}     \\
+    if \= not $member(C,stateSpace)$ \{ \+ \\
+      $stateSpace' = stateSpace \cup \{ C \} $ \\
+      fo\=r each action $ac$ \+ \\
+        fo\=r each $C'$ such that $ C \Rewrites_{ac} C'$  \+ \\
+            push(stack,$C'$) \- \- \- \\
+    \} \- \\
+  \} \- \\
+\}
+
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:Explore}State space exploration.}
+\end{figure}

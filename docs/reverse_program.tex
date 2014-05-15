@@ -1,0 +1,45 @@
+\begin{figure}
+\begin{center}
+\framebox{
+\begin{tabular}{@{\hspace{1ex}}c@{\hspace{1ex}}c@{\hspace{1ex}}}
+\begin{minipage}{1in}
+\begin{alltt}
+\begin{tabbing}
+/* list.h */ \\
+ty\=pedef struct node \\
+\{\+\\
+        struct node *n;  \\
+        int data;      \- \\
+\} *L;
+\end{tabbing}
+\end{alltt}
+\end{minipage}
+&
+\begin{minipage}{1in}
+\begin{alltt}
+\begin{tabbing}
+/* reverse.c */ \\
+\#include "list.h" \\
+L re\=verse(L x) \{ \+ \\
+     L y, t; \\
+     y = NULL; \\
+     whil\=e (x != NULL) \{ \+ \\
+           t = y; \\
+           y = x; \\
+           x = x->n; \\
+           y->n = t; \\
+           t = NULL; \- \\
+     \} \\
+     return y; \- \\
+\}
+\end{tabbing}
+\end{alltt}
+\end{minipage}
+\\
+(a) & (b)
+\end{tabular}}
+\end{center}
+\caption{\label{Fi:Reverse}(a)~Declaration of a linked-list data
+type in C. (b)~A C function that uses destructive updating to
+reverse the list pointed to by parameter \tx.}
+\end{figure}

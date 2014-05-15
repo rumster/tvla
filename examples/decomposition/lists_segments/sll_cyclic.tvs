@@ -1,0 +1,15 @@
+// An acyclic singly-linked list with two or more elements pointed by program x.
+%n = {head, u1,u2,u3}
+%p = {
+       sm = {u1:1/2,u3:1/2}
+       n = {head->u1:1/2, u1->u1:1/2, u1->u2:1/2, u2->u3:1/2, u3->u3:1/2, u3->u2:1/2}
+       x = {head}
+       //t[n] = {head->head, head->u1, head->u2, head->u3,
+       //u1->u1:1/2, u1->u2, u1->u3,
+       //u2->u2, u2->u3,
+       //u3->u3, u3->u2
+       //}
+       is[n] = {u2}
+       c[n] = {u2, u3}
+       r[n,x] = {head, u1, u2, u3}
+}

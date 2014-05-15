@@ -1,0 +1,57 @@
+///////
+// Sets
+
+%s PVar {t, y, x, h} // Names of pointer variables.
+%s PSel {n} // Names of pointer fields.
+%s HVar {}  // Names of pointer variables used for taking heap snapshots.
+%s HLoc {}  // Names of program labels where snapshots of the heap are taken.
+%s Formals {x, y}
+%s Args {x, y, t, h}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////
+// Transition system for a function that merges two sorted linked lists
+// into one sorted list.
+
+main0 Call_2args(x,y,x,y)		    L0   //   h = merge(x,y)
+main0 Call2Return_2args(x,y,x,y,h)  main1
+main1 Merge_2args(x,y,h)            main_exit
+
+                                 // L merge(L x, L y) {
+L0  Init_Formals()			L1
+L1  Is_Null_Var(x)          L1a //   if (x == NULL) return y;
+L1a Copy_Var_L(h,y)			exit
+L1  Is_Not_Null_Var(x)      L2
+L2  Is_Null_Var(y)          L2a //   if (y == NULL) return x;
+L2a Copy_Var_L(h,x)			exit
+L2  Is_Not_Null_Var(y)      L3
+L3  Greater_Data_L(y, x)    L4   //   if (x->d < y->d) {
+L3  Less_Equal_Data_L(y, x) L6
+L4  Copy_Var_L(h, x)        L5   //     h = x;
+L5  Get_Next_L(x, x)        L8   //     x = x->n;
+                                 //   } else {
+L6  Copy_Var_L(h, y)        L7   //     h = y;
+L7  Get_Next_L(y, y)        L8   //     y = y->n;
+                                 //   }
+
+L8 Set_Next_Null_L(h)		L9   //   h->n = null;
+L9 Call_2args(x,y,x,y)		L0   //   t = merge(x,y)
+L9 Call2Return_2args(x,y,x,y,t) L10
+L10 Merge_2args(x,y,t)            L11
+L11 Set_Next_L(h, t)		exit	 //   h->n = t;
+
+exit Return_2args(x,y,x,y,t,h)   L10   //   return h
+exit Return_2args(x,y,x,y,h,h)   main1 
+
+
+main_exit Assert_Sorted_L(h)     exit2                                 
+main_exit Assert_No_Leak(h)      exit2
+
+//%% L10, L11

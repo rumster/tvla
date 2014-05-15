@@ -1,0 +1,142 @@
+<HTML>
+<HEAD>
+<META http-equiv=content-type content="text/html; charset=UTF-8">
+</HEAD>
+
+<BODY>
+
+<H2>Partial Verification of List-Sorting Algorithms</H2>
+
+This directory contains examples of sorting programs manipulating singly linked
+lists of the form
+<PRE><CODE>
+typedef struct node {
+   struct node *n;
+   int data;
+} *L;
+</CODE></PRE>
+The operational semantics is based on the analysis of singly linked lists
+with extra information for inequality.<br>
+There is an extra instrumentation predicate for keeping track of sortedness.
+For space efficiency reasons this predicate is not an abstraction predicate.
+More information about the analysis is available in the paper:<br>
+"<A href="http://www.cs.tau.ac.il/~msagiv">Putting Static Analysis to Work for Verification: A Case Study</A>",
+Lev-Ami T., Reps T., Sagiv., M. and Wilhelm, R.,
+Appeared in the proceedings of the
+<EM>International Symposium on Software Testing and Analysis (ISSTA) 2002</EM>.
+
+<H3>List of examples and their descriptions</H3>
+For faster convergence use the `-join part' option.
+(See additional comments below.)
+
+<TABLE border=1 cellSpacing=0 cellPadding=10><TBODY>
+	<TR>
+	<TD width=80>Example</TD>
+	<TD width=130>Example description</TD>
+	<TD width=340>Properties checked</TD>
+	<TD width=180>Command line</TD>
+	</TR>
+
+	<TR>
+	<TD>bubbleSort</TD>
+	<TD>A function that performs bubble sort on a list by swapping list elements.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in ascending order
+    <LI> Output list is a permutation of the input list
+    </OL></TD>
+    <TD>tvla bubbleSort unsorted</TD>
+	</TR>
+
+	<TR>
+	<TD>bubbleSort_bug</TD>
+	<TD>A function that performs bubble sort on a list by swapping list elements.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in ascending order
+    <LI> Output list is a permutation of the input list
+    </OL></TD>
+    <TD>tvla bubbleSort_bug unsorted</TD>
+	</TR>
+
+	<TR>
+	<TD>insertSort</TD>
+	<TD>A function that performs insertion sort on a list.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in ascending order
+    <LI> Output list is a permutation of the input list
+    </OL></TD>
+    <TD>tvla insertSort unsorted</TD>
+	</TR>
+
+	<TR>
+	<TD>insertSort_bug1</TD>
+	<TD>A function that performs insertion sort on a list.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in ascending order
+    <LI> Output list is a permutation of the input list
+    </OL></TD>
+    <TD>tvla insertSort_bug1 unsorted</TD>
+	</TR>
+
+	<TR>
+	<TD>insertSort_bug2</TD>
+	<TD>A function that performs insertion sort on a list.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in ascending order
+    <LI> Output list is a permutation of the input list
+    </OL></TD>
+    <TD>tvla insertSort_bug2 unsorted</TD>
+	</TR>
+
+	<TR>
+	<TD>merge</TD>
+	<TD>A function that merges two sorted singly-linked lists into one sorted list.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Merged list is sorted in ascending order
+    <LI> Merged list contains all elements of the input lists
+    </OL></TD>
+    <TD>tvla merge merge</TD>
+	</TR>
+
+	<TR>
+	<TD>reverse</TD>
+	<TD>A function that reverses a sorted singly-linked list in-situ.</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> Output list is sorted in descending order
+    </OL></TD>
+    <TD>tvla insertSort sorted</TD>
+	</TR>
+
+</TBODY></TABLE>
+
+
+<H3>Comments</H3>
+The original C functions were pre-processed in the following ways in order
+to simplify the analysis:
+    <OL>
+    <LI> Statements that assign to fields are preceded by statements that assign
+         the value NULL to the fields.<br>
+         For example, 
+         <CODE>x->n = y;</CODE>
+         is replaced with
+         <CODE>x->n = NULL; x->n = y;</CODE>
+      
+    <LI> Statements that copy a value from one field to another are simplified
+         by using temporary variables.<br>
+         For example,
+         <CODE>x->n = y->n;</CODE>
+         is replaced with the sequence of assignments <br>
+         <CODE>t = y->n; x->n = NULL; x->n = t; t = NULL;</CODE>
+    </OL>
+Program conditions are modelled by two actions---one for the true branch
+and one for the false branch. 
+
+
+</BODY>
+</HTML>

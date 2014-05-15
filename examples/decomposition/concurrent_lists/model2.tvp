@@ -1,0 +1,169 @@
+////////////////////////////////////////////////////////////////
+// Sets
+////////////////////////////////////////////////////////////////
+
+%s types            {DeviceObject, Packet, Lock}
+%s globalpointers   {packetList1, packetList2, lock1, lock2}
+%s localpointers    {tmp, tmpLock1, p, pn, pktList1, pktList1n, pktList1n}
+%s recfields        {n}
+%s nonrecfields     {}
+%s fields recfields + nonrecfields
+%s globalbools      {}
+%s localbools       {}
+%s tr_alloc_sites   {m_1, m_13, m_14}
+
+//// Global pointers to recursive data structures
+//%s globalpointers_recs   {packetList1, packetList2}
+
+// Fixed thread ids
+%s threadIds {tid1, tid2}
+
+%s locations {// main function locations
+              m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10,
+              m_11, m_12, m_13, m_14, m_15, m_16, m_17, m_18,
+              // producer1 function locations
+              p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9, p1_10,
+              p1_11, p1_12, p1_13, p1_14, p1_15, p1_16, p1_17, p1_exit
+              }
+
+////////////////////////////////////////////////////////////////
+// Predicates
+////////////////////////////////////////////////////////////////
+
+#include "predicates.tvp"
+
+////////////////////////////////////////////////////////////////
+// Decomposition names
+////////////////////////////////////////////////////////////////
+
+#include "dnames.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////
+// Actions
+////////////////////////////////////////////////////////////////
+
+#include "actions.tvp"
+
+%action verifyProperty() {
+  %t "verify property"
+  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[packetList1](v)) -> "packetList1 is null\n"
+  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[packetList2](v)) -> "packetList2 is null\n"
+  %message (E(o,t) acq(o,t) & !acq(o,t)) -> "acq is imprecise"
+
+  %message (r_in[n](v) &  !r_in[n](v)) -> "r_in[n] is imprecise"
+  %message (r_out[n](v) &  !r_out[n](v)) -> "r_out[n] is imprecise"
+  %message (E(o,t) |/{rv[var](t,o) & !rv[var](t,o) : var in localpointers}) -> "rv[var](t,o) is imprecise"
+
+  %message (r[packetList1,n](v) &  !r[packetList1,n](v)) -> "r[packetList1,n] is imprecise"
+  %message (r[packetList2,n](v) &  !r[packetList2,n](v)) -> "r[packetList2,n] is imprecise"
+
+//  %message (A(v) global[S_Top](v)->global[S_tail](v)) -> "tail is not reachable from Top\n"
+//  %message (E(v) !isthread(v) & !(|/{ r[g,n](v) : g in globals}) & !(|/{ r_in[z](v) : z in locals}) ) -> "garbage detected\n"
+}
+
+%%
+
+/***********************************
+// Pseudo-code
+Packet * packetList1;
+Packet * packetList2;
+Lock * lock1;
+Lock * lock2;
+
+void main() {
+  packetList1 = new Packet();
+  packetList2 = new Packet();
+  lock1 = new Lock();
+  lock2 = new Lock();
+  start_thread(producer1, null);
+  start_thread(producer2, null);
+  while (true) {}
+}
+
+void producer1() {
+  while (nondet()) {
+    lock(lock1);
+      Packet * p = new Packet();
+      p->next = packetList1->next;
+      packetList1->next = p;
+    release(lock1);
+  }
+}
+
+void producer2() {
+  while (nondet()) {
+    lock(lock1);
+      Packet * p = new Packet();
+      p->next = packetList2->next;
+      packetList2->next = p;
+    release(lock2);
+  }
+}
+************************************/
+
+////////////////////////////////////////////////////////////////
+// Thread scheduling mechanism and global property checking
+init verifyProperty() init
+init unschedule() pre_schedule
+pre_schedule unschedule() l_ready
+
+// A schedule transition to every label at which interleaving
+// could happen
+l_ready schedule(m_1)  m_1
+l_ready schedule(m_13) m_13
+l_ready schedule(m_14) m_14
+
+l_ready schedule(p1_1) p1_1
+l_ready schedule(p1_3) p1_3
+l_ready schedule(p1_4) p1_4
+l_ready schedule(p1_6) p1_6
+l_ready schedule(p1_8) p1_8
+l_ready schedule(p1_11) p1_11
+l_ready schedule(p1_14) p1_14
+
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// Transition system for each function
+////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// main CFG
+// thread main is created in the .tvs file
+m_1  newObject(m_1, m_2, tmp, Packet)                   m_2  // packetList1 = new Packet();
+m_2  assignLocalToGlobal(m_2, m_3, packetList1, tmp)    m_3
+m_3  assignNullToLocal(m_3, m_4, tmp)                   m_4
+m_4  newObject(m_4, m_5, tmp, Packet)                   m_5  // packetList2 = new Packet();
+m_5  assignLocalToGlobal(m_5, m_6, packetList2, tmp)    m_6
+m_6  assignNullToLocal(m_6, m_7, tmp)                   m_7
+m_7  newObject(m_7, m_8, tmp, Lock)                     m_8  // lock1 = new Lock();
+m_8  assignLocalToGlobal(m_8, m_9, lock1, tmp)          m_9
+m_9  assignNullToLocal(m_9, m_10, tmp)                  m_10
+m_10 newObject(m_10, m_11, tmp, Lock)                   m_11 // lock2 = new Lock();
+m_11 assignLocalToGlobal(m_11, m_12, lock2, tmp)        m_12
+m_12 assignNullToLocal(m_12, m_13, tmp)                 m_13
+m_13 startThread(m_13, m_14, p1_1, tid1)                init // start_thread(producer1, null);
+m_14 startThread(m_14, m_15, p1_1, tid2)                init // start_thread(producer1, null);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// producer1 CFG
+p1_1  ifNonDet(p1_1, p1_2)                                      p1_2 // while (nondet())
+p1_1  ifNonDet(p1_1, p1_exit)                                   p1_exit
+p1_2  assignGlobalToLocal(p1_2, p1_3, tmpLock1, lock1)          p1_3 // tmp = lock1
+p1_3  acquire_succeded(p1_3, p1_4, tmpLock1)                    init // acquire(tmp)
+p1_3  acquire_failed(p1_3, p1_3, tmpLock1)                      init
+p1_4  assignNullToLocal(p1_4, p1_5, p)                          p1_5 // p = new Packet()
+p1_5  newObject(p1_5, p1_6, p, Packet)                          init
+                                                                // p->next = packetList1->next;
+p1_6  assignGlobalToLocal(p1_6, p1_7, pktList1, packetList1)    p1_7
+p1_7  getField(p1_7, p1_8, pktList1n, pktList1, n)              init
+p1_8  assignFieldNull(p1_8, p1_9, p, n)                         p1_9
+p1_9  assignField(p1_9, p1_10, p, n, pktList1n)                 p1_10
+p1_10 assignNullToLocal(p1_10, p1_11, pktList1n)                init
+p1_11 assignFieldNull(p1_11, p1_12, pktList1, n)                p1_12 // packetList1->n = p
+p1_12 assignField(p1_12, p1_13, pktList1, n, p)                 p1_13
+p1_13 assignNullToLocal(p1_13, p1_14, pktList1)                 init
+p1_14 release(p1_14, p1_15, tmpLock1)                           p1_15 // release(lock1)
+p1_15 assignNullToLocal(p1_15, p1_1, tmpLock1)                  init

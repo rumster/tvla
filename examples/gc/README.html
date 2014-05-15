@@ -1,0 +1,98 @@
+<HTML>
+<HEAD>
+<META http-equiv=content-type content="text/html; charset=UTF-8">
+</HEAD>
+<BODY>
+
+<H2>Partial Verification of a Simple Mark and Sweep Garbage Collector</H2>
+
+This directory contains a shape analysis to meet the challenge
+of verifying partial correctness of a mark and sweep garbage collector.
+The <A href="http://research.microsoft.com/specncheck/gc-challenge.htm">challenge</A>
+was raised during the 
+<A href="http://research.microsoft.com/specncheck/">
+2001 University of Washington and Microsoft Research Summer Institute
+</A>.
+
+
+<H3>Modeling the problem</H3>
+We assume that the heap concists of objects with <CODE>left</CODE> and
+<CODE>right</CODE> reference fields, as shown below.
+<PRE><CODE>
+class Node {
+  Node left;
+  Node right;
+  ...
+}
+</CODE></PRE>
+We also assume that a <CODE>root</CODE> reference variable provides a single
+access point to the heap.
+
+<H3>List of examples and their descriptions</H3>
+(see additional comments below)
+
+<TABLE border=1 cellSpacing=0 cellPadding=10><TBODY>
+	<TR>
+	<TD width=100>Example</TD>
+	<TD width=150>Example description</TD>
+	<TD width=360>Properties checked</TD>
+	<TD width=170>Command line</TD>
+	</TR>
+
+	<TR>
+	<TD>mark</TD>
+	<TD>The mark phase of the garbage collector</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> All objects reachable from <CODE>root</CODE> are marked
+    <LI> All objects not reachable from <CODE>root</CODE> are not marked
+    </OL></TD>
+    <TD>tvla mark store</TD>
+	</TR>
+
+	<TR>
+	<TD>sweep</TD>
+	<TD>The sweep phase of the garbage collector</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> All marked objects are not collected
+    <LI> All objects not marked are collected
+    </OL></TD>
+    <TD>tvla sweep storeAfterMark</TD>
+	</TR>
+	
+	<TR>
+	<TD>markAndSweep</TD>
+	<TD>Mark phase followed by a sweep phase</TD>
+    <TD><OL>
+    <LI> Absence of null dereferences
+    <LI> All objects reachable from <CODE>root</CODE> are not collected
+    <LI> All objects not reachable from <CODE>root</CODE> are collected
+    </OL></TD>
+    <TD>tvla markAndSweep store</TD>
+	</TR>
+</TBODY></TABLE>
+
+<H3>Comments on the way method bodies are modelled by first-order transition systems</H3>
+The original C functions were pre-processed in the following ways in order
+to simplify the analysis:
+    <OL>
+    <LI> Statements that assign to fields are preceded by statements that assign
+         the value NULL to the fields.<br>
+         For example, 
+         <CODE>x->n = y;</CODE>
+         is replaced with
+         <CODE>x->n = NULL; x->n = y;</CODE>
+         
+    <LI> Statements that copy a value from one field to another are simplified
+         by using temporary variables.<br>
+         For example,
+         <CODE>x->n = y->n;</CODE>
+         is replaced with the sequence of assignments <br>
+         <CODE>t = y->n; x->n = NULL; x->n = t; t = NULL;</CODE>
+    </OL>
+Program conditions are modelled by two actions---one for the true branch
+and one for the false branch.
+
+</BODY>
+</HTML>

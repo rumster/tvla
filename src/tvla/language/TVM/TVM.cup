@@ -1,0 +1,622 @@
+// @author Eran Yahav.
+// @since tvla-2-alpha September 28, 2002. CFG nodes can either be TVLA identifiers or
+// quoted strings (Roman).
+package tvla.language.TVM;
+
+import tvla.logic.*;
+import tvla.formulae.*;
+import tvla.language.*;
+import tvla.language.TVP.*;
+import tvla.util.*;
+import com.ibm.dk.dps.io.CPreProcessorStream;
+import java.util.*;
+import java.io.*;
+
+parser code {:
+    static TVMLex scanner;
+    static String entry;
+    static CPreProcessorStream stream;
+
+    public void report_error(String message, Object info) {
+    Logger.println(message + " in line " + stream.getLine(scanner.line_count) + 
+            " of file " + stream.getFile(scanner.line_count));
+    }
+
+    public static TVMAST configure(String filename, String path) 
+                    throws Exception {
+	    String infileName = filename + ".tvm";
+		stream = new CPreProcessorStream(infileName);
+		AddMacrosToPreProcessor.add(stream);
+
+		stream.setSearchPath(path);
+		scanner = new TVMLex(new InputStreamReader(stream));
+		TVMAST answer = (TVMAST)(new TVMParser(scanner).parse().value);
+		return answer;
+    }
+    
+    public static String getEntry() {
+            return entry;
+    }
+:}
+
+terminal String STRING, ID;
+terminal IMPLIES_T, PRED, INS_PRED, CONSISTENCY_RULE, FOCUS,
+    EXISTS, FORALL, TC, IFF, IMPLIES, OR, AND, NOT, STAR, PLUS,
+    EQ, NEQ, TRUE, FALSE, UNKNOWN, LP, RP, ASSIGN, COMMA, LCBR, RCBR, QMARK, COLON, 
+    PERCENT, FOREACH, SET, MINUS, LBR, RBR, TITLE, COMBINE;
+terminal MESSAGE, ACTION, NEW, CLONE, RETAIN;
+terminal THREAD, METHOD;
+terminal TSTART, TWAIT, TSTOP, TNEW;
+terminal ATOMIC;
+terminal ASSERT, HARDASSERT, OINCLUDE, OEXCLUDE;
+terminal AHALT;
+terminal EXPLICITAT;
+terminal ARROW;
+
+non terminal DeclarationsAST decls_done;
+non terminal in;
+non terminal ProgramAST code_part;
+non terminal String cfg_node;
+
+non terminal MacroAST macro;
+non terminal ActionDefAST action_def;
+
+non terminal ThreadDefAST thread_def;
+non terminal MethodDefAST method_def;
+non terminal List body_code;
+non terminal ActionAST action_use;
+non terminal GlobalActionAST global_action;
+
+non terminal List property_list;
+
+non terminal Set show_attr, show_attr_list, optional_show_attr_list;
+non terminal List optional_params;
+non terminal FormulaAST formula, retain, new, clone, precond, halting;
+non terminal PredicateAST predicate;
+non terminal Var var;
+non terminal CombineAST combine;
+non terminal String binary_op;
+
+non terminal Kleene kleene;
+non terminal SetAST set_expr;
+non terminal SetDefAST set_def;
+non terminal CorePredicateAST core_pred_def;
+non terminal InstrumPredicateAST instrum_pred_def;
+non terminal ConstraintAST cons_rule;
+non terminal AST decl;
+
+non terminal List optional_id_list, id_list, asgns, focus, focus_formulae, decls, report_messages, optional_update;
+non terminal ReportMessageAST report_message;
+non terminal UpdateAST asgn;
+non terminal ForeachAST asgn_foreach, decl_foreach;
+
+non terminal MessageAST message;
+non terminal MessageAST title;
+
+non terminal FormulaAST tstart, twait, tstop;
+non terminal List action_list;
+non terminal AtomicBlockAST atomic_block;
+non terminal MacroSectionAST macros;
+non terminal PropertiesAST properties;
+non terminal ThreadUseAST tnew;
+
+non terminal OutputModifierSectionAST output_modifiers,to_print;
+non terminal OutputModifierAST output_modifier;
+
+non terminal Boolean explicitatupd;
+non terminal TVMAST tvm;
+
+non terminal PredicatePropertiesAST optional_dependency;
+
+precedence right EXISTS;
+precedence right FORALL;
+precedence right TC;
+precedence left IFF;
+precedence left IMPLIES;
+precedence left OR;
+precedence left AND;
+precedence right NOT;
+precedence left STAR;
+precedence left PLUS, MINUS;
+precedence right MESSAGE;
+
+start with tvm;
+
+tvm ::= decls_done:d PERCENT PERCENT macros:m PERCENT PERCENT code_part:cp PERCENT PERCENT properties:p to_print:tp
+    {: RESULT = new TVMAST(d,m,cp,p,tp); :}
+    ;
+
+properties  ::= /* empty */ 
+		{: RESULT = new PropertiesAST(Collections.EMPTY_LIST); :}
+	| property_list:list 
+        {: RESULT = new PropertiesAST(list); :}
+    ;
+    
+to_print ::= /* empty */
+    | PERCENT PERCENT output_modifiers:o
+    {: RESULT = o; :}
+    ;
+
+/***********************************************************/
+/*********************** General ***************************/
+/***********************************************************/
+
+var             ::=     ID:id
+                        {: RESULT = new Var(id); :}
+                ;
+
+message ::=         STRING:str
+                        {:RESULT = new MessageStringAST(str); :}
+                        | predicate:p
+                        {:RESULT = new MessagePredicateAST(p); :}
+                        | message:l PLUS message:r
+                        {:RESULT = new MessageCompositeAST(l, r); :}
+                        ;
+
+kleene ::=  TRUE
+        {: RESULT = Kleene.trueKleene; :}
+    |   FALSE
+                {: RESULT = Kleene.falseKleene; :}
+    |   UNKNOWN
+                {: RESULT = Kleene.unknownKleene; :}
+    |   error 
+                {: parser.report_error("Illegal Kleene value",null); :}
+    ;
+
+/********************************************/
+/******************* Sets *******************/
+/********************************************/
+
+set_def ::= SET ID:name LCBR optional_id_list:members RCBR
+                {: RESULT = new SetDefAST(name, members); :}
+    ;
+
+set_expr ::=    ID:set
+                {: RESULT = new SetUseAST(set); :}
+        |    LCBR optional_id_list:list RCBR
+        {: RESULT = new SetConstantAST(list); :}
+        |   set_expr:e1 PLUS set_expr:e2
+                {: RESULT = new SetPlusAST(e1, e2); :}
+        |   set_expr:e1 MINUS set_expr:e2
+                {: RESULT = new SetMinusAST(e1, e2); :}
+        |     set_expr:e1 AND set_expr:e2
+                {: RESULT = new SetAndAST(e1, e2); :}
+        |     LP set_expr:e1 RP
+                {: RESULT = e1; :}
+        |   error
+                {: parser.report_error("Illegal set expression",null); :}
+    ;
+
+/***********************************************************/
+/*********************** Declarations **********************/
+/***********************************************************/
+   
+in ::= ID:id 
+    {: if (!id.equals("in")) 
+        parser.report_fatal_error("expected 'in'", null); 
+    :}
+    ;
+        
+decl_foreach ::= FOREACH LP ID:id in set_expr:e RP LCBR decls:a RCBR
+                {: RESULT = new ForeachAST(id, e, a); :}
+    ;
+
+decls_done  ::= decls:list
+                {: RESULT = new DeclarationsAST(list); :}
+    ;
+
+decls   ::= /* empty */
+                {: RESULT = new ArrayList(); :}
+        |   decls:list decl:single
+                {: RESULT = list; RESULT.add(single); :}
+        |   decls:list decl_foreach:f
+                {: RESULT = list; RESULT.add(f); :}
+    ;
+
+decl    ::= core_pred_def:def
+                {: RESULT = def; :}
+    |   instrum_pred_def:def
+                {: RESULT = def; :}
+        |   set_def:def
+                {: RESULT = def; :}
+        |   cons_rule:cons
+                {: RESULT = cons; :}
+    ;
+
+show_attr_list ::= kleene:a
+        {: RESULT = new HashSet(); RESULT.add(a); :}
+        | show_attr_list:list COMMA kleene:a
+        {: RESULT = list; RESULT.add(a); :}
+    ;
+
+optional_show_attr_list ::= /* empty */ 
+        {: RESULT = new HashSet(); :}
+        | show_attr_list:l 
+        {: RESULT = l; :}
+    ;
+
+show_attr ::= /* empty */
+        {: RESULT = null; :}
+    |   LCBR optional_show_attr_list:attr RCBR
+        {: RESULT = attr; :}
+    ;
+
+optional_params ::= /* empty */
+        {: RESULT = new ArrayList(); :}
+        | LBR id_list:params RBR 
+        {: RESULT = params; :}
+    ;
+
+core_pred_def   ::= PRED ID:p optional_params:params LP optional_id_list:args RP optional_dependency:od
+            show_attr:attr
+         {:  
+            od.setArity(args.size());
+            RESULT = new CorePredicateAST(p, params, args, args.size(), od, attr);
+         :}
+        ;
+
+instrum_pred_def ::=    INS_PRED ID:p optional_params:params LP optional_id_list:args RP 
+                ASSIGN formula:f optional_dependency:od show_attr:attr
+             {: 
+                od.setArity(args.size());
+                RESULT = new InstrumPredicateAST(p, params, 
+                                 VarAST.asVariables(args), 
+                                 f, od, attr);
+             :}
+        ;
+
+cons_rule   ::= CONSISTENCY_RULE formula:body IMPLIES_T formula:head
+                  {: RESULT = new ConstraintAST(body, head); :}
+        ;
+
+predicate    ::=   ID:id optional_params:params
+                  {: RESULT = PredicateAST.getPredicateAST(id, params); :}
+          ;
+
+optional_dependency ::= /* empty */
+			{:
+				RESULT = new PredicatePropertiesAST();
+			:}
+		| optional_dependency:od ID:id
+			{: 
+				RESULT = od;
+				RESULT.addProperty(id); 
+			:}
+        | optional_dependency:od LBR optional_id_list:lhs RBR ARROW ID:rhs
+			{: 
+				RESULT = od;
+				RESULT.addFunctionalDependency(lhs,rhs);
+			:}
+		 ;
+
+title           ::=  /* empty */
+                {: RESULT = new MessageStringAST(""); :}
+    |   TITLE message:str 
+                {: RESULT = str; :}
+    ;
+    
+halting         ::= /* empty */ 
+                {: RESULT = null; :}
+                | AHALT
+                {: RESULT = new ValueFormulaAST(Kleene.trueKleene); :}
+                | AHALT formula:f
+                {: RESULT = f; :} 
+    ;
+    
+/********************************************/
+/******************* Focus ******************/
+/********************************************/
+
+focus   ::= /* empty */
+                {: RESULT = new ArrayList(); :}
+    |   FOCUS LCBR focus_formulae:f RCBR
+                {: RESULT = f; :}
+    ;
+
+focus_formulae  ::= formula:f
+                        {: RESULT = new ArrayList(); RESULT.add(f); :}
+        |   focus_formulae:prev COMMA formula:f
+                        {: RESULT = prev; RESULT.add(f); :}
+        ;
+
+/********************************************/
+/************** Update formulae *************/
+/********************************************/
+
+optional_update   ::=  /* empty */
+                  {:RESULT = new ArrayList(); :}
+                  | LCBR asgns:a RCBR 
+                  {: RESULT = a; :}
+                  | LCBR RCBR 
+                  {:RESULT = new ArrayList(); :}
+                  ; 
+
+asgn_foreach ::= FOREACH LP ID:id in set_expr:e RP LCBR asgns:a RCBR
+                {: RESULT = new ForeachAST(id, e, a); :} 
+    ;
+
+asgns   ::= asgn:a
+                {: RESULT = new ArrayList(); RESULT.add(a); :}
+    |   asgn_foreach:a
+                {: RESULT = new ArrayList(); RESULT.add(a); :}
+    |   asgns:prev asgn:a
+                {: RESULT = prev; RESULT.add(a); :}
+    |   asgns:prev asgn_foreach:a
+                {: RESULT = prev; RESULT.add(a); :}
+    |   error
+                {: parser.report_error("Illegal assignment ",null); :}
+    ;
+
+
+asgn    ::= predicate:p LP optional_id_list:args RP ASSIGN formula:f
+                {: RESULT = new UpdateAST(p, f, VarAST.asVariables(args)); :}
+        /* @since 12.7.2001 
+         * Alex & Mooly added optional parenthesis around predicates to handle
+         * code generated by the macro pre-processor
+         */
+	|  	LP   predicate:p LP optional_id_list:args RP  RP ASSIGN formula:f
+                {: RESULT = new UpdateAST(p, f, VarAST.asVariables(args)); :} 
+    ;
+
+/***********************************************************/
+/************************ Macros ***************************/
+/***********************************************************/
+
+macros ::= /* empty */
+                {: RESULT = new MacroSectionAST(); :}
+        |   macros:list macro:single
+                {: RESULT = list; RESULT.addMacro(single); :}
+    ;
+
+macro ::=       ACTION ID:name LP optional_id_list:args RP LCBR action_def:def RCBR
+                {: RESULT = new ActionMacroAST(name, args, def); :}
+    ;
+
+/*******************************************************/
+/************** Actions and Conditions ************/
+/*******************************************************/
+
+new ::= /* empty */
+    {: RESULT = null; :}
+    |   NEW formula:f
+    {: RESULT = f; :}
+    |   NEW 
+    {: RESULT = new ValueFormulaAST(Kleene.trueKleene); :}
+    ;
+    
+clone ::= /* empty */
+    {: RESULT = null; :}
+    |   CLONE formula:f
+    {: RESULT = f; :}
+    |   CLONE 
+    {: RESULT = new ValueFormulaAST(Kleene.trueKleene); :}
+    ;
+    
+tnew ::= /* empty */
+    {: RESULT = null; :}
+    |   TNEW ID:id
+    {: RESULT = new ThreadUseAST(id); :}
+    ;    
+
+tstart ::= /* empty */
+    {: RESULT = null; :}
+    |   TSTART formula:f
+    {: RESULT = f; :}
+    ;
+
+tstop ::= /* empty */
+    {: RESULT = null; :}
+    |   TSTOP formula:f
+    {: RESULT = f; :}
+    ;
+
+twait ::= /* empty */
+    {: RESULT = null; :}
+    |   TWAIT formula:f
+    {: RESULT = f; :}
+    ;
+
+
+retain ::= /* empty */
+    {: RESULT = null; :}
+    |   RETAIN formula:f
+    {: RESULT = f; :}
+    ;
+    
+explicitatupd ::= /* empty */
+    {: RESULT = Boolean.FALSE; :}
+    |   EXPLICITAT 
+    {: RESULT = Boolean.TRUE; :}
+    ;    
+
+/***********************************/
+/************** Actions ************/
+/***********************************/
+
+precond ::= /* empty */
+    {: RESULT = null; :}
+    |   PRED formula:f
+    {: RESULT = f; :}
+    ;
+
+cfg_node        ::=	ID:id
+                {: RESULT = id; :}
+	|			STRING:label
+				{: RESULT = label; :}
+	;
+
+code_part   ::=  thread_def:first
+        {: RESULT = new ProgramAST(); RESULT.addThread(first); :}
+    |   method_def:first
+        {: RESULT = new ProgramAST(); RESULT.addMethod(first); :}    	
+    |   code_part:prev  thread_def:current        
+        {: RESULT = prev; RESULT.addThread(current); :}
+    |	code_part:prev  method_def:current        
+        {: RESULT = prev; RESULT.addMethod(current); :} 
+    ;
+
+thread_def  ::= THREAD ID:id LCBR body_code:actions RCBR
+        {: RESULT = new ThreadDefAST(id,actions); :}
+        ;
+        
+method_def  ::= METHOD ID:id LCBR body_code:actions RCBR
+        {: RESULT = new MethodDefAST(id,actions); :}
+        ;
+
+body_code ::=  action_use:first 
+        {: RESULT = new ArrayList(); RESULT.add(first); :}
+    |   atomic_block:first
+        {: RESULT = new ArrayList(); RESULT.addAll(first.getActions()); :}
+    |   body_code:prev action_use:current
+        {:  RESULT = prev; RESULT.add(current); :}
+    |   body_code:prev atomic_block:current 
+        {:  RESULT = prev; RESULT.addAll(current.getActions()); :}
+    ;
+
+action_def      ::= title:t focus:f precond:p report_messages:m 
+                    new:n clone:c tstart:s twait:w tstop:st tnew:tn halting:h explicitatupd:e
+                    optional_update:u retain:r
+                    report_messages:pm
+                {: RESULT = new ActionDefAST(t, f, p, m, n, c, u, r, pm, s, w, st, tn, h, e); :}
+        ;
+
+atomic_block ::= ATOMIC LCBR action_list:list RCBR
+        {: RESULT = new AtomicBlockAST(list); :}
+        ;
+
+action_list ::= action_use:first 
+        {: RESULT = new ArrayList(); RESULT.add(first); :}
+    |   action_list:prev action_use:current
+        {:  RESULT = prev; RESULT.add(current); :}
+    ;
+
+action_use  ::=  cfg_node:label ID:mac LP optional_id_list:args RP cfg_node:next 
+                {: RESULT = new ActionAST(label, ActionMacroAST.get(mac).expand(args), next);
+        :}
+    | cfg_node:label ASSERT LP formula:f RP cfg_node:next
+                {: RESULT = new AssertionAST(label,f,false,next); :}
+    | cfg_node:label HARDASSERT LP formula:f RP cfg_node:next
+                {: RESULT = new AssertionAST(label,f,true,next); :}
+    ;
+
+/************************************************/
+/******************* Properties******************/
+/************************************************/
+
+property_list   ::= global_action:first
+        {: RESULT = new ArrayList(); RESULT.add(first); :}
+    |   property_list:prev global_action:current        
+        {: RESULT = prev; RESULT.add(current); :}
+    ;
+     
+global_action   ::= ID:mac LP optional_id_list:args RP
+        {: RESULT = new GlobalActionAST(ActionMacroAST.get(mac).expand(args)); :}
+    ;
+
+/*******************************************************/
+/******************* Output Modifiers ******************/
+/*******************************************************/
+
+
+output_modifiers   ::= output_modifier:first
+        {: RESULT = new OutputModifierSectionAST(); RESULT.add(first); :}
+    |   output_modifiers:prev output_modifier:current        
+        {: RESULT = prev; RESULT.add(current); :}
+    ;
+
+output_modifier   ::=  OINCLUDE formula:f
+        {: RESULT = new OutputModifierAST(f,true); :}
+        | OEXCLUDE formula:f
+        {: RESULT = new OutputModifierAST(f,false); :}
+    ;
+
+/************************************************/
+/******************* Messagses ******************/
+/************************************************/
+
+
+report_messages ::= /* empty */
+                    {:RESULT = new ArrayList(); :}
+                    |  report_messages:prev report_message:mess
+                    {:RESULT = prev; RESULT.add(mess); :}
+        ;
+
+report_message  ::= MESSAGE  formula:f IMPLIES message:m
+                    {:RESULT = new ReportMessageAST(f, m); :}
+        ;
+
+/********************************************/
+/************** Combine operator ************/
+/********************************************/
+binary_op ::=   OR
+    {: RESULT = "OrFormula"; :}
+    |   AND
+    {: RESULT = "AndFormula"; :}
+    ;
+combine ::= binary_op:op COMBINE LCBR formula:f COLON ID:id in 
+        set_expr:e RCBR
+    {: RESULT = new CombineAST(op, f, id, e); :}
+    ;
+
+/********************************************/
+/************** Logical formulae ************/
+/********************************************/
+formula ::= FORALL LP optional_id_list:list RP  formula:f
+                {: RESULT = new QuantFormulaAST(VarAST.asVariables(list), f, "AllQuantFormula"); :}
+        |   EXISTS LP optional_id_list:list RP  formula:f
+                {: RESULT = new QuantFormulaAST(VarAST.asVariables(list), f, "ExistQuantFormula"); :}
+    |   combine:comb
+        {: RESULT = comb; :}
+        |   TC LP var:l COMMA var:r RP LP var:sl COMMA var:sr RP formula:f 
+                {: RESULT = new TCFormulaAST(l, r, sl, sr, f); :}
+        |   formula:f1 AND formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "AndFormula"); :}
+        |   formula:f1 OR formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "OrFormula"); :}
+        |   formula:f1 IMPLIES formula:f2
+                {: RESULT = new CompositeFormulaAST(f2, new CompositeFormulaAST(f1), "OrFormula"); :}
+    |   formula:f1 IFF formula:f2
+                {: RESULT = new CompositeFormulaAST(f1, f2, "EquivalenceFormula"); :}
+    |   NOT formula:f
+                {: RESULT = new CompositeFormulaAST(f); :}
+        |   LP formula:fc QMARK formula:ft COLON formula:ff RP /* if-then-else */
+                {: RESULT = new IfFormulaAST(fc, ft, ff); :}
+    |   LP formula:f RP
+                {: RESULT = f; :}
+    |   var:l EQ var:r
+                {: RESULT  = new EqualityAST(l, r); :}
+    |   var:l NEQ var:r
+                {: RESULT  = new CompositeFormulaAST(new EqualityAST(l, r)); :}
+    |   predicate:p LP optional_id_list:args RP
+                {: RESULT = new PredicateFormulaAST(p, VarAST.asVariables(args)); :}
+    |   predicate:p STAR LP var:l COMMA var:r RP 
+                {: Var v1 = new Var("__v1"); 
+           Var v2 = new Var("__v2"); 
+           RESULT = new CompositeFormulaAST(new EqualityAST(l, r),
+                           new TCFormulaAST(l, r, v1, v2, 
+                                 new PredicateFormulaAST(p, v1, v2)),
+                           "OrFormula");
+        :}
+    |   predicate:p PLUS LP var:l COMMA var:r RP 
+                {: Var v1 = new Var("__v1"); 
+           Var v2 = new Var("__v2"); 
+           RESULT = new TCFormulaAST(l, r, v1, v2, 
+                         new PredicateFormulaAST(p, v1, v2));
+        :}
+    |   kleene:k
+                {: RESULT = new ValueFormulaAST(k); :}
+        ;
+       
+
+
+/*************************************************/
+id_list ::= ID:id
+        {:  RESULT = new ArrayList(); RESULT.add(id); :}
+        |   id_list:list COMMA ID:id
+        {:  RESULT = list; RESULT.add(id); :}
+        ;
+optional_id_list    ::= /* empty */
+        {: RESULT = new ArrayList(); :}
+        |   id_list:list
+        {: RESULT = list; :}
+    ;

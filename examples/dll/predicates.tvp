@@ -1,0 +1,57 @@
+//////////////////
+// Core Predicates
+
+// For every program variable z there is a unary predicate that holds for
+// list elements pointed by z.
+// The unique property is used to convey the fact that the predicate can hold
+// for at most one individual (as a pointer can point to at most one element).
+// The pointer property is a visualization hint for graphical renderers.
+foreach (z in PVar) {
+  %p z(v_1) unique pointer
+}
+
+// For every field there is a corresponding binary predicate.
+// The function property is used to convey the fact that the predicate is a
+// partial function over the individuals (as a field pointer can point to at
+// most one element).
+foreach (sel in DSel) {
+  %p sel(v_1, v_2) function acyclic
+}
+
+/////////////////////////////
+// Instrumentation Predicates
+
+// The is[n] predicate holds for list elements pointed by the same fiedl
+// from two different list elements.
+foreach (sel in DSel) {
+  %i is[sel](v) = E(v_1, v_2) ( v_1 != v_2 & sel(v_1, v) & sel(v_2, v))
+}
+
+// The c[sel1,sel2] predicate holds for list elements for which the
+// fields sel1 and sel2 ``cancell'' each other, i.e., v->sel1->sel2==v.
+foreach (sel in DSel) {
+  foreach (other in DSel-{sel}) {
+    %i c[sel, other](v) = A(v_1) (sel(v, v_1) -> other(v_1, v))
+  }
+}
+
+// The t[n] predicate records transitive reflexive reachability between
+// list elements along each field.
+foreach (sel in DSel) {
+    %i t[sel](v_1, v_2) = sel*(v_1, v_2) transitive reflexive
+
+    // The r[sel,z] predicate records transitive reflexive reachability
+    // from program variable z along field sel.
+    foreach (z in PVar) {
+        %i r[sel,z](v) =  E(v_1) (z(v_1) & t[sel](v_1, v))
+    }
+}
+
+///////////////////////////////////////////////////////////////
+// Additional integrity constraints for transitive reachability
+
+foreach (sel in DSel) {
+    %r !t[sel](v_1, v_2) ==> !sel(v_1, v_2)
+    %r !t[sel](v_1, v_2) ==> v_1 != v_2
+    %r E(v_1) (t[sel](v_1, v_2) & t[sel](v_1, v_3) & !t[sel](v_2, v_3)) ==> t[sel](v_3, v_2)
+}

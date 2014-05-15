@@ -1,0 +1,46 @@
+/*****
+* set.tvs
+* Initial structure for set implementation.
+* The list has two dummy node: Head with value -inf 
+*****/
+
+//All local variables initially null.
+//Both locks initially unacquired.
+
+//empty set
+%n = { t1, t2, uh, ut, other }
+%p = {
+
+    ready = {t1, t2}
+    isthread = {t1, t2, other}
+
+    tr_scheduled = {t1:1/2, t2:1/2, other:1/2} 
+    at[l_dispatch] = {t1, t2, other:1/2}
+    at[l_0] = {other:1/2} 
+    at[l_2] = {other:1/2} 
+    at[l_3] = {other:1/2} 
+    at[l_8] = {other:1/2} 
+    at[ld_2a] = {other:1/2} 
+    at[ld_3a] = {other:1/2} 
+    choice[insert] = {other:1/2}
+    choice[delete] = {other:1/2}
+    choice[find] = {other:1/2}
+
+    t1 = {t1}
+    t2 = {t2}
+
+    r_by[Head] = {uh}
+    r_by[Tail] = {ut}
+
+    rt[Head] = {uh, ut}
+    rt[Tail] = {uh, ut}
+
+    rv[n] = {uh -> ut}
+
+    dle = {uh->uh, uh->ut, ut->ut, other->other:1/2, t1->t1, t2->t2}
+
+    inSOrder[dle,n] = {uh,ut}
+
+    bn[n] = {uh->uh, ut->ut, uh->ut, t1->t1 , t2->t2, other->other:1/2}
+}
+

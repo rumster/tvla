@@ -1,0 +1,11 @@
+// Tree with root "root"
+%n = {u, us}
+%p = {
+	sm = {us:1/2}
+	root = {u}
+	left = {u->us:1/2, us->us:1/2}
+	right = {u->us:1/2, us->us:1/2}
+	down = {u->us:1/2,us->us:1/2}
+	downStar = {u->u, u->us, us->us:1/2}
+        r[root] = {u,us}
+}

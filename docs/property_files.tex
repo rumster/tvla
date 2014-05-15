@@ -1,0 +1,49 @@
+\section{Property files}
+\label{Se:PropertyFiles}
+
+A mechanism alternative to command-line options is available by
+the means of property files. Property files consist of key-value
+pairs using the syntax key=value. (More information about the
+syntax of property files is available from the JDK documentation
+of the java.util.Properties
+class\footnote{\url{http://java.sun.com/j2se/1.4.2/docs/api/java/util/Properties.html}}.)
+Each command-line option has a corresponding property.
+
+There are several ways to pass properties to TVLA:
+\begin{enumerate}
+\item When TVLA is activated a tvla.properties file, which is
+located at the installation directory is loaded. This file
+contains all available properties and also includes documentation
+for each.
+
+\item Though it is possible to edit the tvla.properties file, it
+is not recommended, because later TVLA versions may update this
+file and also because this global change will affect every run of
+TVLA.
+%
+If global changes are intended, add the properties that should be
+change to the user.properties file, which is also located at the
+installation directory. The properties in this file override the
+ones in the tvla.properties file.
+
+\item By creating a file with the same name as the program file
+and the .properties extension (for example merge.properties for
+merge.tvp) the properties in this file will load when this program
+is used and override the ones passed by the previous methods.
+
+\item By specifying a properties file name with the -props
+command-line option. The properties in this file will override all
+properties specified with the previous methods.
+
+%\item By passing properties from the Java invocation line of TVLA.
+%These properties will be overridden by properties specified by all
+%other methods.
+
+\item Finally, command-line options change their corresponding
+properties and override properties specified by all other methods.
+\end{enumerate}
+
+Although all command-line options have corresponding properties,
+there are other properties which do not correspond to command-line
+options.  These are used to control TVLA behaviors which are less
+common and also to test features as they are being developed.

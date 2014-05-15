@@ -1,0 +1,29 @@
+/*****
+* nbq.tvs
+* Initial structure for nonblocking queue implementation.
+* head always points to dummy node.
+*****/
+
+//All local variables initially null
+
+%n = {t1, t2, uh, alien}
+
+%p = {
+    ready = {t1, t2}
+    isthread = {t1, t2, alien}
+    at[l_dispatch] = {t1, t2}
+
+    t1 = {t1}
+    t2 = {t2}
+
+    r_by[Tail] = {uh}
+
+
+    r_by[Head] = {uh}
+
+
+    rt[Head] = {uh}
+    rt[Tail] = {uh}
+
+    tc[n] = { t1->t1, t2->t2, alien->alien, uh->uh }
+}

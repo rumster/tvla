@@ -1,0 +1,61 @@
+// dequeue.tvm
+// $Id: dequeue.tvm 1848 2007-11-01 14:15:07Z rumster $
+// a file to be included into a driver-TVM
+
+//dequeue(Q: pointer to queue t, pvalue: pointer to data type): boolean
+%thread consumer {
+//D1: loop // Keep trying until Dequeue is done
+//D2: head = Q-->Head // Read Head
+atomic {
+    d2 assignNull(head) d2a
+    d2a assignFromField(head,this,Head) d3
+}   
+//D3: tail = Q-->Tail // Read Tail
+atomic {
+    d3 assignNull(tail) d3a
+    d3a assignFromField(tail,this,Tail) d4
+}
+//D4: next = head-->next // Read Head.ptr-->next
+atomic {
+    d4 assignNull(next) d4a
+    d4a assignFromField(next,head,n) d5
+}
+//D5: if head == Q-->Head // Are head, tail, and next consistent?
+d5 isFieldEqual(head,this,Head) d6
+d5 isFieldNotEqual(head,this,Head) d18
+//D6: if head.ptr == tail.ptr // Is queue empty or Tail falling behind?
+d6 isFieldPtrEqual(head,tail) d7
+d6 isFieldPtrNotEqual(head,tail) d12
+//D7: if next.ptr == NULL // Is queue empty?
+d7 isFieldNull(next) d21 
+d7 isFieldNotNull(next) d10
+//D8: return FALSE // Queue is empty, couldn't dequeue
+//D9: endif
+//D10: CAS(&Q-->Tail, tail, <next.ptr, tail.count+1>) // Tail is falling behind. Try to advance it
+atomic {
+    d10 assignNull(newCount) d10a
+    d10a  getFieldSuccessor(newCount,next) d10b
+    d10b succesfullCAS(this,Tail,tail,next,newCount) d18
+    d10b failedCAS(this,Tail,tail,next,newCount) d18
+}
+//D11: else // No need to deal with Tail
+//// Read value before CAS, otherwise another dequeue might free the next node
+//D12: *pvalue = next.ptr-->value
+d12 skip() d13
+//D13: if CAS(&Q-->Head, head, <next.ptr, head.count+1>) // Try to swing Head to the next node
+atomic {
+    d13 assignNull(newCount) d13a
+    d13a  getFieldSuccessor(newCount,next) d13b
+    d13b succesfullCAS(this,Head,head,next,newCount) d19
+    d13b failedCAS(this,Head,head,next,newCount) d18
+}
+//D14: break // Dequeue is done. Exit loop
+//D15: endif
+//D16: endif
+//D17: endif
+//D18: endloop
+d18 skip() d1
+//D19: free(head.ptr) // It is safe now to free the old dummy node
+d19 freeNode(head) d20
+//D20: return TRUE // Queue was not empty, dequeue succeeded
+}

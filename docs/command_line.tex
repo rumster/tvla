@@ -1,0 +1,194 @@
+\section{\label{Se:Command}Command line options}
+\small
+\begin{alltt}
+Usage: tvla <program name> [input file] [options] Options:
+ -d                      Turns on debug mode.
+ -action [f][c]pu[c]b    Determines the order of operations computed
+                         by an action. The default is fpucb.
+                         f - Focus,  c - Coerce, p - Precondition.
+                         u - Update, b - Blur.
+ -join [algorithm]       Determines the type of join method to apply.
+                         rel  - Relational join.
+                         part - Partial join.
+                         conc - No abstraction (i.e., blurring) is applied.
+ -ms <number>            Limits the number of structures.
+ -mm <number>            Limits the number of messages (default=0).
+ -save {back|ext|all}    Determines which locations store structures.
+                         back - at every back edge (the default).
+                         ext  - at every beginning of an extended block.
+                         all  - at every program location.
+ -noautomatic            Supresses generation of automatic constraints.
+ -props <file name>      Can be used to specify a properties file.
+ -log <file name>        Creates a log file of the execution.
+ -tvs <file name>        Creates a TVS formatted output.
+ -dot <file name>        Creates a DOT formatted output.
+ -tr:tvs <file name>     Creates a transition relation output in tvs-like format.
+ -tr:dot <file name>     Creates a transition relation output in dot format.
+ -D<macro name>[(value)] Defines a C preprocessor macro.
+ -terse                  Turns off on-line information printouts.
+ -nowarnings             Causes all warnings to be ignored.
+ -path <directory path>  Can be used to specify a search path.
+ -post                   Post order evaluation of actions.
+\end{alltt}
+
+\begin{itemize}
+\item{\textbf{Analysis engine}}\\
+Three different types of engines are available : \textbf{tvla} is
+the classic chaotic iteration algorithm and the default one,
+\textbf{tvmc} is a multithreading engine that performs a
+state-space exploration using a search stack, and \textbf{ddfs} is
+a Double-DFS multithreading engine that utilizes Buchi automata.
+
+\item{\textbf{Backward Analysis}}\\
+Some analyses need to propagate information in the opposite
+direction specified for the CFG edges. To reverse the direction of
+the CFG edges use the \textbf{-backward} flag. When this option is
+chosen, the input structures are stored in the last location
+computed by the topological sorting of the program locations.
+
+\item{\textbf{Order of action evaluation}}\\
+The default order of evaluation in the iterative algorithm is
+reverse post order. However, when the analysis is very time/space
+consuming and you want to see the structures that reach the end of
+the analyzed program as soon as possible, use the \textbf{-post}
+flag to use post order and get the desired effect.
+
+\item{\textbf{Debugging}}\\
+When debugging a new analysis it is useful to see the analysis as
+it progresses and not just its final result. Use the \textbf{-d}
+flag to see the structures in the different phases of execution.
+In debug mode all the consistency rules are printed together with
+their dependencies and each time a structure is discarded because
+of an irreparable consistency rule breach, the problematic
+consistency rule, assignment and structure are shown. Notice that
+this mode generates very large PostScript files so you would
+probably want to use the \textbf{-ms} flag.
+
+\item{\textbf{Computing the effect of an action}}\\
+Sometime you want to try and run the algorithms (Coerce, Focus,
+Precondition, Update, Blur) in a different order or quantity than
+the default one (Focus, Coerce, Precondition, Update, Coerce,
+Blur). Use the \textbf{-action
+\param{seq}} flag to control the computation of the action's
+effect.  The argument is of the form [f][c]pu[c]b when: f - Focus,
+c - Coerce, p - Precondition, u - Update, b -
+Blur. % blur is now mandatory
+
+\item{\textbf{Join method}}\\
+Three join methods are available. To use the relational analysis
+approach where (bounded) structures kept up to isomorphism choose
+the \textbf{rel} option. To use the single-structure method use
+the \textbf{ind} option. In this approach all the structures in a
+CFG node that match with their nullary predicates' values are
+merged into a single structure. The option is very useful for
+analyses that would otherwise take a very long time and create
+many structures. It is worth considering the \textbf{-action
+fcpucb} specification when working in single structure mode. A
+compromise between the two approaches merges structures that
+identify on their nullary abstraction values and set of canonical
+node names, thus considering only a partial set of predicates. To
+use this option choose the \textbf{part}.  TVLA can perform
+analysis without applying abstraction (i.e., blurring) via the
+\textbf{conc} option.  This option can yield a
+non-terminating analysis and therefore the \textbf{-ms} is usually
+needed to force termination.
+
+\item{\textbf{Maximum number of structures}}\\
+A complex analysis may take a very long time and especially in
+debug time may run forever. To see a partial result, you can limit
+the number of structures generated using the \textbf{-ms
+\param{number}} flag.
+
+\item{\textbf{Maximum number of messages}}\\
+The number of messages reported by the system can be limited. This
+can be used to supply a condition that if holds the system stops
+(by limiting the number of messages to $1$).
+
+\item{\textbf{Saved locations}}\\
+The default behavior of the system is to perform a join, and save
+all the structures that reached the program location, only in
+every back edge in the control graph (approximately once in every
+loop). Saving structures at every program location is the most
+efficient in terms of the number of structures generated (use
+\textbf{-save all}). However, it is very space consuming. For a
+compromise between the two extremes use \textbf{-save ext} which
+saves structures only at the beginning of each extended block
+(i.e., at every merge point in the control graph).
+
+\item{\textbf{No automatic constraint generation}}\\
+Sometimes it is useful to supply all the constraints by hand
+without the automatically generated constraints. To do this supply
+the \textbf{-noautomatic} flag.
+
+\item{\textbf{Properties file}}\\
+A properties file name can be supplied with the \textbf{-props}
+option. The file is loaded before the analysis starts and
+overrides all other property files. For more information see
+section~\ref{Se:PropertyFiles}.
+
+\item{\textbf{Log file}}\\
+A log file name can be supplied with \textbf{-log} option. In this
+case the majority of the information written to the console is
+redirected to the log file.
+
+\item{\textbf{TVS output file}}\\
+A TVS output file name can be supplied with the \textbf{-tvs}
+option. In this case the output of the analysis in TVS format is
+directed to the file.
+
+\item{\textbf{DOT output file}}\\
+A DOT output file name can be supplied with the \textbf{-dot}
+option. In this case the output of the analysis in DOT format is
+directed to the file. The activation scripts for TVLA use this
+option to create an output file for DOT by adding the `.dt'
+extension to the program name. This option can be used to specify
+a different file name for DOT, but the Postscript output should
+then be created manually (the dotps script, supplied with TVLA,
+can be used for this).
+
+% This option is no longer supported
+%\item{\textbf{Dumping intermediate results}}\\
+%Some of the analyses can take a very long time. To see
+%intermediate results the \textbf{-dump} flag can be used. The
+%number supplied is the number of structures generated between
+%each dump of the current set of structures per program location.
+
+\item{\textbf{On-line information}}\\
+TVLA reports information as the analysis progresses to the
+standard output. To avoid seeing this information use the
+\textbf{-terse} flag.
+
+\item{\textbf{Preprocessor macros}}\\
+Preprocessor macros can be passed to the parsers by using the\\
+\textbf{-D$<$macro$>$(value)} option. This has the same effect
+as\\
+\verb"#define symbol value". For example, specifying -DCONCRETE
+defines the CONCRETE symbol, and -DLEVEL(1) sets the value 1 to
+the symbol LEVEL.
+
+\item{\textbf{Search path}}\\
+The option \textbf{-path} can be used to add directories to the
+search path.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Moved to property files %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \item{\textbf{Blur}}\\
+% Two rules are implemented when determining which node
+% should remain distinguished in the blur.  The default is two nodes must be
+% different in the value of at least one abstraction predicate.  The second is two
+% nodes must be different in a \emph{definite} value of at least one abstraction
+% predicate.  Use the \textbf{-b2} flag to use the second rule.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%% -significant is no longer supported %%%%%%%%%%%%%%%%%%%%%%%%%
+%\item{\textbf{Node names}}\\
+%It may be useful to track the nodes themselves
+%from the original structures and during the different actions. Use the
+%\textbf{-significant} to try and keep the names of the nodes significant. A
+%materialization creates two nodes \param{node}.0 and \param{node}.1 according to
+%the focused value of the predicate in question.  A blur that causes merging of
+%nodes names the new nodes [\param{node},\ldots,\param{node}].  However, the
+%nodes allocated by the new operation new node names in the
+%form m\param{number}. In complex analyses using significant names may create
+%very large names that create unreadable graphs.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{itemize}

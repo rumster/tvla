@@ -1,0 +1,23 @@
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+
+\%i i\_1() = E(v) isthread(v) \\
+\%i i\_2() = E(v) E(l) isthread(v) \& blocked(v,l) \\
+\%\% \\
+\%b\=uchi example \{ \+ \\
+    ->(b1) \\
+    (b1) i\_1 b2 \\
+    b2 i\_2 b3 \\
+    b3 i\_1 b4 \\
+    b4 i\_2 b5 \\
+    b5 i\_1 (b1) \- \\
+    \} \\
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:bucFile}BUC file defining a Buchi automata.}
+\end{figure}

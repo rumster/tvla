@@ -1,0 +1,65 @@
+///////
+// Sets
+
+%s semaphores {mutex, w}
+//%s counters {readcount, crit}
+%s counters {readcount}
+
+#include "predicates.tvm"
+
+%%
+
+#include "actions.tvm"
+
+%action verifyProperty() {
+    //%p !property_occured()
+    // There are no readers doing reading while a writer is writing
+    %message (E(t1,t2) reader(t1) & writer(t2) & (at[rl_6](t1) | at[rl_7](t1)) & at[wl_2](t2)) -> "possible datarace detected"
+    %message (E(t) writer(t) & (at[wl_2](t) | at[wl_3](t)) & t!=t) -> "There is possible more than one writer writing"
+}
+
+%%
+
+//////////
+// Threads
+
+%thread reader {
+    rl_1  P_fail(mutex) rl_1
+    rl_1  P_success(mutex) rl_2
+    rl_2  increment(readcount) rl_3
+    rl_3  if_equal(readcount,num1) rl_4
+    rl_3  if_not_equal(readcount,num1) rl_6
+    rl_4  P_fail(w) rl_4
+    rl_4  P_success(w) rl_6
+//atomic{
+    rl_6  V(mutex) rl_7
+//    rl_7_1 increment(crit) rl_7
+//}
+    rl_7  read() rl_8
+
+    rl_8  P_fail(mutex) rl_8
+//atomic{
+    rl_8  P_success(mutex) rl_9
+//    rl_8_1 decrement(crit) rl_9
+//}
+    rl_9  decrement(readcount) rl_11
+    rl_11 if_equal(readcount,num0) rl_12
+    rl_11 if_not_equal(readcount,num0) rl_13
+    rl_12 V(w) rl_13
+    rl_13 V(mutex) rl_1
+}
+
+
+%thread writer {
+    wl_1  P_fail(w) wl_1
+    wl_1  P_success(w) wl_2
+    wl_2  write() wl_3
+    wl_3  V(w) wl_1
+}
+
+%%
+
+/////////
+// Claims
+
+verifyProperty()

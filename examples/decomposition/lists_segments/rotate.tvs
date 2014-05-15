@@ -1,0 +1,32 @@
+// An acyclic singly-linked list with two or more elements where variable x
+// points to the first element and variable last points to the last element.
+%n = {first, middle, last}
+%p = {
+       sm = {middle:1/2}
+       n = {middle->middle:1/2, first->middle:1/2, middle->last:1/2}
+       x = {first}
+       last = {last}
+       r[n,x] = {middle, first, last}
+       r[n,last] = {last}
+}
+
+// An acyclic singly-linked list with exactly two elements where variable x
+// points to the first element and variable last points to the second element.
+%n = {first, last}
+%p = {
+       n = {first->last}
+       x = {first}
+       last = {last}
+       r[n,x] = {first, last}
+       r[n,last] = {last}
+}
+
+// An acyclic singly-linked list with a single element pointed by variables x
+// and last.
+%n = {first}
+%p = {
+       x = {first}
+       r[n,x] = {first}
+       last = {first}
+       r[n,last] = {first}
+}

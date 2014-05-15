@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+  =======================================================================
+    TVLA build file                                                      
+  ======================================================================= 
+-->
+<project name="TVLA" default="build" basedir=".">
+	<!-- Software version details -->
+	<property name="name" value="tvla"/>
+	<property name="Name" value="TVLA"/>
+	<property name="version" value="3"/>
+
+	<!-- Compilation switches -->
+	<property name="debug" value="true"/>
+	<property name="deprecation" value="false"/>
+	<property name="optimize" value="true"/>
+
+	<!-- Set global properties for this build -->
+	<property name="src" value="src"/>
+	<property name="src.tests" value="tests"/>
+	<property name="build" value="build"/>
+	<property name="build.tests" value="build/tests"/>
+	<property name="build.javadocs" value="${build}/javadocs"/>
+	<property name="dist" value="dist"/>
+	<property name="dist.tvla" value="dist/tvla"/>
+	<property name="etc" value="etc"/>
+	<property name="docs" value="docs"/>
+	<property name="lib" value="lib"/>
+
+	<!--
+       ===================================================================
+         Sets up internal values
+       ===================================================================
+  -->
+	<target name="init" description="-> sets up internal values">
+		<!-- Create a time stamp -->
+		<tstamp>
+			<format property="year" pattern="yyyy" />
+		</tstamp>
+		<filterset id="tvla.filters">
+			<filter token="VERSION" value="${Name} version ${version}" />
+			<filter token="DATE" value="${TODAY}" />
+			<filter token="TIME" value="${TSTAMP}" />
+		</filterset>
+
+		<!-- Create the build directory structure used by compile -->
+		<mkdir dir="${build}"/>
+		<mkdir dir="${build}/output"/> <!-- Create output dir for cruise control -->
+		<mkdir dir="${build.tests}"/>
+		<property environment="env"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Generates parser and scanner sources for all languages
+       ===================================================================
+  -->
+	<target name="parsers" depends="tvs, tvp, tvm, buc" description="-> generates parser and scanner sources for all languages">
+	</target>
+
+	<!--
+       ===================================================================
+         Generates the TVS parser and scanner sources
+       ===================================================================
+  -->
+	<target name="tvs" depends="init" description="-> generates the TVS parser and scanner sources">
+		<property name="tvs" value="src/tvla/language/TVS"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${tvs}/TVS.lex"/>
+		</java>
+		<move file="${tvs}/TVS.lex.java" tofile="${tvs}/TVSLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="TVSParser"/>
+			<arg value="${tvs}/TVS.cup"/>
+		</java>
+		<move file="TVSParser.java" tofile="${tvs}/TVSParser.java"/>
+		<move file="sym.java" tofile="${tvs}/sym.java"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Generates the TVP parser and scanner sources
+       ===================================================================
+  -->
+	<target name="tvp" depends="init" description="-> generates the TVP parser and scanner sources">
+		<property name="tvp" value="src/tvla/language/TVP"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${tvp}/TVP.lex"/>
+		</java>
+		<move file="${tvp}/TVP.lex.java" tofile="${tvp}/TVPLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="TVPParser"/>
+			<arg value="${tvp}/TVP.cup"/>
+		</java>
+		<move file="TVPParser.java" tofile="${tvp}/TVPParser.java"/>
+		<move file="sym.java" tofile="${tvp}/sym.java"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Generates the PTS parser and scanner sources
+       ===================================================================
+  -->
+	<target name="pts" depends="init" description="-> generates the PTS parser and scanner sources">
+		<property name="pts" value="src/tvla/language/PTS"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${pts}/PTS.lex"/>
+		</java>
+		<move file="${pts}/PTS.lex.java" tofile="${pts}/PTSLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="PTSParser"/>
+			<arg value="${pts}/PTS.cup"/>
+		</java>
+		<move file="PTSParser.java" tofile="${pts}/PTSParser.java"/>
+		<move file="sym.java" tofile="${pts}/sym.java"/>
+	</target>
+
+	
+	<!--
+       ===================================================================
+         Generates the TVM parser and scanner sources
+       ===================================================================
+  -->
+	<target name="tvm" depends="init" description="-> generates the TVM parser and scanner sources">
+		<property name="tvm" value="src/tvla/language/TVM"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${tvm}/TVM.lex"/>
+		</java>
+		<move file="${tvm}/TVM.lex.java" tofile="${tvm}/TVMLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="TVMParser"/>
+			<arg value="${tvm}/TVM.cup"/>
+		</java>
+		<move file="TVMParser.java" tofile="${tvm}/TVMParser.java"/>
+		<move file="sym.java" tofile="${tvm}/sym.java"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Generates the BUC parser and scanner sources
+       ===================================================================
+  -->
+	<target name="buc" depends="init" description="-> generates the BUC parser and scanner sources">
+		<property name="buc" value="src/tvla/language/BUC"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${buc}/BUC.lex"/>
+		</java>
+		<move file="${buc}/BUC.lex.java" tofile="${buc}/BUCLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="BUCParser"/>
+			<arg value="${buc}/BUC.cup"/>
+		</java>
+		<move file="BUCParser.java" tofile="${buc}/BUCParser.java"/>
+		<move file="sym.java" tofile="${buc}/sym.java"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Generates the formula parser and scanner sources
+       ===================================================================
+  -->
+	<target name="formula" depends="init" description="-> generates the formula parser and scanner sources">
+		<property name="formula" value="src/tvla/formulae"/>
+
+		<java classpath="${lib}/JLex.jar" classname="JLex.Main">
+			<arg value="${formula}/formula.lex"/>
+		</java>
+		<move file="${formula}/formula.lex.java" tofile="${formula}/FormulaLex.java"/>
+
+		<java classpath="${lib}/java_cup.jar" classname="java_cup.Main" >
+			<arg value="-parser"/>
+			<arg value="FormulaParser"/>
+			<arg value="${formula}/formula.cup"/>
+		</java>
+		<move file="FormulaParser.java" tofile="${formula}/FormulaParser.java"/>
+		<move file="sym.java" tofile="${formula}/sym.java"/>
+	</target>
+
+	<!--
+       ===================================================================
+         Compiles the sources
+       ===================================================================
+  -->
+	<target name="classes" depends="init" description="-> compiles the source code to create the tree of classes">
+		<!-- Compile the java code from ${src} into ${build} -->
+		<echo message="Compiling TVLA sources..."/>
+		<javac srcdir="${src}"
+	           destdir="${build}"
+	           source="1.5"
+			   target="1.5"
+	           debug="${debug}"
+	           deprecation="${deprecation}"
+	           optimize="${optimize}"
+	       classpath="${lib}/cprep.jar;${lib}/java_cup.jar;${lib}/trove-2.1.0.jar"/>
+
+		<!-- Copy the MetaData files to the compilation area and apply filters -->
+		<copy todir="${build}">
+			<fileset dir="${src}">
+				<include name="**/*.properties" />
+			</fileset>
+			<filterset refid="tvla.filters"/>
+		</copy>
+	</target>
+
+
+	<!--
+       ===================================================================
+         Builds unit tests sources
+       ===================================================================
+  -->
+	<target name="buildtests" depends="init" description="-> builds unit tests sources">
+		<echo message="Compiling TVLA unit tests sources..."/>
+		<javac srcdir="${src.tests}"
+           destdir="${build.tests}"
+           source="1.5"
+           debug="${debug}"
+           deprecation="${deprecation}"
+           optimize="${optimize}"
+	   classpath="${build};${lib}/cprep.jar;${lib}/java_cup.jar;${lib}/junit.jar;${lib}/trove-2.1.0.jar"/>
+	</target>
+
+
+	<!--
+       ===================================================================
+         Cleans and the builds tvla.jar
+       ===================================================================
+  -->
+	<target name="rebuild" depends="clean, build" description="-> first cleans and the creates tvla.jar">
+	</target>
+
+	<!--
+       ===================================================================
+         Builds tvla.jar
+       ===================================================================
+  -->
+	<target name="build" depends="jar, buildtests" description="-> compiles and creates tvla.jar">
+	</target>
+
+	<!--
+       ===================================================================
+         Builds tvla.jar (build-everything target for Cruise Control)
+       ===================================================================
+  -->
+	<target name="build-everything" depends="clean, jar, buildtests" description="-> clean, compiles and creates tvla.jar">
+	</target>
+
+	<!-- 
+       =================================================================== 
+         Creates the tvla.jar
+       =================================================================== 
+  -->
+	<target name="jar" depends="classes" description="-> creates tvla.jar">
+		<!-- Create a manifest for tvla.jar -->
+		<manifest file="MANIFEST.MF">
+			<attribute name="Built-By" value="${user.name}"/>
+			<attribute name="Main-Class" value="tvla.Runner"/>
+			<attribute name="Class-Path" value="cprep.jar java_cup.jar trove-2.1.0.jar bsh.jar"/>
+			<section name="tvla">
+				<attribute name="Specification-Title" value="${Name}"/>
+				<attribute name="Specification-Version" value="${version}"/>
+				<attribute name="Implementation-Title" value="${name}"/>
+				<attribute name="Implementation-Version" value="${version} ${TODAY}"/>
+			</section>
+		</manifest>
+
+		<!-- The unit test classes are explicitly excluded. -->
+		<jar jarfile="${lib}/${name}.jar" basedir="${build}" excludes="**/${build.tests}"
+	manifest="MANIFEST.MF"/>
+		<delete file="Manifest.MF"/>
+	</target>
+
+
+	<!-- 
+       =================================================================== 
+         Creates the tvlaapi.jar
+       =================================================================== 
+  -->
+	<target name="apijar" depends="classes" description="-> creates tvlaapi.jar">
+		<!-- Create a manifest for tvla.jar -->
+		<manifest file="MANIFEST.MF">
+			<attribute name="Built-By" value="${user.name}"/>
+			<section name="tvlaapi">
+				<attribute name="Specification-Title" value="${Name}api"/>
+				<attribute name="Specification-Version" value="${version}"/>
+				<attribute name="Implementation-Title" value="${name}api"/>
+				<attribute name="Implementation-Version" value="${version} ${TODAY}"/>
+			</section>
+		</manifest>
+
+		<!-- The unit test classes are explicitly excluded. -->
+		<jar jarfile="${lib}/${name}api.jar" 
+			basedir="${build}" 
+			includes="**/tvla/api/" manifest="MANIFEST.MF"/>
+		<delete file="Manifest.MF"/>
+	</target>
+	
+	<!--
+       ===================================================================
+         Creates the complete distribution
+       ===================================================================
+  -->
+	<target name="dist" depends="clean, jar" description="-> creates the complete distribution">
+		<!-- Create the distribution directory -->
+		<mkdir dir="${dist.tvla}/lib"/>
+
+		<copy todir="${dist.tvla}/lib">
+			<fileset dir="${lib}" includes="tvla.jar, cprep.jar, java_cup.jar, trove-2.1.0.jar"/>
+		</copy>
+
+		<copy todir="${dist.tvla}/examples">
+			<fileset dir="examples"/>
+		</copy>
+
+		<copy todir="${dist.tvla}">
+			<fileset dir="${etc}"/>
+			<filterset refid="tvla.filters"/>
+		</copy>
+
+		<copy todir="${dist.tvla}" file="tvla.properties" />
+		<copy todir="${dist.tvla}" file="user.properties" />
+
+		<copy todir="${dist.tvla}/bin">
+			<fileset dir="bin"/>
+		</copy>
+
+		<mkdir dir="tmp"/>
+		<!-- A temporary dir is sometimes needed by the fixcrlf task. -->
+		<fixcrlf srcdir="bin" destDir="${dist.tvla}/bin" eol="lf" eof="remove" includes="tvla, dotps"/>
+		<delete dir="tmp"/>
+
+		<copy todir="${dist.tvla}" file="${docs}/manual.pdf"/>
+
+		<manifest file="MANIFEST.MF">
+			<attribute name="Built-By" value="${user.name} on ${TODAY}"/>
+		</manifest>
+		<jar jarfile="${name}-${version}.jar" basedir="${dist}" manifest="MANIFEST.MF"/>
+		<delete file="Manifest.MF"/>
+
+		<tar tarfile="${name}-${version}.tar" basedir="${dist}"/>
+		<gzip zipfile="${name}-${version}.tar.gz" src="${name}-${version}.tar"/>
+		<delete file="${name}-${version}.tar"/>
+	</target>
+
+
+	<!--
+       ===================================================================
+         Deletes the build and dist directory trees
+       ===================================================================
+  -->
+	<target name="clean" description="-> cleans up build and dist directories">
+		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
+		<delete file="Manifest.MF"/>
+		<delete file="${lib}/${name}.jar"/>
+		<delete file="${name}-${version}.jar"/>
+		<delete file="${name}-${version}.tar"/>
+		<delete file="${name}-${version}.tar.gz"/>
+	</target>
+
+
+	<!-- 
+       ===================================================================
+         Creates the source documentation                             
+       =================================================================== 
+  -->
+	<target name="javadocs" depends="init" description="-> creates the source documentation">
+		<mkdir dir="${build.javadocs}"/>
+		<javadoc source="1.5"
+    			packagenames="${name}.*"
+             	sourcepath="${src};${src.tests}"
+             	classpath="${lib}/cprep.jar;${lib}/java_cup.jar;${lib}/junit.jar;${lib}/trove-2.1.0.jar"
+             	overview="${src}/overview.html"
+             	destdir="${build.javadocs}"
+             	author="true"
+             	version="true"
+				Header="${Name} Reference"
+            	windowtitle="${Name} Reference"
+             	doctitle="${Name} ${version} Reference">
+		</javadoc>
+
+	</target>
+
+	<!-- 
+       ===================================================================
+         Runs checkstyle checks
+       =================================================================== 
+  -->
+	<!--  disabled for now
+  
+  <taskdef resource="checkstyletask.properties"
+           classpath="${lib}/checkstyle-all-3.4.jar"/>
+  </tastkdef>
+  <target name="checkstyle"
+          description="Generates a report of code convention violations.">
+   <checkstyle config="${lib}/sun_checks.xml">
+    <fileset dir="src/" includes="**/*.java"/>
+    <formatter type="xml" toFile="build/checkstyle_errors.xml"/>
+  </checkstyle>
+  </target>
+  -->
+
+
+	<!-- 
+       ===================================================================
+         Runs JCSC checks
+       =================================================================== 
+  -->
+
+	<!-- read the environment variables into env property -->
+	<property environment="env"/>
+
+<!--
+	<taskdef name="jcsc"  classname="rj.tools.jcsc.ant.JCSCTask">
+		<classpath>
+			<pathelement location="${lib}/JCSC.jar"/>
+			<pathelement location="${lib}/gnu-regexp.jar"/>
+		</classpath>
+	</taskdef>
+
+	<target name="jcsc">
+		<jcsc 
+        destdir="${env.CC_WORKDIR}/logs/jcsc"        
+        rules="${lib}/tvla_jcsc.xml"
+        worstcount="20" 
+        startdate="2003-01-01 00:00:00"        
+        failvalue="0.05"        
+        failseverity="5"        
+        copyassociatedfiles="true"        
+        jcschome="${env.JCSC_HOME}">
+			<fileset dir="src/" includes="**/*.java"/>
+		</jcsc>
+	</target>
+-->
+	
+	<!-- 
+       ===================================================================
+         Runs unit tests
+       =================================================================== 
+     -->
+	<target name="runtests" depends="classes, buildtests" description="-> runs unit tests">
+		<junit fork="true" printsummary="yes" haltonerror="off">
+			<!-- Enable assertions - required by certain tests. -->
+			<jvmarg value="-ea"/>
+			<classpath>
+				<pathelement path="${lib}/cprep.jar"/>
+				<pathelement path="${lib}/trove-2.1.0.jar"/>
+				<pathelement path="${lib}/java_cup.jar"/>
+				<pathelement path="${lib}/jlex.jar"/>
+				<pathelement path="${build}"/>
+				<pathelement path="${build.tests}"/>
+			</classpath>
+			<formatter type="xml"/>
+			<!-- fork=true is required to enable assertions in the tests' JVM. -->
+			<batchtest todir="${build.tests}" fork="true">
+				<fileset dir="${src.tests}">
+					<include name="**/*Test*.java"/>
+				</fileset>
+			</batchtest>
+		</junit>
+		
+		<junitreport todir="${build.tests}">
+			<fileset dir="${build.tests}">
+				<include name="TEST-*.xml"/>
+			</fileset>
+			<report format="frames" todir="${build.tests}"/>
+		</junitreport>
+		
+		<dirname property="junitreportfile" file="${build.tests}${file.separator}index.html"/>
+		<echo message="A report was written to ${junitreportfile}${file.separator}index.html"/>
+	   <!-- -->
+	</target>
+
+</project>

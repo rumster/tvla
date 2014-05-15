@@ -1,0 +1,210 @@
+////////////////////////////////////////////////////////////////
+// Sets
+////////////////////////////////////////////////////////////////
+
+%s types            {QueueItem}
+%s globalpointers   {head, tail}
+%s localpointers    {x_i, x_d, first}
+%s recfields        {n}
+%s nonrecfields     {}
+%s fields recfields + nonrecfields
+%s globalbools      {}
+%s localbools       {}
+
+// Fixed thread ids
+%s threadIds {tid1, tid2}
+
+%s locations {
+                lp_1, lp_2, lp_3, lp_4, lp_4a, lp_4b, lp_5,
+                lt_1, lt_3, lt_4, lt_6, lt_6a, lt_8
+              }
+
+////////////////////////////////////////////////////////////////
+// Predicates
+////////////////////////////////////////////////////////////////
+
+#include "predicates.tvp"
+
+//////////////////////////////////////
+// Program specific typing constraints
+// Theoretically, these could be automatically generated.
+
+// Every two types are disjoint
+foreach (tp1 in types) {
+  %r isthread(v) ==> !t[tp1](v)
+  %r t[tp1](v) ==> !isthread(v)
+  foreach (tp2 in types-{tp1}) {
+    %r t[tp2](v) ==> !t[tp1](v)
+  }
+}
+%r acq(u,v) ==> isthread(v)
+%r n(u,v) ==> !isthread(u)
+%r n(u,v) ==> !isthread(v)
+
+foreach (var in localpointers) {
+  %r rv[var](u,v) ==> isthread(u)
+  %r rv[var](u,v) ==> !isthread(v)
+}
+
+////////////////////////////////////////////////////////////////
+// Decomposition names
+////////////////////////////////////////////////////////////////
+
+#include "dnames.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////
+// Actions
+////////////////////////////////////////////////////////////////
+
+#include "actions.tvp"
+
+%action verifyProperty() {
+  %t "verify property"
+//r[lock1,n](v3) & r[lock2,n](v4) &
+//  %compose tid1(v1) //& tmain(v2) //r[packetList1,n](v1) & r[packetList2,n](v2) & alloc[m_1](t)
+//  %messagecompose tid1(v1) //& tmain(v2) //r[packetList1,n](v1) & r[packetList2,n](v2) & alloc[m_1](t)
+
+//  %message (E(t) at[m_14](t) & at[m_13](t) & !outside(t)) -> "at[] is imprecise\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[packetList1](v)) -> "packetList1 is null\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[packetList2](v)) -> "packetList2 is null\n"
+//  %message (E(v) !isthread(v) & !(|/{ r[gvar,n](v) : gvar in globalpointers }) & !(|/{ r_rv[var](v) : var in localpointers}))
+//                -> "Possible memory leak detected!"
+//   %message (E(o,t) acq(o,t) & !acq(o,t)) -> "acq is imprecise\n"
+//
+//   %message (E(v) is[n](v) &  !is[n](v)) -> "is[n] is imprecise\n"
+//   %message (E(v) r_in[n](v) &  !r_in[n](v)) -> "r_in[n] is imprecise\n"
+//   %message (E(v) r_out[n](v) &  !r_out[n](v)) -> "r_out[n] is imprecise\n"
+//   %message (E(o,t) |/{rv[var](t,o) & !rv[var](t,o) : var in localpointers}) -> "rv[var](t,o) is imprecise\n"
+//
+//   %message (E(v) r[packetList1,n](v) &  !r[packetList1,n](v)) -> "r[packetList1,n] is imprecise\n"
+//   %message (E(v) r[packetList2,n](v) &  !r[packetList2,n](v)) -> "r[packetList2,n] is imprecise\n"
+
+// //  %message (A(v) global[S_Top](v)->global[S_tail](v)) -> "tail is not reachable from Top\n"
+// //  %message (E(v) !isthread(v) & !(|/{ r[g,n](v) : g in globals}) & !(|/{ r_in[z](v) : z in locals}) ) -> "garbage detected\n"
+}
+
+%%
+
+/***********************************
+// Pseudo-code
+// QueueItem.java
+class QueueItem \{
+    public QueueItem next;
+    public Object value;
+    ...
+\}
+
+// TwoLockQueue.java
+class TwoLockQueue \{
+  private QueueItem head;
+  private QueueItem tail;
+  private Object headLock;
+  private Object tailLock;
+  ...
+
+  public TwoLockQueue() \{
+    node = new QueueItem();
+    node.next = null;
+    this.head = this.tail = node;
+  \}
+
+  public void enqueue(Object value) \{
+lp_1   QueueItem x_i = new QueueItem(value);
+lp_2   synchronize(tailLock) \{
+lp_3    tail.next = x_i;
+lp_4    tail = x_i;
+lp_5   \}
+lp_6  \}
+
+  public Object dequeue() \{
+         Object x_d;
+lt_1   synchronized(headLock) \{
+lt_2    x_d = null;
+lt_3    QueueItem first=head.next;
+lt_4    if (first != null) \{
+lt_5     x_d = first.value;
+lt_6     head = first;
+lt_7     head.value = null;
+          \}
+lt_8   \}
+lt_9   return x_d;
+lt_10  \}
+ \}
+************************************/
+
+////////////////////////////////////////////////////////////////
+// Thread scheduling mechanism and global property checking
+init verifyProperty() init
+init unschedule() pre_schedule
+pre_schedule unschedule() l_ready
+
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// Transition system for each function
+////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// CFG
+// Threads are created in the .tvs file
+//   public void enqueue(Object value) \{
+// lp_1   QueueItem x_i = new QueueItem(value);
+// lp_2   synchronize(tailLock) \{
+// lp_3    tail.next = x_i;
+// lp_4    tail = x_i;
+// lp_5   \}
+// lp_6  \}
+// A schedule transition to every label where interleaving can happen
+l_ready schedule(tid1, lp_1) lp_1
+l_ready schedule(tid1, lp_2) lp_2
+l_ready schedule(tid1, lp_3) lp_3
+l_ready schedule(tid1, lp_4) lp_4
+l_ready schedule(tid1, lp_5) lp_5
+//
+lp_1   newObject(tid1, lp_1, lp_2, x_i, QueueItem) init
+lp_2   acquireGlobal_failed(tid1, lp_2, lp_2, tail) init
+lp_2   acquireGlobal_succeded(tid1, lp_2, lp_3, tail) init
+lp_3   assignFieldLocalToGlobal(tid1, lp_3, lp_4, tail, n, x_i) init
+lp_4   assignNullToGlobal(tid1, lp_4, lp_4a, tail) lp_4a
+lp_4a  assignLocalToGlobal(tid1, lp_4a, lp_4b, tail, x_i) lp_4b
+lp_4b  assignNullToLocal(tid1, lp_4b, lp_5, x_i) init
+lp_5   releaseGlobal(tid1, lp_5, lp_1, tail) init
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//   public Object dequeue() \{
+//          Object x_d;
+// lt_1   synchronized(headLock) \{
+// lt_2    x_d = null;
+// lt_3    QueueItem first=head.next;
+// lt_4    if (first != null) \{
+// lt_5     x_d = first.value;
+// lt_6     head = first;
+// lt_7     head.value = null;
+//           \}
+// lt_8   \}
+// lt_9   return x_d;
+// lt_10  \}
+//  \}
+// A schedule transition to every label where interleaving can happen
+//
+l_ready schedule(tid2, lt_1) lt_1
+l_ready schedule(tid2, lt_3) lt_3
+l_ready schedule(tid2, lt_4) lt_4
+l_ready schedule(tid2, lt_6) lt_6
+l_ready schedule(tid2, lt_8) lt_8
+lt_1   acquireGlobal_failed(tid2, lt_1, lt_3, head) init
+lt_1   acquireGlobal_succeded(tid2, lt_1, lt_3, head) init
+//lt_2   assignNullToLocal(tid2, lt_2, lt_3, x_d) init
+lt_3   getFieldGlobalToLocal(tid2, lt_3, lt_4, first, head, n) init
+lt_4   ifNotNullLocal(tid2, lt_4, lt_6, first) init
+lt_4   ifNullLocal(tid2, lt_4, lt_6a, first) init
+// lt_5
+lt_6   assignLocalToGlobal(tid2, lt_6, lt_6a, head, first) lt_6a
+lt_6a  assignNullToLocal(tid2, lt_6a, lt_8, first) init
+lt_8   releaseGlobal(tid2, lt_8, lt_1, head) init
+
+//%%
+//l_ready

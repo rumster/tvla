@@ -1,0 +1,767 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.5	//
+AbstractBaseGraph	graph/AbstractBaseGraph.java	/^    public AbstractBaseGraph( EdgeFactory ef, boolean allowMultipleEdges,$/;"	m	class:AbstractBaseGraph
+AbstractBaseGraph	graph/AbstractBaseGraph.java	/^public abstract class AbstractBaseGraph extends AbstractGraph implements Graph,$/;"	c
+AbstractEdgeFactory	edge/EdgeFactories.java	/^    abstract static class AbstractEdgeFactory implements EdgeFactory,$/;"	c	class:EdgeFactories
+AbstractGraph	graph/AbstractGraph.java	/^    public AbstractGraph(  ) {}$/;"	m	class:AbstractGraph
+AbstractGraph	graph/AbstractGraph.java	/^public abstract class AbstractGraph implements Graph {$/;"	c
+AbstractGraphIterator	traverse/AbstractGraphIterator.java	/^public abstract class AbstractGraphIterator implements GraphIterator {$/;"	c
+AsUndirectedGraph	graph/AsUndirectedGraph.java	/^    public AsUndirectedGraph( DirectedGraph g ) {$/;"	m	class:AsUndirectedGraph
+AsUndirectedGraph	graph/AsUndirectedGraph.java	/^public class AsUndirectedGraph extends GraphDelegator implements Serializable,$/;"	c
+BEFORE_EDGE_ADDED	event/GraphEdgeChangeEvent.java	/^    public static final int BEFORE_EDGE_ADDED = 21;$/;"	f	class:GraphEdgeChangeEvent
+BEFORE_EDGE_REMOVED	event/GraphEdgeChangeEvent.java	/^    public static final int BEFORE_EDGE_REMOVED = 22;$/;"	f	class:GraphEdgeChangeEvent
+BEFORE_VERTEX_ADDED	event/GraphVertexChangeEvent.java	/^    public static final int BEFORE_VERTEX_ADDED = 11;$/;"	f	class:GraphVertexChangeEvent
+BEFORE_VERTEX_REMOVED	event/GraphVertexChangeEvent.java	/^    public static final int BEFORE_VERTEX_REMOVED = 12;$/;"	f	class:GraphVertexChangeEvent
+BaseGraphListener	graph/Subgraph.java	/^    private class BaseGraphListener implements GraphListener {$/;"	c	class:Subgraph
+BreadthFirstIterator	traverse/BreadthFirstIterator.java	/^    public BreadthFirstIterator( Graph g ) {$/;"	m	class:BreadthFirstIterator
+BreadthFirstIterator	traverse/BreadthFirstIterator.java	/^    public BreadthFirstIterator( Graph g, Object startVertex ) {$/;"	m	class:BreadthFirstIterator
+BreadthFirstIterator	traverse/BreadthFirstIterator.java	/^public class BreadthFirstIterator extends XXFirstIterator {$/;"	c
+CCS_AFTER_COMPONENT	traverse/TraverseUtils.java	/^        private static final int CCS_AFTER_COMPONENT  = 3;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+CCS_BEFORE_COMPONENT	traverse/TraverseUtils.java	/^        private static final int CCS_BEFORE_COMPONENT = 1;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+CCS_WITHIN_COMPONENT	traverse/TraverseUtils.java	/^        private static final int CCS_WITHIN_COMPONENT = 2;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+CONNECTED_COMPONENT_FINISHED	event/ConnectedComponentTraversalEvent.java	/^    public static final int CONNECTED_COMPONENT_FINISHED = 32;$/;"	f	class:ConnectedComponentTraversalEvent
+CONNECTED_COMPONENT_STARTED	event/ConnectedComponentTraversalEvent.java	/^    public static final int CONNECTED_COMPONENT_STARTED = 31;$/;"	f	class:ConnectedComponentTraversalEvent
+ClosestFirstIterator	traverse/ClosestFirstIterator.java	/^    private ClosestFirstIterator( Graph g, Object startVertex,$/;"	m	class:ClosestFirstIterator	file:
+ClosestFirstIterator	traverse/ClosestFirstIterator.java	/^    public ClosestFirstIterator( Graph g ) {$/;"	m	class:ClosestFirstIterator
+ClosestFirstIterator	traverse/ClosestFirstIterator.java	/^    public ClosestFirstIterator( Graph g, Object startVertex ) {$/;"	m	class:ClosestFirstIterator
+ClosestFirstIterator	traverse/ClosestFirstIterator.java	/^public class ClosestFirstIterator extends XXFirstIterator {$/;"	c
+ClosestFirstQueue	traverse/ClosestFirstIterator.java	/^        ClosestFirstQueue(  ) {$/;"	m	class:ClosestFirstIterator.ClosestFirstQueue
+ClosestFirstQueue	traverse/ClosestFirstIterator.java	/^    private static class ClosestFirstQueue$/;"	c	class:ClosestFirstIterator
+ConnectedComponentTraversalEvent	event/ConnectedComponentTraversalEvent.java	/^    public ConnectedComponentTraversalEvent( Object eventSource, int type ) {$/;"	m	class:ConnectedComponentTraversalEvent
+ConnectedComponentTraversalEvent	event/ConnectedComponentTraversalEvent.java	/^public class ConnectedComponentTraversalEvent extends EventObject {$/;"	c
+ConnectivityInspector	alg/ConnectivityInspector.java	/^    public ConnectivityInspector( DirectedGraph g ) {$/;"	m	class:ConnectivityInspector
+ConnectivityInspector	alg/ConnectivityInspector.java	/^    public ConnectivityInspector( UndirectedGraph g ) {$/;"	m	class:ConnectivityInspector
+ConnectivityInspector	alg/ConnectivityInspector.java	/^public class ConnectivityInspector implements GraphListener {$/;"	c
+DEFAULT_BG_COLOR	demo/JGraphAdapterDemo.java	/^    private static final Color     DEFAULT_BG_COLOR = Color.decode( "#FAFBFF" );$/;"	f	class:JGraphAdapterDemo	file:
+DEFAULT_EDGE_WEIGHT	Edge.java	/^    public static double DEFAULT_EDGE_WEIGHT = 1.0;$/;"	f	interface:Edge
+DEFAULT_SIZE	demo/JGraphAdapterDemo.java	/^    private static final Dimension DEFAULT_SIZE = new Dimension( 530, 320 );$/;"	f	class:JGraphAdapterDemo	file:
+DefaulltEdge	edge/DefaulltEdge.java	/^    public DefaulltEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DefaulltEdge
+DefaulltEdge	edge/DefaulltEdge.java	/^public class DefaulltEdge implements Edge, Cloneable {$/;"	c
+DefaultDirectedGraph	graph/DefaultDirectedGraph.java	/^    public DefaultDirectedGraph(  ) {$/;"	m	class:DefaultDirectedGraph
+DefaultDirectedGraph	graph/DefaultDirectedGraph.java	/^    public DefaultDirectedGraph( EdgeFactory ef ) {$/;"	m	class:DefaultDirectedGraph
+DefaultDirectedGraph	graph/DefaultDirectedGraph.java	/^public class DefaultDirectedGraph extends AbstractBaseGraph$/;"	c
+DefaultDirectedWeightedGraph	graph/DefaultDirectedWeightedGraph.java	/^    public DefaultDirectedWeightedGraph(  ) {$/;"	m	class:DefaultDirectedWeightedGraph
+DefaultDirectedWeightedGraph	graph/DefaultDirectedWeightedGraph.java	/^    public DefaultDirectedWeightedGraph( EdgeFactory ef ) {$/;"	m	class:DefaultDirectedWeightedGraph
+DefaultDirectedWeightedGraph	graph/DefaultDirectedWeightedGraph.java	/^public class DefaultDirectedWeightedGraph extends DefaultDirectedGraph$/;"	c
+DefaultEdge	edge/DefaultEdge.java	/^    public DefaultEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DefaultEdge
+DefaultEdge	edge/DefaultEdge.java	/^public class DefaultEdge implements Edge, Cloneable {$/;"	c
+DefaultListenableGraph	graph/DefaultListenableGraph.java	/^    public DefaultListenableGraph( Graph g ) {$/;"	m	class:DefaultListenableGraph
+DefaultListenableGraph	graph/DefaultListenableGraph.java	/^    public DefaultListenableGraph( Graph g, boolean reuseEvents ) {$/;"	m	class:DefaultListenableGraph
+DefaultListenableGraph	graph/DefaultListenableGraph.java	/^public class DefaultListenableGraph extends GraphDelegator$/;"	c
+DepthFirstIterator	traverse/DepthFirstIterator.java	/^    public DepthFirstIterator( Graph g ) {$/;"	m	class:DepthFirstIterator
+DepthFirstIterator	traverse/DepthFirstIterator.java	/^    public DepthFirstIterator( Graph g, Object startVertex ) {$/;"	m	class:DepthFirstIterator
+DepthFirstIterator	traverse/DepthFirstIterator.java	/^public class DepthFirstIterator extends XXFirstIterator {$/;"	c
+DijkstraShortestPath	alg/DijkstraShortestPath.java	/^    private DijkstraShortestPath(  ) {} \/\/ ensure non-instantiability.$/;"	m	class:DijkstraShortestPath	file:
+DijkstraShortestPath	alg/DijkstraShortestPath.java	/^public final class DijkstraShortestPath {$/;"	c
+DirectedEdge	edge/DirectedEdge.java	/^    public DirectedEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DirectedEdge
+DirectedEdge	edge/DirectedEdge.java	/^public class DirectedEdge extends DefaultEdge {$/;"	c
+DirectedEdgeContainer	graph/AbstractBaseGraph.java	/^    private static class DirectedEdgeContainer {$/;"	c	class:AbstractBaseGraph
+DirectedEdgeFactory	edge/EdgeFactories.java	/^    public static class DirectedEdgeFactory extends AbstractEdgeFactory {$/;"	c	class:EdgeFactories
+DirectedGraph	DirectedGraph.java	/^public interface DirectedGraph extends Graph {$/;"	i
+DirectedMultigraph	graph/DirectedMultigraph.java	/^    public DirectedMultigraph(  ) {$/;"	m	class:DirectedMultigraph
+DirectedMultigraph	graph/DirectedMultigraph.java	/^    public DirectedMultigraph( EdgeFactory ef ) {$/;"	m	class:DirectedMultigraph
+DirectedMultigraph	graph/DirectedMultigraph.java	/^public class DirectedMultigraph extends AbstractBaseGraph$/;"	c
+DirectedSpecifics	graph/AbstractBaseGraph.java	/^    private class DirectedSpecifics extends Specifics {$/;"	c	class:AbstractBaseGraph
+DirectedSpecifics	traverse/TraverseUtils.java	/^        public DirectedSpecifics( DirectedGraph g ) {$/;"	m	class:TraverseUtils.DirectedSpecifics
+DirectedSpecifics	traverse/TraverseUtils.java	/^    static class DirectedSpecifics extends Specifics {$/;"	c	class:TraverseUtils
+DirectedSubgraph	graph/DirectedSubgraph.java	/^    public DirectedSubgraph( DirectedGraph base, Set vertexSubset,$/;"	m	class:DirectedSubgraph
+DirectedSubgraph	graph/DirectedSubgraph.java	/^public class DirectedSubgraph extends Subgraph implements DirectedGraph {$/;"	c
+DirectedWeightedEdge	edge/DirectedWeightedEdge.java	/^    public DirectedWeightedEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DirectedWeightedEdge
+DirectedWeightedEdge	edge/DirectedWeightedEdge.java	/^    public DirectedWeightedEdge( Object sourceVertex, Object targetVertex,$/;"	m	class:DirectedWeightedEdge
+DirectedWeightedEdge	edge/DirectedWeightedEdge.java	/^public class DirectedWeightedEdge extends DirectedEdge {$/;"	c
+DirectedWeightedEdgeFactory	edge/EdgeFactories.java	/^    public static class DirectedWeightedEdgeFactory extends AbstractEdgeFactory {$/;"	c	class:EdgeFactories
+DirectedWeightedMultigraph	graph/DirectedWeightedMultigraph.java	/^    public DirectedWeightedMultigraph(  ) {$/;"	m	class:DirectedWeightedMultigraph
+DirectedWeightedMultigraph	graph/DirectedWeightedMultigraph.java	/^    public DirectedWeightedMultigraph( EdgeFactory ef ) {$/;"	m	class:DirectedWeightedMultigraph
+DirectedWeightedMultigraph	graph/DirectedWeightedMultigraph.java	/^public class DirectedWeightedMultigraph extends DirectedMultigraph$/;"	c
+DirectedWeightedSubgraph	graph/DirectedWeightedSubgraph.java	/^    public DirectedWeightedSubgraph( WeightedGraph base, Set vertexSubset,$/;"	m	class:DirectedWeightedSubgraph
+DirectedWeightedSubgraph	graph/DirectedWeightedSubgraph.java	/^public class DirectedWeightedSubgraph extends DirectedSubgraph$/;"	c
+EDGE_ADDED	event/GraphEdgeChangeEvent.java	/^    public static final int EDGE_ADDED = 23;$/;"	f	class:GraphEdgeChangeEvent
+EDGE_REMOVED	event/GraphEdgeChangeEvent.java	/^    public static final int EDGE_REMOVED = 24;$/;"	f	class:GraphEdgeChangeEvent
+END_VERTEX	generate/LinearGraphGenerator.java	/^    public static final String END_VERTEX = "End Vertex";$/;"	f	class:LinearGraphGenerator
+Edge	Edge.java	/^public interface Edge extends Cloneable {$/;"	i
+EdgeFactories	edge/EdgeFactories.java	/^    private EdgeFactories(  ) {} \/\/ ensure non-instantiability.$/;"	m	class:EdgeFactories	file:
+EdgeFactories	edge/EdgeFactories.java	/^public final class EdgeFactories {$/;"	c
+EdgeFactory	EdgeFactory.java	/^public interface EdgeFactory {$/;"	i
+EdgeTraversalEvent	event/EdgeTraversalEvent.java	/^    public EdgeTraversalEvent( Object eventSource, Edge edge ) {$/;"	m	class:EdgeTraversalEvent
+EdgeTraversalEvent	event/EdgeTraversalEvent.java	/^public class EdgeTraversalEvent extends EventObject {$/;"	c
+EmptyGraphGenerator	generate/EmptyGraphGenerator.java	/^    public EmptyGraphGenerator( int size ) {$/;"	m	class:EmptyGraphGenerator
+EmptyGraphGenerator	generate/EmptyGraphGenerator.java	/^public class EmptyGraphGenerator implements GraphGenerator {$/;"	c
+FibonacciHeap	util/FibonacciHeap.java	/^    public FibonacciHeap(  ) {} \/\/ FibonacciHeap$/;"	m	class:FibonacciHeap
+FibonacciHeap	util/FibonacciHeap.java	/^public class FibonacciHeap {$/;"	c
+FlyweightEdgeEvent	graph/DefaultListenableGraph.java	/^        public FlyweightEdgeEvent( Object eventSource, int type, Edge e ) {$/;"	m	class:DefaultListenableGraph.FlyweightEdgeEvent
+FlyweightEdgeEvent	graph/DefaultListenableGraph.java	/^    private static class FlyweightEdgeEvent extends GraphEdgeChangeEvent {$/;"	c	class:DefaultListenableGraph
+FlyweightEdgeEvent	traverse/TraverseUtils.java	/^        public FlyweightEdgeEvent( Object eventSource, Edge edge ) {$/;"	m	class:TraverseUtils.FlyweightEdgeEvent
+FlyweightEdgeEvent	traverse/TraverseUtils.java	/^    private static class FlyweightEdgeEvent extends EdgeTraversalEvent {$/;"	c	class:TraverseUtils
+FlyweightVertexEvent	graph/DefaultListenableGraph.java	/^        public FlyweightVertexEvent( Object eventSource, int type, Object vertex ) {$/;"	m	class:DefaultListenableGraph.FlyweightVertexEvent
+FlyweightVertexEvent	graph/DefaultListenableGraph.java	/^    private static class FlyweightVertexEvent extends GraphVertexChangeEvent {$/;"	c	class:DefaultListenableGraph
+FlyweightVertexEvent	traverse/TraverseUtils.java	/^        public FlyweightVertexEvent( Object eventSource, Object vertex ) {$/;"	m	class:TraverseUtils.FlyweightVertexEvent
+FlyweightVertexEvent	traverse/TraverseUtils.java	/^    private static class FlyweightVertexEvent extends VertexTraversalEvent {$/;"	c	class:TraverseUtils
+Graph	Graph.java	/^public interface Graph {$/;"	i
+GraphChangeEvent	event/GraphChangeEvent.java	/^    public GraphChangeEvent( Object eventSource, int type ) {$/;"	m	class:GraphChangeEvent
+GraphChangeEvent	event/GraphChangeEvent.java	/^public class GraphChangeEvent extends EventObject {$/;"	c
+GraphDelegator	graph/GraphDelegator.java	/^    public GraphDelegator( Graph g ) {$/;"	m	class:GraphDelegator
+GraphDelegator	graph/GraphDelegator.java	/^public class GraphDelegator extends AbstractGraph implements Graph,$/;"	c
+GraphEdgeChangeEvent	event/GraphEdgeChangeEvent.java	/^    public GraphEdgeChangeEvent( Object eventSource, int type, Edge e ) {$/;"	m	class:GraphEdgeChangeEvent
+GraphEdgeChangeEvent	event/GraphEdgeChangeEvent.java	/^public class GraphEdgeChangeEvent extends GraphChangeEvent {$/;"	c
+GraphGenerator	generate/GraphGenerator.java	/^public interface GraphGenerator {$/;"	i
+GraphHelper	GraphHelper.java	/^    private GraphHelper(  ) {} \/\/ ensure non-instantiability.$/;"	m	class:GraphHelper	file:
+GraphHelper	GraphHelper.java	/^public final class GraphHelper {$/;"	c
+GraphIterator	traverse/GraphIterator.java	/^public interface GraphIterator extends Iterator {$/;"	i
+GraphListener	event/GraphListener.java	/^public interface GraphListener extends VertexSetListener {$/;"	i
+GraphVertexChangeEvent	event/GraphVertexChangeEvent.java	/^    public GraphVertexChangeEvent( Object eventSource, int type, Object vertex ) {$/;"	m	class:GraphVertexChangeEvent
+GraphVertexChangeEvent	event/GraphVertexChangeEvent.java	/^public class GraphVertexChangeEvent extends GraphChangeEvent {$/;"	c
+HUB_VERTEX	generate/WheelGraphGenerator.java	/^    public static final String HUB_VERTEX     = "Hub Vertex";$/;"	f	class:WheelGraphGenerator
+HelloJGraphT	demo/HelloJGraphT.java	/^public class HelloJGraphT {$/;"	c
+JGraphAdapterDemo	demo/JGraphAdapterDemo.java	/^public class JGraphAdapterDemo extends JApplet {$/;"	c
+JGraphModelAdapter	ext/JGraphModelAdapter.java	/^    public JGraphModelAdapter( Graph g ) {$/;"	m	class:JGraphModelAdapter
+JGraphModelAdapter	ext/JGraphModelAdapter.java	/^    public JGraphModelAdapter( Graph g, Map defaultVertexAttributes,$/;"	m	class:JGraphModelAdapter
+JGraphModelAdapter	ext/JGraphModelAdapter.java	/^public class JGraphModelAdapter extends DefaultGraphModel {$/;"	c
+LOOPS_NOT_ALLOWED	graph/AbstractBaseGraph.java	/^    private static final String LOOPS_NOT_ALLOWED = "loops not allowed";$/;"	f	class:AbstractBaseGraph	file:
+LabeledElement	LabeledElement.java	/^public interface LabeledElement {$/;"	i
+LinearGraphGenerator	generate/LinearGraphGenerator.java	/^    public LinearGraphGenerator( int size ) {$/;"	m	class:LinearGraphGenerator
+LinearGraphGenerator	generate/LinearGraphGenerator.java	/^public class LinearGraphGenerator implements GraphGenerator {$/;"	c
+ListenableDirectedGraph	graph/ListenableDirectedGraph.java	/^    public ListenableDirectedGraph(  ) {$/;"	m	class:ListenableDirectedGraph
+ListenableDirectedGraph	graph/ListenableDirectedGraph.java	/^    public ListenableDirectedGraph( DirectedGraph base ) {$/;"	m	class:ListenableDirectedGraph
+ListenableDirectedGraph	graph/ListenableDirectedGraph.java	/^public class ListenableDirectedGraph extends DefaultListenableGraph$/;"	c
+ListenableDirectedWeightedGraph	graph/ListenableDirectedWeightedGraph.java	/^    public ListenableDirectedWeightedGraph(  ) {$/;"	m	class:ListenableDirectedWeightedGraph
+ListenableDirectedWeightedGraph	graph/ListenableDirectedWeightedGraph.java	/^    public ListenableDirectedWeightedGraph( WeightedGraph base ) {$/;"	m	class:ListenableDirectedWeightedGraph
+ListenableDirectedWeightedGraph	graph/ListenableDirectedWeightedGraph.java	/^public class ListenableDirectedWeightedGraph extends ListenableDirectedGraph$/;"	c
+ListenableGraph	ListenableGraph.java	/^public interface ListenableGraph extends Graph {$/;"	i
+ListenableUndirectedGraph	graph/ListenableUndirectedGraph.java	/^    public ListenableUndirectedGraph(  ) {$/;"	m	class:ListenableUndirectedGraph
+ListenableUndirectedGraph	graph/ListenableUndirectedGraph.java	/^    public ListenableUndirectedGraph( UndirectedGraph base ) {$/;"	m	class:ListenableUndirectedGraph
+ListenableUndirectedGraph	graph/ListenableUndirectedGraph.java	/^public class ListenableUndirectedGraph extends DefaultListenableGraph$/;"	c
+ListenableUndirectedWeightedGraph	graph/ListenableUndirectedWeightedGraph.java	/^    public ListenableUndirectedWeightedGraph(  ) {$/;"	m	class:ListenableUndirectedWeightedGraph
+ListenableUndirectedWeightedGraph	graph/ListenableUndirectedWeightedGraph.java	/^    public ListenableUndirectedWeightedGraph( WeightedGraph base ) {$/;"	m	class:ListenableUndirectedWeightedGraph
+ListenableUndirectedWeightedGraph	graph/ListenableUndirectedWeightedGraph.java	/^public class ListenableUndirectedWeightedGraph extends ListenableUndirectedGraph$/;"	c
+Multigraph	graph/Multigraph.java	/^    public Multigraph(  ) {$/;"	m	class:Multigraph
+Multigraph	graph/Multigraph.java	/^    public Multigraph( EdgeFactory ef ) {$/;"	m	class:Multigraph
+Multigraph	graph/Multigraph.java	/^public class Multigraph extends AbstractBaseGraph implements UndirectedGraph {$/;"	c
+MyGraphListener	ext/JGraphModelAdapter.java	/^    private class MyGraphListener implements GraphListener {$/;"	c	class:JGraphModelAdapter
+MyTraversalListener	alg/ConnectivityInspector.java	/^    private class MyTraversalListener extends TraversalListenerAdapter {$/;"	c	class:ConnectivityInspector
+NOT_IN_DIRECTED_GRAPH	graph/AbstractBaseGraph.java	/^        private static final String NOT_IN_DIRECTED_GRAPH =$/;"	f	class:AbstractBaseGraph.DirectedSpecifics	file:
+NOT_IN_UNDIRECTED_GRAPH	graph/AbstractBaseGraph.java	/^        private static final String NOT_IN_UNDIRECTED_GRAPH =$/;"	f	class:AbstractBaseGraph.UndirectedSpecifics	file:
+NO_EDGE_ADD	graph/AsUndirectedGraph.java	/^    private static final String NO_EDGE_ADD =$/;"	f	class:AsUndirectedGraph	file:
+NO_SUCH_EDGE_IN_BASE	graph/Subgraph.java	/^    private static final String NO_SUCH_EDGE_IN_BASE =$/;"	f	class:Subgraph	file:
+NO_SUCH_VERTEX_IN_BASE	graph/Subgraph.java	/^    private static final String NO_SUCH_VERTEX_IN_BASE =$/;"	f	class:Subgraph	file:
+Node	util/FibonacciHeap.java	/^        public Node( double key ) {$/;"	m	class:FibonacciHeap.Node
+Node	util/FibonacciHeap.java	/^    public static class Node {$/;"	c	class:FibonacciHeap
+PerformanceDemo	demo/PerformanceDemo.java	/^public final class PerformanceDemo {$/;"	c
+Pseudograph	graph/Pseudograph.java	/^    public Pseudograph(  ) {$/;"	m	class:Pseudograph
+Pseudograph	graph/Pseudograph.java	/^    public Pseudograph( EdgeFactory ef ) {$/;"	m	class:Pseudograph
+Pseudograph	graph/Pseudograph.java	/^public class Pseudograph extends AbstractBaseGraph implements UndirectedGraph {$/;"	c
+QueueEntry	traverse/ClosestFirstIterator.java	/^        QueueEntry( double key ) {$/;"	m	class:ClosestFirstIterator.QueueEntry
+QueueEntry	traverse/ClosestFirstIterator.java	/^    private static class QueueEntry extends FibonacciHeap.Node {$/;"	c	class:ClosestFirstIterator
+REF_NOT_EQUAL_TO_BASE	graph/Subgraph.java	/^    private static final String REF_NOT_EQUAL_TO_BASE =$/;"	f	class:Subgraph	file:
+RingGraphGenerator	generate/RingGraphGenerator.java	/^    public RingGraphGenerator( int size ) {$/;"	m	class:RingGraphGenerator
+RingGraphGenerator	generate/RingGraphGenerator.java	/^public class RingGraphGenerator implements GraphGenerator {$/;"	c
+START_VERTEX	generate/LinearGraphGenerator.java	/^    public static final String START_VERTEX = "Start Vertex";$/;"	f	class:LinearGraphGenerator
+SimpleContainer	traverse/TraverseUtils.java	/^    static interface SimpleContainer {$/;"	i	class:TraverseUtils
+SimpleDirectedGraph	graph/SimpleDirectedGraph.java	/^    public SimpleDirectedGraph(  ) {$/;"	m	class:SimpleDirectedGraph
+SimpleDirectedGraph	graph/SimpleDirectedGraph.java	/^    public SimpleDirectedGraph( EdgeFactory ef ) {$/;"	m	class:SimpleDirectedGraph
+SimpleDirectedGraph	graph/SimpleDirectedGraph.java	/^public class SimpleDirectedGraph extends AbstractBaseGraph$/;"	c
+SimpleDirectedWeightedGraph	graph/SimpleDirectedWeightedGraph.java	/^    public SimpleDirectedWeightedGraph(  ) {$/;"	m	class:SimpleDirectedWeightedGraph
+SimpleDirectedWeightedGraph	graph/SimpleDirectedWeightedGraph.java	/^    public SimpleDirectedWeightedGraph( EdgeFactory ef ) {$/;"	m	class:SimpleDirectedWeightedGraph
+SimpleDirectedWeightedGraph	graph/SimpleDirectedWeightedGraph.java	/^public class SimpleDirectedWeightedGraph extends SimpleDirectedGraph$/;"	c
+SimpleGraph	graph/SimpleGraph.java	/^    public SimpleGraph(  ) {$/;"	m	class:SimpleGraph
+SimpleGraph	graph/SimpleGraph.java	/^    public SimpleGraph( EdgeFactory ef ) {$/;"	m	class:SimpleGraph
+SimpleGraph	graph/SimpleGraph.java	/^public class SimpleGraph extends AbstractBaseGraph implements UndirectedGraph {$/;"	c
+SimpleQueue	traverse/TraverseUtils.java	/^    static class SimpleQueue implements SimpleContainer {$/;"	c	class:TraverseUtils
+SimpleStack	traverse/TraverseUtils.java	/^    static class SimpleStack implements SimpleContainer {$/;"	c	class:TraverseUtils
+SimpleWeightedGraph	graph/SimpleWeightedGraph.java	/^    public SimpleWeightedGraph(  ) {$/;"	m	class:SimpleWeightedGraph
+SimpleWeightedGraph	graph/SimpleWeightedGraph.java	/^    public SimpleWeightedGraph( EdgeFactory ef ) {$/;"	m	class:SimpleWeightedGraph
+SimpleWeightedGraph	graph/SimpleWeightedGraph.java	/^public class SimpleWeightedGraph extends SimpleGraph implements WeightedGraph {$/;"	c
+Specifics	graph/AbstractBaseGraph.java	/^    private abstract class Specifics {$/;"	c	class:AbstractBaseGraph
+Specifics	traverse/TraverseUtils.java	/^    abstract static class Specifics {$/;"	c	class:TraverseUtils
+Subgraph	graph/Subgraph.java	/^    public Subgraph( Graph base, Set vertexSubset, Set edgeSubset ) {$/;"	m	class:Subgraph
+Subgraph	graph/Subgraph.java	/^public class Subgraph extends AbstractGraph {$/;"	c
+TraversalListener	event/TraversalListener.java	/^public interface TraversalListener {$/;"	i
+TraversalListenerAdapter	event/TraversalListenerAdapter.java	/^public class TraversalListenerAdapter implements TraversalListener {$/;"	c
+TraverseUtils	traverse/TraverseUtils.java	/^    private TraverseUtils(  ) {} \/\/ ensure non-instantiability.$/;"	m	class:TraverseUtils	file:
+TraverseUtils	traverse/TraverseUtils.java	/^final class TraverseUtils {$/;"	c
+UNDIRECTED	graph/AsUndirectedGraph.java	/^    private static final String UNDIRECTED =$/;"	f	class:AsUndirectedGraph	file:
+UNMODIFIABLE	graph/UnmodifiableGraph.java	/^    private static final String UNMODIFIABLE = "this graph is unmodifiable";$/;"	f	class:UnmodifiableGraph	file:
+UndirectedEdge	edge/UndirectedEdge.java	/^    public UndirectedEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:UndirectedEdge
+UndirectedEdge	edge/UndirectedEdge.java	/^public class UndirectedEdge extends DefaultEdge {$/;"	c
+UndirectedEdgeContainer	graph/AbstractBaseGraph.java	/^    private static class UndirectedEdgeContainer {$/;"	c	class:AbstractBaseGraph
+UndirectedEdgeFactory	edge/EdgeFactories.java	/^    public static class UndirectedEdgeFactory extends AbstractEdgeFactory {$/;"	c	class:EdgeFactories
+UndirectedGraph	UndirectedGraph.java	/^public interface UndirectedGraph extends Graph {$/;"	i
+UndirectedSpecifics	graph/AbstractBaseGraph.java	/^    private class UndirectedSpecifics extends Specifics {$/;"	c	class:AbstractBaseGraph
+UndirectedSpecifics	traverse/TraverseUtils.java	/^        public UndirectedSpecifics( Graph g ) {$/;"	m	class:TraverseUtils.UndirectedSpecifics
+UndirectedSpecifics	traverse/TraverseUtils.java	/^    static class UndirectedSpecifics extends Specifics {$/;"	c	class:TraverseUtils
+UndirectedSubgraph	graph/UndirectedSubgraph.java	/^    public UndirectedSubgraph( UndirectedGraph base, Set vertexSubset,$/;"	m	class:UndirectedSubgraph
+UndirectedSubgraph	graph/UndirectedSubgraph.java	/^public class UndirectedSubgraph extends Subgraph implements UndirectedGraph {$/;"	c
+UndirectedWeightedEdge	edge/UndirectedWeightedEdge.java	/^    public UndirectedWeightedEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:UndirectedWeightedEdge
+UndirectedWeightedEdge	edge/UndirectedWeightedEdge.java	/^    public UndirectedWeightedEdge( Object sourceVertex, Object targetVertex,$/;"	m	class:UndirectedWeightedEdge
+UndirectedWeightedEdge	edge/UndirectedWeightedEdge.java	/^public class UndirectedWeightedEdge extends UndirectedEdge {$/;"	c
+UndirectedWeightedEdgeFactory	edge/EdgeFactories.java	/^    public static class UndirectedWeightedEdgeFactory$/;"	c	class:EdgeFactories
+UndirectedWeightedSubgraph	graph/UndirectedWeightedSubgraph.java	/^    public UndirectedWeightedSubgraph( WeightedGraph base, Set vertexSubset,$/;"	m	class:UndirectedWeightedSubgraph
+UndirectedWeightedSubgraph	graph/UndirectedWeightedSubgraph.java	/^public class UndirectedWeightedSubgraph extends UndirectedSubgraph$/;"	c
+UnmodifiableDirectedGraph	graph/UnmodifiableDirectedGraph.java	/^    public UnmodifiableDirectedGraph( DirectedGraph g ) {$/;"	m	class:UnmodifiableDirectedGraph
+UnmodifiableDirectedGraph	graph/UnmodifiableDirectedGraph.java	/^public class UnmodifiableDirectedGraph extends UnmodifiableGraph$/;"	c
+UnmodifiableGraph	graph/UnmodifiableGraph.java	/^    public UnmodifiableGraph( Graph g ) {$/;"	m	class:UnmodifiableGraph
+UnmodifiableGraph	graph/UnmodifiableGraph.java	/^public class UnmodifiableGraph extends GraphDelegator implements Serializable {$/;"	c
+UnmodifiableUndirectedGraph	graph/UnmodifiableUndirectedGraph.java	/^    public UnmodifiableUndirectedGraph( UndirectedGraph g ) {$/;"	m	class:UnmodifiableUndirectedGraph
+UnmodifiableUndirectedGraph	graph/UnmodifiableUndirectedGraph.java	/^public class UnmodifiableUndirectedGraph extends UnmodifiableGraph$/;"	c
+VERTEX_ADDED	event/GraphVertexChangeEvent.java	/^    public static final int VERTEX_ADDED = 13;$/;"	f	class:GraphVertexChangeEvent
+VERTEX_REMOVED	event/GraphVertexChangeEvent.java	/^    public static final int VERTEX_REMOVED = 14;$/;"	f	class:GraphVertexChangeEvent
+VertexCovers	alg/VertexCovers.java	/^public class VertexCovers {$/;"	c
+VertexDegreeComparator	alg/util/VertexDegreeComparator.java	/^    public VertexDegreeComparator( UndirectedGraph g ) {$/;"	m	class:VertexDegreeComparator
+VertexDegreeComparator	alg/util/VertexDegreeComparator.java	/^    public VertexDegreeComparator( UndirectedGraph g, boolean ascendingOrder ) {$/;"	m	class:VertexDegreeComparator
+VertexDegreeComparator	alg/util/VertexDegreeComparator.java	/^public class VertexDegreeComparator implements java.util.Comparator {$/;"	c
+VertexFactory	VertexFactory.java	/^public interface VertexFactory {$/;"	i
+VertexSetListener	event/VertexSetListener.java	/^public interface VertexSetListener extends EventListener {$/;"	i
+VertexTraversalEvent	event/VertexTraversalEvent.java	/^    public VertexTraversalEvent( Object eventSource, Object vertex ) {$/;"	m	class:VertexTraversalEvent
+VertexTraversalEvent	event/VertexTraversalEvent.java	/^public class VertexTraversalEvent extends EventObject {$/;"	c
+WeightedGraph	WeightedGraph.java	/^public interface WeightedGraph extends Graph {}$/;"	i
+WeightedMultigraph	graph/WeightedMultigraph.java	/^    public WeightedMultigraph(  ) {$/;"	m	class:WeightedMultigraph
+WeightedMultigraph	graph/WeightedMultigraph.java	/^    public WeightedMultigraph( EdgeFactory ef ) {$/;"	m	class:WeightedMultigraph
+WeightedMultigraph	graph/WeightedMultigraph.java	/^public class WeightedMultigraph extends Multigraph implements WeightedGraph {$/;"	c
+WeightedPseudograph	graph/WeightedPseudograph.java	/^    public WeightedPseudograph(  ) {$/;"	m	class:WeightedPseudograph
+WeightedPseudograph	graph/WeightedPseudograph.java	/^    public WeightedPseudograph( EdgeFactory ef ) {$/;"	m	class:WeightedPseudograph
+WeightedPseudograph	graph/WeightedPseudograph.java	/^public class WeightedPseudograph extends Pseudograph implements WeightedGraph {$/;"	c
+WheelGraphGenerator	generate/WheelGraphGenerator.java	/^    public WheelGraphGenerator( int size ) {$/;"	m	class:WheelGraphGenerator
+WheelGraphGenerator	generate/WheelGraphGenerator.java	/^    public WheelGraphGenerator( int size, boolean inwardSpokes ) {$/;"	m	class:WheelGraphGenerator
+WheelGraphGenerator	generate/WheelGraphGenerator.java	/^public class WheelGraphGenerator implements GraphGenerator {$/;"	c
+XXFirstIterator	traverse/TraverseUtils.java	/^        public XXFirstIterator( Graph g, Object startVertex,$/;"	m	class:TraverseUtils.XXFirstIterator
+XXFirstIterator	traverse/TraverseUtils.java	/^    static class XXFirstIterator extends AbstractGraphIterator {$/;"	c	class:TraverseUtils
+add	traverse/ClosestFirstIterator.java	/^        public void add( Object obj ) {$/;"	m	class:ClosestFirstIterator.ClosestFirstQueue
+add	traverse/TraverseUtils.java	/^        public void add( Object o ) {$/;"	m	class:TraverseUtils.SimpleQueue
+add	traverse/TraverseUtils.java	/^        public void add( Object o ) {$/;"	m	class:TraverseUtils.SimpleStack
+add	traverse/TraverseUtils.java	/^        public void add( Object o );$/;"	m	interface:TraverseUtils.SimpleContainer
+addAllEdges	Graph.java	/^    public boolean addAllEdges( Collection edges );$/;"	m	interface:Graph
+addAllEdges	graph/AbstractGraph.java	/^    public boolean addAllEdges( Collection edges ) {$/;"	m	class:AbstractGraph
+addAllEdges	graph/AsUndirectedGraph.java	/^    public boolean addAllEdges( Collection edges ) {$/;"	m	class:AsUndirectedGraph
+addAllEdges	graph/UnmodifiableGraph.java	/^    public boolean addAllEdges( Collection edges ) {$/;"	m	class:UnmodifiableGraph
+addAllVertices	Graph.java	/^    public boolean addAllVertices( Collection vertices );$/;"	m	interface:Graph
+addAllVertices	graph/AbstractGraph.java	/^    public boolean addAllVertices( Collection vertices ) {$/;"	m	class:AbstractGraph
+addAllVertices	graph/UnmodifiableGraph.java	/^    public boolean addAllVertices( Collection vertices ) {$/;"	m	class:UnmodifiableGraph
+addEdge	Graph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+addEdge	Graph.java	/^    public boolean addEdge( Edge e );$/;"	m	interface:Graph
+addEdge	GraphHelper.java	/^    public static Edge addEdge( Graph g, Object sourceVertex,$/;"	m	class:GraphHelper
+addEdge	graph/AbstractBaseGraph.java	/^        public void addEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.UndirectedEdgeContainer
+addEdge	graph/AbstractBaseGraph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph
+addEdge	graph/AbstractBaseGraph.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph
+addEdge	graph/AsUndirectedGraph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AsUndirectedGraph
+addEdge	graph/AsUndirectedGraph.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:AsUndirectedGraph
+addEdge	graph/DefaultListenableGraph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DefaultListenableGraph
+addEdge	graph/DefaultListenableGraph.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:DefaultListenableGraph
+addEdge	graph/GraphDelegator.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:GraphDelegator
+addEdge	graph/GraphDelegator.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:GraphDelegator
+addEdge	graph/Subgraph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:Subgraph
+addEdge	graph/Subgraph.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:Subgraph
+addEdge	graph/UnmodifiableGraph.java	/^    public Edge addEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:UnmodifiableGraph
+addEdge	graph/UnmodifiableGraph.java	/^    public boolean addEdge( Edge e ) {$/;"	m	class:UnmodifiableGraph
+addEdgeToTouchingVertices	graph/AbstractBaseGraph.java	/^        public abstract void addEdgeToTouchingVertices( Edge e );$/;"	m	class:AbstractBaseGraph.Specifics
+addEdgeToTouchingVertices	graph/AbstractBaseGraph.java	/^        public void addEdgeToTouchingVertices( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+addEdgeToTouchingVertices	graph/AbstractBaseGraph.java	/^        public void addEdgeToTouchingVertices( Edge e ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+addEdgeWithVertices	GraphHelper.java	/^    public static Edge addEdgeWithVertices( Graph g, Object sourceVertex,$/;"	m	class:GraphHelper
+addEdgeWithVertices	GraphHelper.java	/^    public static boolean addEdgeWithVertices( Graph g, Edge e ) {$/;"	m	class:GraphHelper
+addEdgesUsingFilter	graph/Subgraph.java	/^    private void addEdgesUsingFilter( Set edgeSet, Set filter ) {$/;"	m	class:Subgraph	file:
+addGraph	GraphHelper.java	/^    public static boolean addGraph( Graph destination, Graph source ) {$/;"	m	class:GraphHelper
+addGraphListener	ListenableGraph.java	/^    public void addGraphListener( GraphListener l );$/;"	m	interface:ListenableGraph
+addGraphListener	graph/DefaultListenableGraph.java	/^    public void addGraphListener( GraphListener l ) {$/;"	m	class:DefaultListenableGraph
+addIncomingEdge	graph/AbstractBaseGraph.java	/^        public void addIncomingEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+addJGraphTEdge	ext/JGraphModelAdapter.java	/^    protected void addJGraphTEdge( Edge e ) {$/;"	m	class:JGraphModelAdapter
+addJGraphTVertex	ext/JGraphModelAdapter.java	/^    protected void addJGraphTVertex( Object v ) {$/;"	m	class:JGraphModelAdapter
+addOutgoingEdge	graph/AbstractBaseGraph.java	/^        public void addOutgoingEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+addToListenerList	graph/DefaultListenableGraph.java	/^    private void addToListenerList( List list, EventListener l ) {$/;"	m	class:DefaultListenableGraph	file:
+addTraversalListener	traverse/AbstractGraphIterator.java	/^    public void addTraversalListener( TraversalListener l ) {$/;"	m	class:AbstractGraphIterator
+addTraversalListener	traverse/GraphIterator.java	/^    public void addTraversalListener( TraversalListener l );$/;"	m	interface:GraphIterator
+addUnseenChildrenOf	traverse/TraverseUtils.java	/^        private void addUnseenChildrenOf( Object vertex ) {$/;"	m	class:TraverseUtils.XXFirstIterator	file:
+addVertex	Graph.java	/^    public boolean addVertex( Object v );$/;"	m	interface:Graph
+addVertex	graph/AbstractBaseGraph.java	/^    public boolean addVertex( Object v ) {$/;"	m	class:AbstractBaseGraph
+addVertex	graph/DefaultListenableGraph.java	/^    public boolean addVertex( Object v ) {$/;"	m	class:DefaultListenableGraph
+addVertex	graph/GraphDelegator.java	/^    public boolean addVertex( Object v ) {$/;"	m	class:GraphDelegator
+addVertex	graph/Subgraph.java	/^    public boolean addVertex( Object v ) {$/;"	m	class:Subgraph
+addVertex	graph/UnmodifiableGraph.java	/^    public boolean addVertex( Object v ) {$/;"	m	class:UnmodifiableGraph
+addVertexSetListener	ListenableGraph.java	/^    public void addVertexSetListener( VertexSetListener l );$/;"	m	interface:ListenableGraph
+addVertexSetListener	graph/DefaultListenableGraph.java	/^    public void addVertexSetListener( VertexSetListener l ) {$/;"	m	class:DefaultListenableGraph
+addVerticesUsingFilter	graph/Subgraph.java	/^    private void addVerticesUsingFilter( Set vertexSet, Set filter ) {$/;"	m	class:Subgraph	file:
+adjustDisplaySettings	demo/JGraphAdapterDemo.java	/^    private void adjustDisplaySettings( JGraph jg ) {$/;"	m	class:JGraphAdapterDemo	file:
+assertBaseContainsEdgeInstance	graph/Subgraph.java	/^    private void assertBaseContainsEdgeInstance( Edge e ) {$/;"	m	class:Subgraph	file:
+assertBaseContainsVertexInstance	graph/Subgraph.java	/^    private void assertBaseContainsVertexInstance( Object v ) {$/;"	m	class:Subgraph	file:
+assertCompatibleWithEdgeFactory	graph/AbstractBaseGraph.java	/^    private boolean assertCompatibleWithEdgeFactory( Edge e ) {$/;"	m	class:AbstractBaseGraph	file:
+assertNonNegativeEdge	traverse/ClosestFirstIterator.java	/^    private void assertNonNegativeEdge( Edge edge ) {$/;"	m	class:ClosestFirstIterator	file:
+assertVertexExist	graph/AbstractGraph.java	/^    protected boolean assertVertexExist( Object v ) {$/;"	m	class:AbstractGraph
+calculatePathLength	traverse/ClosestFirstIterator.java	/^    private double calculatePathLength( Object vertex, Edge edge ) {$/;"	m	class:ClosestFirstIterator	file:
+cascadingCut	util/FibonacciHeap.java	/^    protected void cascadingCut( Node y ) {$/;"	m	class:FibonacciHeap
+clear	util/FibonacciHeap.java	/^    public void clear(  ) {$/;"	m	class:FibonacciHeap
+clone	Edge.java	/^    public Object clone(  );$/;"	m	interface:Edge
+clone	edge/DefaulltEdge.java	/^    public Object clone(  ) {$/;"	m	class:DefaulltEdge
+clone	edge/DefaultEdge.java	/^    public Object clone(  ) {$/;"	m	class:DefaultEdge
+clone	graph/AbstractBaseGraph.java	/^    public Object clone(  ) {$/;"	m	class:AbstractBaseGraph
+clone	graph/DefaultListenableGraph.java	/^    public Object clone(  ) {$/;"	m	class:DefaultListenableGraph
+compare	alg/util/VertexDegreeComparator.java	/^    public int compare( Object v1, Object v2 ) {$/;"	m	class:VertexDegreeComparator
+connectedComponentFinished	alg/ConnectivityInspector.java	/^        public void connectedComponentFinished( $/;"	m	class:ConnectivityInspector.MyTraversalListener
+connectedComponentFinished	event/TraversalListener.java	/^    public void connectedComponentFinished( ConnectedComponentTraversalEvent e );$/;"	m	interface:TraversalListener
+connectedComponentFinished	event/TraversalListenerAdapter.java	/^    public void connectedComponentFinished( ConnectedComponentTraversalEvent e ) {}$/;"	m	class:TraversalListenerAdapter
+connectedComponentStarted	alg/ConnectivityInspector.java	/^        public void connectedComponentStarted( $/;"	m	class:ConnectivityInspector.MyTraversalListener
+connectedComponentStarted	event/TraversalListener.java	/^    public void connectedComponentStarted( ConnectedComponentTraversalEvent e );$/;"	m	interface:TraversalListener
+connectedComponentStarted	event/TraversalListenerAdapter.java	/^    public void connectedComponentStarted( ConnectedComponentTraversalEvent e ) {}$/;"	m	class:TraversalListenerAdapter
+connectedSetOf	alg/ConnectivityInspector.java	/^    public Set connectedSetOf( Object vertex ) {$/;"	m	class:ConnectivityInspector
+connectedSets	alg/ConnectivityInspector.java	/^    public List connectedSets(  ) {$/;"	m	class:ConnectivityInspector
+consolidate	util/FibonacciHeap.java	/^    protected void consolidate(  ) {$/;"	m	class:FibonacciHeap
+containsEdge	Graph.java	/^    public boolean containsEdge( Edge e );$/;"	m	interface:Graph
+containsEdge	Graph.java	/^    public boolean containsEdge( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+containsEdge	graph/AbstractBaseGraph.java	/^    public boolean containsEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph
+containsEdge	graph/AbstractGraph.java	/^    public boolean containsEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractGraph
+containsEdge	graph/GraphDelegator.java	/^    public boolean containsEdge( Edge e ) {$/;"	m	class:GraphDelegator
+containsEdge	graph/Subgraph.java	/^    public boolean containsEdge( Edge e ) {$/;"	m	class:Subgraph
+containsVertex	Edge.java	/^    public boolean containsVertex( Object v );$/;"	m	interface:Edge
+containsVertex	Graph.java	/^    public boolean containsVertex( Object v );$/;"	m	interface:Graph
+containsVertex	edge/DefaulltEdge.java	/^    public boolean containsVertex( Object v ) {$/;"	m	class:DefaulltEdge
+containsVertex	edge/DefaultEdge.java	/^    public boolean containsVertex( Object v ) {$/;"	m	class:DefaultEdge
+containsVertex	graph/AbstractBaseGraph.java	/^    public boolean containsVertex( Object v ) {$/;"	m	class:AbstractBaseGraph
+containsVertex	graph/GraphDelegator.java	/^    public boolean containsVertex( Object v ) {$/;"	m	class:GraphDelegator
+containsVertex	graph/Subgraph.java	/^    public boolean containsVertex( Object v ) {$/;"	m	class:Subgraph
+createDefaultEdgeAttributes	ext/JGraphModelAdapter.java	/^    protected Map createDefaultEdgeAttributes( Graph g ) {$/;"	m	class:JGraphModelAdapter
+createDefaultVertexAttributes	ext/JGraphModelAdapter.java	/^    protected Map createDefaultVertexAttributes(  ) {$/;"	m	class:JGraphModelAdapter
+createEdge	EdgeFactory.java	/^    public Edge createEdge( Object sourceVertex, Object targetVertex );$/;"	m	interface:EdgeFactory
+createEdge	edge/EdgeFactories.java	/^        public Edge createEdge( Object source, Object target ) {$/;"	m	class:EdgeFactories.DirectedEdgeFactory
+createEdge	edge/EdgeFactories.java	/^        public Edge createEdge( Object source, Object target ) {$/;"	m	class:EdgeFactories.DirectedWeightedEdgeFactory
+createEdge	edge/EdgeFactories.java	/^        public Edge createEdge( Object source, Object target ) {$/;"	m	class:EdgeFactories.UndirectedEdgeFactory
+createEdge	edge/EdgeFactories.java	/^        public Edge createEdge( Object source, Object target ) {$/;"	m	class:EdgeFactories.UndirectedWeightedEdgeFactory
+createEdgeTraversalEvent	traverse/TraverseUtils.java	/^        private EdgeTraversalEvent createEdgeTraversalEvent( Edge edge ) {$/;"	m	class:TraverseUtils.XXFirstIterator	file:
+createGraphEdgeChangeEvent	graph/DefaultListenableGraph.java	/^    private GraphEdgeChangeEvent createGraphEdgeChangeEvent( int eventType,$/;"	m	class:DefaultListenableGraph	file:
+createGraphSpecifics	traverse/TraverseUtils.java	/^    static Specifics createGraphSpecifics( Graph g ) {$/;"	m	class:TraverseUtils
+createGraphVertexChangeEvent	graph/DefaultListenableGraph.java	/^    private GraphVertexChangeEvent createGraphVertexChangeEvent( $/;"	m	class:DefaultListenableGraph	file:
+createHrefGraph	demo/HelloJGraphT.java	/^    private static DirectedGraph createHrefGraph(  ) {$/;"	m	class:HelloJGraphT	file:
+createPath	alg/DijkstraShortestPath.java	/^    private static List createPath( ClosestFirstIterator iter, Object endVertex ) {$/;"	m	class:DijkstraShortestPath	file:
+createStringGraph	demo/HelloJGraphT.java	/^    private static UndirectedGraph createStringGraph(  ) {$/;"	m	class:HelloJGraphT	file:
+createVertex	VertexFactory.java	/^    public Object createVertex(  );$/;"	m	interface:VertexFactory
+createVertexTraversalEvent	traverse/TraverseUtils.java	/^        private VertexTraversalEvent createVertexTraversalEvent( Object vertex ) {$/;"	m	class:TraverseUtils.XXFirstIterator	file:
+cut	util/FibonacciHeap.java	/^    protected void cut( Node x, Node y ) {$/;"	m	class:FibonacciHeap
+decreaseKey	util/FibonacciHeap.java	/^    public void decreaseKey( Node x, double k ) {$/;"	m	class:FibonacciHeap
+degreeOf	UndirectedGraph.java	/^    public int degreeOf( Object vertex );$/;"	m	interface:UndirectedGraph
+degreeOf	graph/AbstractBaseGraph.java	/^        public abstract int degreeOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+degreeOf	graph/AbstractBaseGraph.java	/^        public int degreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+degreeOf	graph/AbstractBaseGraph.java	/^        public int degreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+degreeOf	graph/AbstractBaseGraph.java	/^    public int degreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+degreeOf	graph/AsUndirectedGraph.java	/^    public int degreeOf( Object vertex ) {$/;"	m	class:AsUndirectedGraph
+degreeOf	graph/GraphDelegator.java	/^    public int degreeOf( Object vertex ) {$/;"	m	class:GraphDelegator
+degreeOf	graph/Subgraph.java	/^    public int degreeOf( Object vertex ) {$/;"	m	class:Subgraph
+delete	util/FibonacciHeap.java	/^    public void delete( Node x ) {$/;"	m	class:FibonacciHeap
+edgeAdded	alg/ConnectivityInspector.java	/^    public void edgeAdded( GraphEdgeChangeEvent e ) {$/;"	m	class:ConnectivityInspector
+edgeAdded	event/GraphListener.java	/^    public void edgeAdded( GraphEdgeChangeEvent e );$/;"	m	interface:GraphListener
+edgeAdded	ext/JGraphModelAdapter.java	/^        public void edgeAdded( GraphEdgeChangeEvent e ) {$/;"	m	class:JGraphModelAdapter.MyGraphListener
+edgeAdded	graph/Subgraph.java	/^        public void edgeAdded( GraphEdgeChangeEvent e ) {$/;"	m	class:Subgraph.BaseGraphListener
+edgeCount	graph/AbstractBaseGraph.java	/^        public int edgeCount(  ) {$/;"	m	class:AbstractBaseGraph.UndirectedEdgeContainer
+edgeRemoved	alg/ConnectivityInspector.java	/^    public void edgeRemoved( GraphEdgeChangeEvent e ) {$/;"	m	class:ConnectivityInspector
+edgeRemoved	event/GraphListener.java	/^    public void edgeRemoved( GraphEdgeChangeEvent e );$/;"	m	interface:GraphListener
+edgeRemoved	ext/JGraphModelAdapter.java	/^        public void edgeRemoved( GraphEdgeChangeEvent e ) {$/;"	m	class:JGraphModelAdapter.MyGraphListener
+edgeRemoved	graph/Subgraph.java	/^        public void edgeRemoved( GraphEdgeChangeEvent e ) {$/;"	m	class:Subgraph.BaseGraphListener
+edgeSet	Graph.java	/^    public Set edgeSet(  );$/;"	m	interface:Graph
+edgeSet	graph/AbstractBaseGraph.java	/^    public Set edgeSet(  ) {$/;"	m	class:AbstractBaseGraph
+edgeSet	graph/GraphDelegator.java	/^    public Set edgeSet(  ) {$/;"	m	class:GraphDelegator
+edgeSet	graph/Subgraph.java	/^    public Set edgeSet(  ) {$/;"	m	class:Subgraph
+edgeTraversed	event/TraversalListener.java	/^    public void edgeTraversed( EdgeTraversalEvent e );$/;"	m	interface:TraversalListener
+edgeTraversed	event/TraversalListenerAdapter.java	/^    public void edgeTraversed( EdgeTraversalEvent e ) {}$/;"	m	class:TraversalListenerAdapter
+edgesOf	Graph.java	/^    public List edgesOf( Object vertex );$/;"	m	interface:Graph
+edgesOf	graph/AbstractBaseGraph.java	/^        public List edgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+edgesOf	graph/AbstractBaseGraph.java	/^        public List edgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+edgesOf	graph/AbstractBaseGraph.java	/^        public abstract List edgesOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+edgesOf	graph/AbstractBaseGraph.java	/^    public List edgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+edgesOf	graph/GraphDelegator.java	/^    public List edgesOf( Object vertex ) {$/;"	m	class:GraphDelegator
+edgesOf	graph/Subgraph.java	/^    public List edgesOf( Object vertex ) {$/;"	m	class:Subgraph
+edgesOf	traverse/TraverseUtils.java	/^        public List edgesOf( Object vertex ) {$/;"	m	class:TraverseUtils.DirectedSpecifics
+edgesOf	traverse/TraverseUtils.java	/^        public List edgesOf( Object vertex ) {$/;"	m	class:TraverseUtils.UndirectedSpecifics
+edgesOf	traverse/TraverseUtils.java	/^        public abstract List edgesOf( Object vertex );$/;"	m	class:TraverseUtils.Specifics
+edit	ext/JGraphModelAdapter.java	/^    public void edit( Map attributes ) {$/;"	m	class:JGraphModelAdapter
+edit	ext/JGraphModelAdapter.java	/^    public void edit( Map attributes, ConnectionSet cs, ParentMap pm,$/;"	m	class:JGraphModelAdapter
+encounterVertex	traverse/TraverseUtils.java	/^        private final void encounterVertex( Object vertex, Edge edge ) {$/;"	m	class:TraverseUtils.XXFirstIterator	file:
+encounterVertexAgain	traverse/ClosestFirstIterator.java	/^    protected void encounterVertexAgain( Object vertex, Edge edge ) {$/;"	m	class:ClosestFirstIterator
+encounterVertexAgain	traverse/TraverseUtils.java	/^        protected void encounterVertexAgain( Object vertex, Edge edge ) {}$/;"	m	class:TraverseUtils.XXFirstIterator
+find2ApproximationCover	alg/VertexCovers.java	/^    public Set find2ApproximationCover( Graph g ) {$/;"	m	class:VertexCovers
+findGreedyCover	alg/VertexCovers.java	/^    public Set findGreedyCover( UndirectedGraph g ) {$/;"	m	class:VertexCovers
+findPathBetween	alg/DijkstraShortestPath.java	/^    public static List findPathBetween( Graph graph, Object startVertex,$/;"	m	class:DijkstraShortestPath
+fireConnectedComponentFinished	traverse/AbstractGraphIterator.java	/^    protected void fireConnectedComponentFinished( $/;"	m	class:AbstractGraphIterator
+fireConnectedComponentStarted	traverse/AbstractGraphIterator.java	/^    protected void fireConnectedComponentStarted( $/;"	m	class:AbstractGraphIterator
+fireEdgeAdded	graph/DefaultListenableGraph.java	/^    protected void fireEdgeAdded( Edge edge ) {$/;"	m	class:DefaultListenableGraph
+fireEdgeRemoved	graph/DefaultListenableGraph.java	/^    protected void fireEdgeRemoved( Edge edge ) {$/;"	m	class:DefaultListenableGraph
+fireEdgeTraversed	traverse/AbstractGraphIterator.java	/^    protected void fireEdgeTraversed( EdgeTraversalEvent e ) {$/;"	m	class:AbstractGraphIterator
+fireVertexAdded	graph/DefaultListenableGraph.java	/^    protected void fireVertexAdded( Object vertex ) {$/;"	m	class:DefaultListenableGraph
+fireVertexRemoved	graph/DefaultListenableGraph.java	/^    protected void fireVertexRemoved( Object vertex ) {$/;"	m	class:DefaultListenableGraph
+fireVertexTraversed	traverse/AbstractGraphIterator.java	/^    protected void fireVertexTraversed( VertexTraversalEvent e ) {$/;"	m	class:AbstractGraphIterator
+generateGraph	generate/EmptyGraphGenerator.java	/^    public void generateGraph( Graph target, VertexFactory vertexFactory,$/;"	m	class:EmptyGraphGenerator
+generateGraph	generate/GraphGenerator.java	/^    public void generateGraph( Graph target, VertexFactory vertexFactory,$/;"	m	interface:GraphGenerator
+generateGraph	generate/LinearGraphGenerator.java	/^    public void generateGraph( Graph target, VertexFactory vertexFactory,$/;"	m	class:LinearGraphGenerator
+generateGraph	generate/RingGraphGenerator.java	/^    public void generateGraph( Graph target, VertexFactory vertexFactory,$/;"	m	class:RingGraphGenerator
+generateGraph	generate/WheelGraphGenerator.java	/^    public void generateGraph( Graph target, final VertexFactory vertexFactory,$/;"	m	class:WheelGraphGenerator
+getAllEdges	Graph.java	/^    public List getAllEdges( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+getAllEdges	graph/AbstractBaseGraph.java	/^        public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+getAllEdges	graph/AbstractBaseGraph.java	/^        public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+getAllEdges	graph/AbstractBaseGraph.java	/^        public abstract List getAllEdges( Object sourceVertex,$/;"	m	class:AbstractBaseGraph.Specifics
+getAllEdges	graph/AbstractBaseGraph.java	/^    public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph
+getAllEdges	graph/AsUndirectedGraph.java	/^    public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AsUndirectedGraph
+getAllEdges	graph/GraphDelegator.java	/^    public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:GraphDelegator
+getAllEdges	graph/Subgraph.java	/^    public List getAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:Subgraph
+getEdge	Graph.java	/^    public Edge getEdge( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+getEdge	event/EdgeTraversalEvent.java	/^    public Edge getEdge(  ) {$/;"	m	class:EdgeTraversalEvent
+getEdge	event/GraphEdgeChangeEvent.java	/^    public Edge getEdge(  ) {$/;"	m	class:GraphEdgeChangeEvent
+getEdge	graph/AbstractBaseGraph.java	/^        public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+getEdge	graph/AbstractBaseGraph.java	/^        public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+getEdge	graph/AbstractBaseGraph.java	/^        public abstract Edge getEdge( Object sourceVertex, Object targetVertex );$/;"	m	class:AbstractBaseGraph.Specifics
+getEdge	graph/AbstractBaseGraph.java	/^    public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph
+getEdge	graph/AsUndirectedGraph.java	/^    public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AsUndirectedGraph
+getEdge	graph/GraphDelegator.java	/^    public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:GraphDelegator
+getEdge	graph/Subgraph.java	/^    public Edge getEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:Subgraph
+getEdgeCell	ext/JGraphModelAdapter.java	/^    public DefaultEdge getEdgeCell( Edge jGraphTEdge ) {$/;"	m	class:JGraphModelAdapter
+getEdgeContainer	graph/AbstractBaseGraph.java	/^        private DirectedEdgeContainer getEdgeContainer( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics	file:
+getEdgeContainer	graph/AbstractBaseGraph.java	/^        private UndirectedEdgeContainer getEdgeContainer( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics	file:
+getEdgeFactory	Graph.java	/^    public EdgeFactory getEdgeFactory(  );$/;"	m	interface:Graph
+getEdgeFactory	graph/AbstractBaseGraph.java	/^    public EdgeFactory getEdgeFactory(  ) {$/;"	m	class:AbstractBaseGraph
+getEdgeFactory	graph/GraphDelegator.java	/^    public EdgeFactory getEdgeFactory(  ) {$/;"	m	class:GraphDelegator
+getEdgeFactory	graph/Subgraph.java	/^    public EdgeFactory getEdgeFactory(  ) {$/;"	m	class:Subgraph
+getKey	util/FibonacciHeap.java	/^        public final double getKey(  ) {$/;"	m	class:FibonacciHeap.Node
+getLabel	LabeledElement.java	/^    public Object getLabel(  );$/;"	m	interface:LabeledElement
+getSeenData	traverse/TraverseUtils.java	/^        protected Object getSeenData( Object vertex ) {$/;"	m	class:TraverseUtils.XXFirstIterator
+getShortestPathLength	traverse/ClosestFirstIterator.java	/^        double getShortestPathLength(  ) {$/;"	m	class:ClosestFirstIterator.QueueEntry
+getSource	Edge.java	/^    public Object getSource(  );$/;"	m	interface:Edge
+getSource	edge/DefaulltEdge.java	/^    public Object getSource(  ) {$/;"	m	class:DefaulltEdge
+getSource	edge/DefaultEdge.java	/^    public Object getSource(  ) {$/;"	m	class:DefaultEdge
+getSpanningTreeEdge	traverse/ClosestFirstIterator.java	/^    public Edge getSpanningTreeEdge( Object vertex ) {$/;"	m	class:ClosestFirstIterator
+getTarget	Edge.java	/^    public Object getTarget(  );$/;"	m	interface:Edge
+getTarget	edge/DefaulltEdge.java	/^    public Object getTarget(  ) {$/;"	m	class:DefaulltEdge
+getTarget	edge/DefaultEdge.java	/^    public Object getTarget(  ) {$/;"	m	class:DefaultEdge
+getType	event/ConnectedComponentTraversalEvent.java	/^    public int getType(  ) {$/;"	m	class:ConnectedComponentTraversalEvent
+getType	event/GraphChangeEvent.java	/^    public int getType(  ) {$/;"	m	class:GraphChangeEvent
+getUnmodifiableIncomingEdges	graph/AbstractBaseGraph.java	/^        public List getUnmodifiableIncomingEdges(  ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+getUnmodifiableOutgoingEdges	graph/AbstractBaseGraph.java	/^        public List getUnmodifiableOutgoingEdges(  ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+getUnmodifiableVertexEdges	graph/AbstractBaseGraph.java	/^        public List getUnmodifiableVertexEdges(  ) {$/;"	m	class:AbstractBaseGraph.UndirectedEdgeContainer
+getVertex	event/GraphVertexChangeEvent.java	/^    public Object getVertex(  ) {$/;"	m	class:GraphVertexChangeEvent
+getVertex	event/VertexTraversalEvent.java	/^    public Object getVertex(  ) {$/;"	m	class:VertexTraversalEvent
+getVertexCell	ext/JGraphModelAdapter.java	/^    public DefaultGraphCell getVertexCell( Object jGraphTVertex ) {$/;"	m	class:JGraphModelAdapter
+getVertexPort	ext/JGraphModelAdapter.java	/^    public DefaultPort getVertexPort( Object jGraphTVertex ) {$/;"	m	class:JGraphModelAdapter
+getWeight	Edge.java	/^    public double getWeight(  );$/;"	m	interface:Edge
+getWeight	edge/DefaulltEdge.java	/^    public double getWeight(  ) {$/;"	m	class:DefaulltEdge
+getWeight	edge/DefaultEdge.java	/^    public double getWeight(  ) {$/;"	m	class:DefaultEdge
+getWeight	edge/DirectedWeightedEdge.java	/^    public double getWeight(  ) {$/;"	m	class:DirectedWeightedEdge
+getWeight	edge/UndirectedWeightedEdge.java	/^    public double getWeight(  ) {$/;"	m	class:UndirectedWeightedEdge
+hasLabel	LabeledElement.java	/^    public boolean hasLabel(  );$/;"	m	interface:LabeledElement
+hasNext	traverse/TraverseUtils.java	/^        public boolean hasNext(  ) {$/;"	m	class:TraverseUtils.XXFirstIterator
+inDegreeOf	DirectedGraph.java	/^    public int inDegreeOf( Object vertex );$/;"	m	interface:DirectedGraph
+inDegreeOf	graph/AbstractBaseGraph.java	/^        public abstract int inDegreeOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+inDegreeOf	graph/AbstractBaseGraph.java	/^        public int inDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+inDegreeOf	graph/AbstractBaseGraph.java	/^        public int inDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+inDegreeOf	graph/AbstractBaseGraph.java	/^    public int inDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+inDegreeOf	graph/AsUndirectedGraph.java	/^    public int inDegreeOf( Object vertex ) {$/;"	m	class:AsUndirectedGraph
+inDegreeOf	graph/GraphDelegator.java	/^    public int inDegreeOf( Object vertex ) {$/;"	m	class:GraphDelegator
+inDegreeOf	graph/Subgraph.java	/^    public int inDegreeOf( Object vertex ) {$/;"	m	class:Subgraph
+incomingEdgesOf	DirectedGraph.java	/^    public List incomingEdgesOf( Object vertex );$/;"	m	interface:DirectedGraph
+incomingEdgesOf	graph/AbstractBaseGraph.java	/^        public List incomingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+incomingEdgesOf	graph/AbstractBaseGraph.java	/^        public List incomingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+incomingEdgesOf	graph/AbstractBaseGraph.java	/^        public abstract List incomingEdgesOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+incomingEdgesOf	graph/AbstractBaseGraph.java	/^    public List incomingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+incomingEdgesOf	graph/AsUndirectedGraph.java	/^    public List incomingEdgesOf( Object vertex ) {$/;"	m	class:AsUndirectedGraph
+incomingEdgesOf	graph/GraphDelegator.java	/^    public List incomingEdgesOf( Object vertex ) {$/;"	m	class:GraphDelegator
+incomingEdgesOf	graph/Subgraph.java	/^    public List incomingEdgesOf( Object vertex ) {$/;"	m	class:Subgraph
+init	alg/ConnectivityInspector.java	/^    private void init(  ) {$/;"	m	class:ConnectivityInspector	file:
+init	demo/JGraphAdapterDemo.java	/^    public void init(  ) {$/;"	m	class:JGraphAdapterDemo
+insert	ext/JGraphModelAdapter.java	/^    public void insert( Object[] theRoots, Map attributes, ConnectionSet cs,$/;"	m	class:JGraphModelAdapter
+insert	util/FibonacciHeap.java	/^    public void insert( Node node, double key ) {$/;"	m	class:FibonacciHeap
+isAllowingLoops	graph/AbstractBaseGraph.java	/^    public boolean isAllowingLoops(  ) {$/;"	m	class:AbstractBaseGraph
+isAllowingMultipleEdges	graph/AbstractBaseGraph.java	/^    public boolean isAllowingMultipleEdges(  ) {$/;"	m	class:AbstractBaseGraph
+isCrossComponentTraversal	traverse/AbstractGraphIterator.java	/^    public boolean isCrossComponentTraversal(  ) {$/;"	m	class:AbstractGraphIterator
+isCrossComponentTraversal	traverse/GraphIterator.java	/^    public boolean isCrossComponentTraversal(  );$/;"	m	interface:GraphIterator
+isEmpty	traverse/ClosestFirstIterator.java	/^        public boolean isEmpty(  ) {$/;"	m	class:ClosestFirstIterator.ClosestFirstQueue
+isEmpty	traverse/TraverseUtils.java	/^        public boolean isEmpty(  ) {$/;"	m	class:TraverseUtils.SimpleQueue
+isEmpty	traverse/TraverseUtils.java	/^        public boolean isEmpty(  ) {$/;"	m	class:TraverseUtils.SimpleStack
+isEmpty	traverse/TraverseUtils.java	/^        public boolean isEmpty(  );$/;"	m	interface:TraverseUtils.SimpleContainer
+isEmpty	util/FibonacciHeap.java	/^    public boolean isEmpty(  ) {$/;"	m	class:FibonacciHeap
+isGraphConnected	alg/ConnectivityInspector.java	/^    public boolean isGraphConnected(  ) {$/;"	m	class:ConnectivityInspector
+isReuseEvents	graph/DefaultListenableGraph.java	/^    public boolean isReuseEvents(  ) {$/;"	m	class:DefaultListenableGraph
+isReuseEvents	traverse/AbstractGraphIterator.java	/^    public boolean isReuseEvents(  ) {$/;"	m	class:AbstractGraphIterator
+isReuseEvents	traverse/GraphIterator.java	/^    public boolean isReuseEvents(  );$/;"	m	interface:GraphIterator
+isVerifyIntegrity	graph/Subgraph.java	/^    public boolean isVerifyIntegrity(  ) {$/;"	m	class:Subgraph
+lazyFindConnectedSets	alg/ConnectivityInspector.java	/^    private List lazyFindConnectedSets(  ) {$/;"	m	class:ConnectivityInspector	file:
+link	util/FibonacciHeap.java	/^    protected void link( Node y, Node x ) {$/;"	m	class:FibonacciHeap
+m_allowingLoops	graph/AbstractBaseGraph.java	/^    boolean m_allowingLoops;$/;"	f	class:AbstractBaseGraph
+m_allowingMultipleEdges	graph/AbstractBaseGraph.java	/^    private boolean       m_allowingMultipleEdges;$/;"	f	class:AbstractBaseGraph	file:
+m_ascendingOrder	alg/util/VertexDegreeComparator.java	/^    private boolean m_ascendingOrder;$/;"	f	class:VertexDegreeComparator	file:
+m_base	graph/Subgraph.java	/^    private Graph         m_base;$/;"	f	class:Subgraph	file:
+m_ccFinishedEvent	traverse/TraverseUtils.java	/^        private final ConnectedComponentTraversalEvent m_ccFinishedEvent =$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_ccStartedEvent	traverse/TraverseUtils.java	/^        private final ConnectedComponentTraversalEvent m_ccStartedEvent =$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_child	util/FibonacciHeap.java	/^        Node m_child;$/;"	f	class:FibonacciHeap.Node
+m_connectedSets	alg/ConnectivityInspector.java	/^    List          m_connectedSets;$/;"	f	class:ConnectivityInspector
+m_crossComponentTraversal	traverse/AbstractGraphIterator.java	/^    private boolean m_crossComponentTraversal = true;$/;"	f	class:AbstractGraphIterator	file:
+m_currentConnectedSet	alg/ConnectivityInspector.java	/^        private Set m_currentConnectedSet;$/;"	f	class:ConnectivityInspector.MyTraversalListener	file:
+m_defaultEdgeAttributes	ext/JGraphModelAdapter.java	/^    private Map           m_defaultEdgeAttributes   = new HashMap(  );$/;"	f	class:JGraphModelAdapter	file:
+m_defaultVertexAttributes	ext/JGraphModelAdapter.java	/^    private Map           m_defaultVertexAttributes = new HashMap(  );$/;"	f	class:JGraphModelAdapter	file:
+m_degree	util/FibonacciHeap.java	/^        int m_degree;$/;"	f	class:FibonacciHeap.Node
+m_delegate	graph/GraphDelegator.java	/^    private Graph m_delegate;$/;"	f	class:GraphDelegator	file:
+m_edge	event/EdgeTraversalEvent.java	/^    protected Edge m_edge;$/;"	f	class:EdgeTraversalEvent
+m_edge	event/GraphEdgeChangeEvent.java	/^    protected Edge m_edge;$/;"	f	class:GraphEdgeChangeEvent
+m_edgeCells	ext/JGraphModelAdapter.java	/^    private Map           m_edgeCells               = new HashMap(  );$/;"	f	class:JGraphModelAdapter	file:
+m_edgeFactory	graph/AbstractBaseGraph.java	/^    private EdgeFactory   m_edgeFactory;$/;"	f	class:AbstractBaseGraph	file:
+m_edgeSet	graph/AbstractBaseGraph.java	/^    private Set           m_edgeSet;$/;"	f	class:AbstractBaseGraph	file:
+m_edgeSet	graph/Subgraph.java	/^    Set m_edgeSet   = new HashSet(  ); \/\/ friendly to improve performance$/;"	f	class:Subgraph
+m_elementList	traverse/TraverseUtils.java	/^        private ArrayList m_elementList = new ArrayList(  );$/;"	f	class:TraverseUtils.SimpleStack	file:
+m_elementList	traverse/TraverseUtils.java	/^        private LinkedList m_elementList = new LinkedList(  );$/;"	f	class:TraverseUtils.SimpleQueue	file:
+m_factoryEdgeClass	graph/AbstractBaseGraph.java	/^    private Class         m_factoryEdgeClass;$/;"	f	class:AbstractBaseGraph	file:
+m_frozen	traverse/ClosestFirstIterator.java	/^        boolean m_frozen;$/;"	f	class:ClosestFirstIterator.QueueEntry
+m_graph	alg/ConnectivityInspector.java	/^    private Graph m_graph;$/;"	f	class:ConnectivityInspector	file:
+m_graph	alg/util/VertexDegreeComparator.java	/^    private UndirectedGraph m_graph;$/;"	f	class:VertexDegreeComparator	file:
+m_graph	traverse/TraverseUtils.java	/^        private DirectedGraph m_graph;$/;"	f	class:TraverseUtils.DirectedSpecifics	file:
+m_graph	traverse/TraverseUtils.java	/^        private Graph m_graph;$/;"	f	class:TraverseUtils.UndirectedSpecifics	file:
+m_graphListener	ext/JGraphModelAdapter.java	/^    private GraphListener m_graphListener;$/;"	f	class:JGraphModelAdapter	file:
+m_graphListeners	graph/DefaultListenableGraph.java	/^    private ArrayList            m_graphListeners       = new ArrayList(  );$/;"	f	class:DefaultListenableGraph	file:
+m_heap	traverse/ClosestFirstIterator.java	/^        FibonacciHeap m_heap;$/;"	f	class:ClosestFirstIterator.ClosestFirstQueue
+m_incoming	graph/AbstractBaseGraph.java	/^        List                   m_incoming             = new ArrayList( 1 );$/;"	f	class:AbstractBaseGraph.DirectedEdgeContainer
+m_inwardSpokes	generate/WheelGraphGenerator.java	/^    private boolean            m_inwardSpokes;$/;"	f	class:WheelGraphGenerator	file:
+m_jgAdapter	demo/JGraphAdapterDemo.java	/^    private JGraphModelAdapter m_jgAdapter;$/;"	f	class:JGraphAdapterDemo	file:
+m_key	util/FibonacciHeap.java	/^        double m_key;$/;"	f	class:FibonacciHeap.Node
+m_left	util/FibonacciHeap.java	/^        Node m_left;$/;"	f	class:FibonacciHeap.Node
+m_mark	util/FibonacciHeap.java	/^        boolean m_mark;$/;"	f	class:FibonacciHeap.Node
+m_min	util/FibonacciHeap.java	/^    private Node m_min;$/;"	f	class:FibonacciHeap	file:
+m_n	util/FibonacciHeap.java	/^    private int m_n;$/;"	f	class:FibonacciHeap	file:
+m_outgoing	graph/AbstractBaseGraph.java	/^        List                   m_outgoing             = new ArrayList( 1 );$/;"	f	class:AbstractBaseGraph.DirectedEdgeContainer
+m_parent	util/FibonacciHeap.java	/^        Node m_parent;$/;"	f	class:FibonacciHeap.Node
+m_pending	traverse/TraverseUtils.java	/^        private SimpleContainer      m_pending;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_queue	traverse/ClosestFirstIterator.java	/^    private ClosestFirstQueue m_queue;$/;"	f	class:ClosestFirstIterator	file:
+m_reuseEvents	graph/DefaultListenableGraph.java	/^    private boolean              m_reuseEvents;$/;"	f	class:DefaultListenableGraph	file:
+m_reuseEvents	traverse/AbstractGraphIterator.java	/^    private boolean m_reuseEvents             = false;$/;"	f	class:AbstractGraphIterator	file:
+m_reuseableEdgeEvent	graph/DefaultListenableGraph.java	/^    private FlyweightEdgeEvent   m_reuseableEdgeEvent;$/;"	f	class:DefaultListenableGraph	file:
+m_reuseableEdgeEvent	traverse/TraverseUtils.java	/^        private FlyweightEdgeEvent   m_reuseableEdgeEvent;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_reuseableVertexEvent	graph/DefaultListenableGraph.java	/^    private FlyweightVertexEvent m_reuseableVertexEvent;$/;"	f	class:DefaultListenableGraph	file:
+m_reuseableVertexEvent	traverse/TraverseUtils.java	/^        private FlyweightVertexEvent m_reuseableVertexEvent;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_right	util/FibonacciHeap.java	/^        Node m_right;$/;"	f	class:FibonacciHeap.Node
+m_seen	traverse/TraverseUtils.java	/^        private Map                  m_seen           = new HashMap(  );$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_size	generate/EmptyGraphGenerator.java	/^    private int m_size;$/;"	f	class:EmptyGraphGenerator	file:
+m_size	generate/LinearGraphGenerator.java	/^    private int                m_size;$/;"	f	class:LinearGraphGenerator	file:
+m_size	generate/RingGraphGenerator.java	/^    private int m_size;$/;"	f	class:RingGraphGenerator	file:
+m_size	generate/WheelGraphGenerator.java	/^    private int                m_size;$/;"	f	class:WheelGraphGenerator	file:
+m_source	edge/DefaulltEdge.java	/^    private Object m_source;$/;"	f	class:DefaulltEdge	file:
+m_source	edge/DefaultEdge.java	/^    private Object m_source;$/;"	f	class:DefaultEdge	file:
+m_spanningTreeEdge	traverse/ClosestFirstIterator.java	/^        Edge m_spanningTreeEdge;$/;"	f	class:ClosestFirstIterator.QueueEntry
+m_specifics	graph/AbstractBaseGraph.java	/^    private Specifics     m_specifics;$/;"	f	class:AbstractBaseGraph	file:
+m_specifics	traverse/TraverseUtils.java	/^        private Specifics            m_specifics;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_state	traverse/TraverseUtils.java	/^        private int m_state = CCS_BEFORE_COMPONENT;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_target	edge/DefaulltEdge.java	/^    private Object m_target;$/;"	f	class:DefaulltEdge	file:
+m_target	edge/DefaultEdge.java	/^    private Object m_target;$/;"	f	class:DefaultEdge	file:
+m_traversalListeners	traverse/AbstractGraphIterator.java	/^    private List    m_traversalListeners      = new ArrayList(  );$/;"	f	class:AbstractGraphIterator	file:
+m_type	event/ConnectedComponentTraversalEvent.java	/^    private int m_type;$/;"	f	class:ConnectedComponentTraversalEvent	file:
+m_type	event/GraphChangeEvent.java	/^    protected int m_type;$/;"	f	class:GraphChangeEvent
+m_unmodifiableEdgeSet	graph/AbstractBaseGraph.java	/^    private transient Set m_unmodifiableEdgeSet   = null;$/;"	f	class:AbstractBaseGraph	file:
+m_unmodifiableEdgeSet	graph/Subgraph.java	/^    private transient Set m_unmodifiableEdgeSet   = null;$/;"	f	class:Subgraph	file:
+m_unmodifiableIncoming	graph/AbstractBaseGraph.java	/^        private transient List m_unmodifiableIncoming = null;$/;"	f	class:AbstractBaseGraph.DirectedEdgeContainer	file:
+m_unmodifiableOutgoing	graph/AbstractBaseGraph.java	/^        private transient List m_unmodifiableOutgoing = null;$/;"	f	class:AbstractBaseGraph.DirectedEdgeContainer	file:
+m_unmodifiableVertexEdges	graph/AbstractBaseGraph.java	/^        private transient List m_unmodifiableVertexEdges = null;$/;"	f	class:AbstractBaseGraph.UndirectedEdgeContainer	file:
+m_unmodifiableVertexSet	graph/AbstractBaseGraph.java	/^    private transient Set m_unmodifiableVertexSet = null;$/;"	f	class:AbstractBaseGraph	file:
+m_unmodifiableVertexSet	graph/Subgraph.java	/^    private transient Set m_unmodifiableVertexSet = null;$/;"	f	class:Subgraph	file:
+m_verifyIntegrity	graph/Subgraph.java	/^    private boolean       m_verifyIntegrity       = true;$/;"	f	class:Subgraph	file:
+m_vertex	event/GraphVertexChangeEvent.java	/^    protected Object m_vertex;$/;"	f	class:GraphVertexChangeEvent
+m_vertex	event/VertexTraversalEvent.java	/^    protected Object m_vertex;$/;"	f	class:VertexTraversalEvent
+m_vertex	traverse/ClosestFirstIterator.java	/^        Object m_vertex;$/;"	f	class:ClosestFirstIterator.QueueEntry
+m_vertexCells	ext/JGraphModelAdapter.java	/^    private Map           m_vertexCells             = new HashMap(  );$/;"	f	class:JGraphModelAdapter	file:
+m_vertexEdges	graph/AbstractBaseGraph.java	/^        List                   m_vertexEdges             = new ArrayList( 1 );$/;"	f	class:AbstractBaseGraph.UndirectedEdgeContainer
+m_vertexIterator	traverse/TraverseUtils.java	/^        private Iterator             m_vertexIterator = null;$/;"	f	class:TraverseUtils.XXFirstIterator	file:
+m_vertexMap	graph/AbstractBaseGraph.java	/^    Map     m_vertexMap;$/;"	f	class:AbstractBaseGraph
+m_vertexSet	graph/Subgraph.java	/^    Set m_vertexSet = new HashSet(  ); \/\/ friendly to improve performance$/;"	f	class:Subgraph
+m_vertexSetListeners	graph/DefaultListenableGraph.java	/^    private ArrayList            m_vertexSetListeners   = new ArrayList(  );$/;"	f	class:DefaultListenableGraph	file:
+m_vertexToConnectedSet	alg/ConnectivityInspector.java	/^    Map           m_vertexToConnectedSet;$/;"	f	class:ConnectivityInspector
+m_weight	edge/DirectedWeightedEdge.java	/^    private double m_weight = DEFAULT_EDGE_WEIGHT;$/;"	f	class:DirectedWeightedEdge	file:
+m_weight	edge/UndirectedWeightedEdge.java	/^    private double m_weight = DEFAULT_EDGE_WEIGHT;$/;"	f	class:UndirectedWeightedEdge	file:
+main	demo/HelloJGraphT.java	/^    public static void main( String[] args ) {$/;"	m	class:HelloJGraphT
+main	demo/JGraphAdapterDemo.java	/^    public static void main( String[] args ) {$/;"	m	class:JGraphAdapterDemo
+main	demo/PerformanceDemo.java	/^    public static void main( String[] args ) {$/;"	m	class:PerformanceDemo
+min	util/FibonacciHeap.java	/^    public Node min(  ) {$/;"	m	class:FibonacciHeap
+newSeenData	traverse/ClosestFirstIterator.java	/^    protected Object newSeenData( Object vertex, Edge edge ) {$/;"	m	class:ClosestFirstIterator
+newSeenData	traverse/TraverseUtils.java	/^        protected Object newSeenData( Object vertex, Edge edge ) {$/;"	m	class:TraverseUtils.XXFirstIterator
+next	traverse/TraverseUtils.java	/^        public Object next(  ) {$/;"	m	class:TraverseUtils.XXFirstIterator
+oppositeVertex	Edge.java	/^    public Object oppositeVertex( Object v );$/;"	m	interface:Edge
+oppositeVertex	edge/DefaulltEdge.java	/^    public Object oppositeVertex( Object v ) {$/;"	m	class:DefaulltEdge
+oppositeVertex	edge/DefaultEdge.java	/^    public Object oppositeVertex( Object v ) {$/;"	m	class:DefaultEdge
+org._3pq.jgrapht	DirectedGraph.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	Edge.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	EdgeFactory.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	Graph.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	GraphHelper.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	LabeledElement.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	ListenableGraph.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	UndirectedGraph.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	VertexFactory.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht	WeightedGraph.java	/^package org._3pq.jgrapht;$/;"	p
+org._3pq.jgrapht.alg	alg/ConnectivityInspector.java	/^package org._3pq.jgrapht.alg;$/;"	p
+org._3pq.jgrapht.alg	alg/DijkstraShortestPath.java	/^package org._3pq.jgrapht.alg;$/;"	p
+org._3pq.jgrapht.alg	alg/VertexCovers.java	/^package org._3pq.jgrapht.alg;$/;"	p
+org._3pq.jgrapht.alg.util	alg/util/VertexDegreeComparator.java	/^package org._3pq.jgrapht.alg.util;$/;"	p
+org._3pq.jgrapht.demo	demo/HelloJGraphT.java	/^package org._3pq.jgrapht.demo;$/;"	p
+org._3pq.jgrapht.demo	demo/JGraphAdapterDemo.java	/^package org._3pq.jgrapht.demo;$/;"	p
+org._3pq.jgrapht.demo	demo/PerformanceDemo.java	/^package org._3pq.jgrapht.demo;$/;"	p
+org._3pq.jgrapht.edge	edge/DefaulltEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/DefaultEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/DirectedEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/DirectedWeightedEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/EdgeFactories.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/UndirectedEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.edge	edge/UndirectedWeightedEdge.java	/^package org._3pq.jgrapht.edge;$/;"	p
+org._3pq.jgrapht.event	event/ConnectedComponentTraversalEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/EdgeTraversalEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/GraphChangeEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/GraphEdgeChangeEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/GraphListener.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/GraphVertexChangeEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/TraversalListener.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/TraversalListenerAdapter.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/VertexSetListener.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.event	event/VertexTraversalEvent.java	/^package org._3pq.jgrapht.event;$/;"	p
+org._3pq.jgrapht.ext	ext/JGraphModelAdapter.java	/^package org._3pq.jgrapht.ext;$/;"	p
+org._3pq.jgrapht.generate	generate/EmptyGraphGenerator.java	/^package org._3pq.jgrapht.generate;$/;"	p
+org._3pq.jgrapht.generate	generate/GraphGenerator.java	/^package org._3pq.jgrapht.generate;$/;"	p
+org._3pq.jgrapht.generate	generate/LinearGraphGenerator.java	/^package org._3pq.jgrapht.generate;$/;"	p
+org._3pq.jgrapht.generate	generate/RingGraphGenerator.java	/^package org._3pq.jgrapht.generate;$/;"	p
+org._3pq.jgrapht.generate	generate/WheelGraphGenerator.java	/^package org._3pq.jgrapht.generate;$/;"	p
+org._3pq.jgrapht.graph	graph/AbstractBaseGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/AbstractGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/AsUndirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DefaultDirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DefaultDirectedWeightedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DefaultListenableGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DirectedMultigraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DirectedSubgraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DirectedWeightedMultigraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/DirectedWeightedSubgraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/GraphDelegator.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/ListenableDirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/ListenableDirectedWeightedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/ListenableUndirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/ListenableUndirectedWeightedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/Multigraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/Pseudograph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/SimpleDirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/SimpleDirectedWeightedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/SimpleGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/SimpleWeightedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/Subgraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/UndirectedSubgraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/UndirectedWeightedSubgraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/UnmodifiableDirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/UnmodifiableGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/UnmodifiableUndirectedGraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/WeightedMultigraph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.graph	graph/WeightedPseudograph.java	/^package org._3pq.jgrapht.graph;$/;"	p
+org._3pq.jgrapht.traverse	traverse/AbstractGraphIterator.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.traverse	traverse/BreadthFirstIterator.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.traverse	traverse/ClosestFirstIterator.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.traverse	traverse/DepthFirstIterator.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.traverse	traverse/GraphIterator.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.traverse	traverse/TraverseUtils.java	/^package org._3pq.jgrapht.traverse;$/;"	p
+org._3pq.jgrapht.util	util/FibonacciHeap.java	/^package org._3pq.jgrapht.util;$/;"	p
+outDegreeOf	DirectedGraph.java	/^    public int outDegreeOf( Object vertex );$/;"	m	interface:DirectedGraph
+outDegreeOf	graph/AbstractBaseGraph.java	/^        public abstract int outDegreeOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+outDegreeOf	graph/AbstractBaseGraph.java	/^        public int outDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+outDegreeOf	graph/AbstractBaseGraph.java	/^        public int outDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+outDegreeOf	graph/AbstractBaseGraph.java	/^    public int outDegreeOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+outDegreeOf	graph/AsUndirectedGraph.java	/^    public int outDegreeOf( Object vertex ) {$/;"	m	class:AsUndirectedGraph
+outDegreeOf	graph/GraphDelegator.java	/^    public int outDegreeOf( Object vertex ) {$/;"	m	class:GraphDelegator
+outDegreeOf	graph/Subgraph.java	/^    public int outDegreeOf( Object vertex ) {$/;"	m	class:Subgraph
+outgoingEdgesOf	DirectedGraph.java	/^    public List outgoingEdgesOf( Object vertex );$/;"	m	interface:DirectedGraph
+outgoingEdgesOf	graph/AbstractBaseGraph.java	/^        public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+outgoingEdgesOf	graph/AbstractBaseGraph.java	/^        public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+outgoingEdgesOf	graph/AbstractBaseGraph.java	/^        public abstract List outgoingEdgesOf( Object vertex );$/;"	m	class:AbstractBaseGraph.Specifics
+outgoingEdgesOf	graph/AbstractBaseGraph.java	/^    public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:AbstractBaseGraph
+outgoingEdgesOf	graph/AsUndirectedGraph.java	/^    public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:AsUndirectedGraph
+outgoingEdgesOf	graph/GraphDelegator.java	/^    public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:GraphDelegator
+outgoingEdgesOf	graph/Subgraph.java	/^    public List outgoingEdgesOf( Object vertex ) {$/;"	m	class:Subgraph
+pathExists	alg/ConnectivityInspector.java	/^    public boolean pathExists( Object sourceVertex, Object targetVertex ) {$/;"	m	class:ConnectivityInspector
+positionVertexAt	demo/JGraphAdapterDemo.java	/^    private void positionVertexAt( Object vertex, int x, int y ) {$/;"	m	class:JGraphAdapterDemo	file:
+remove	ext/JGraphModelAdapter.java	/^    public void remove( Object[] theRoots ) {$/;"	m	class:JGraphModelAdapter
+remove	traverse/AbstractGraphIterator.java	/^    public void remove(  ) {$/;"	m	class:AbstractGraphIterator
+remove	traverse/ClosestFirstIterator.java	/^        public Object remove(  ) {$/;"	m	class:ClosestFirstIterator.ClosestFirstQueue
+remove	traverse/GraphIterator.java	/^    public void remove(  );$/;"	m	interface:GraphIterator
+remove	traverse/TraverseUtils.java	/^        public Object remove(  ) {$/;"	m	class:TraverseUtils.SimpleQueue
+remove	traverse/TraverseUtils.java	/^        public Object remove(  ) {$/;"	m	class:TraverseUtils.SimpleStack
+remove	traverse/TraverseUtils.java	/^        public Object remove(  );$/;"	m	interface:TraverseUtils.SimpleContainer
+removeAllEdges	Graph.java	/^    public List removeAllEdges( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+removeAllEdges	Graph.java	/^    public boolean removeAllEdges( Collection edges );$/;"	m	interface:Graph
+removeAllEdges	graph/AbstractBaseGraph.java	/^    private boolean removeAllEdges( Edge[] edges ) {$/;"	m	class:AbstractBaseGraph	file:
+removeAllEdges	graph/AbstractGraph.java	/^    public List removeAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractGraph
+removeAllEdges	graph/AbstractGraph.java	/^    public boolean removeAllEdges( Collection edges ) {$/;"	m	class:AbstractGraph
+removeAllEdges	graph/UnmodifiableGraph.java	/^    public List removeAllEdges( Object sourceVertex, Object targetVertex ) {$/;"	m	class:UnmodifiableGraph
+removeAllEdges	graph/UnmodifiableGraph.java	/^    public boolean removeAllEdges( Collection edges ) {$/;"	m	class:UnmodifiableGraph
+removeAllVertices	Graph.java	/^    public boolean removeAllVertices( Collection vertices );$/;"	m	interface:Graph
+removeAllVertices	graph/AbstractGraph.java	/^    public boolean removeAllVertices( Collection vertices ) {$/;"	m	class:AbstractGraph
+removeAllVertices	graph/UnmodifiableGraph.java	/^    public boolean removeAllVertices( Collection vertices ) {$/;"	m	class:UnmodifiableGraph
+removeEdge	Graph.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex );$/;"	m	interface:Graph
+removeEdge	Graph.java	/^    public boolean removeEdge( Edge e );$/;"	m	interface:Graph
+removeEdge	graph/AbstractBaseGraph.java	/^        public void removeEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.UndirectedEdgeContainer
+removeEdge	graph/AbstractBaseGraph.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:AbstractBaseGraph
+removeEdge	graph/AbstractBaseGraph.java	/^    public boolean removeEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph
+removeEdge	graph/DefaultListenableGraph.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:DefaultListenableGraph
+removeEdge	graph/DefaultListenableGraph.java	/^    public boolean removeEdge( Edge e ) {$/;"	m	class:DefaultListenableGraph
+removeEdge	graph/GraphDelegator.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:GraphDelegator
+removeEdge	graph/GraphDelegator.java	/^    public boolean removeEdge( Edge e ) {$/;"	m	class:GraphDelegator
+removeEdge	graph/Subgraph.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:Subgraph
+removeEdge	graph/Subgraph.java	/^    public boolean removeEdge( Edge e ) {$/;"	m	class:Subgraph
+removeEdge	graph/UnmodifiableGraph.java	/^    public Edge removeEdge( Object sourceVertex, Object targetVertex ) {$/;"	m	class:UnmodifiableGraph
+removeEdge	graph/UnmodifiableGraph.java	/^    public boolean removeEdge( Edge e ) {$/;"	m	class:UnmodifiableGraph
+removeEdgeFromTouchingVertices	graph/AbstractBaseGraph.java	/^        public abstract void removeEdgeFromTouchingVertices( Edge e );$/;"	m	class:AbstractBaseGraph.Specifics
+removeEdgeFromTouchingVertices	graph/AbstractBaseGraph.java	/^        public void removeEdgeFromTouchingVertices( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedSpecifics
+removeEdgeFromTouchingVertices	graph/AbstractBaseGraph.java	/^        public void removeEdgeFromTouchingVertices( Edge e ) {$/;"	m	class:AbstractBaseGraph.UndirectedSpecifics
+removeGraphListener	ListenableGraph.java	/^    public void removeGraphListener( GraphListener l );$/;"	m	interface:ListenableGraph
+removeGraphListener	graph/DefaultListenableGraph.java	/^    public void removeGraphListener( GraphListener l ) {$/;"	m	class:DefaultListenableGraph
+removeIncomingEdge	graph/AbstractBaseGraph.java	/^        public void removeIncomingEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+removeJGraphTEdge	ext/JGraphModelAdapter.java	/^    protected void removeJGraphTEdge( Edge e ) {$/;"	m	class:JGraphModelAdapter
+removeJGraphTVertex	ext/JGraphModelAdapter.java	/^    protected void removeJGraphTVertex( Object v ) {$/;"	m	class:JGraphModelAdapter
+removeMin	util/FibonacciHeap.java	/^    public Node removeMin(  ) {$/;"	m	class:FibonacciHeap
+removeOutgoingEdge	graph/AbstractBaseGraph.java	/^        public void removeOutgoingEdge( Edge e ) {$/;"	m	class:AbstractBaseGraph.DirectedEdgeContainer
+removeTraversalListener	traverse/AbstractGraphIterator.java	/^    public void removeTraversalListener( TraversalListener l ) {$/;"	m	class:AbstractGraphIterator
+removeTraversalListener	traverse/GraphIterator.java	/^    public void removeTraversalListener( TraversalListener l );$/;"	m	interface:GraphIterator
+removeVertex	Graph.java	/^    public boolean removeVertex( Object v );$/;"	m	interface:Graph
+removeVertex	graph/AbstractBaseGraph.java	/^    public boolean removeVertex( Object v ) {$/;"	m	class:AbstractBaseGraph
+removeVertex	graph/DefaultListenableGraph.java	/^    public boolean removeVertex( Object v ) {$/;"	m	class:DefaultListenableGraph
+removeVertex	graph/GraphDelegator.java	/^    public boolean removeVertex( Object v ) {$/;"	m	class:GraphDelegator
+removeVertex	graph/Subgraph.java	/^    public boolean removeVertex( Object v ) {$/;"	m	class:Subgraph
+removeVertex	graph/UnmodifiableGraph.java	/^    public boolean removeVertex( Object v ) {$/;"	m	class:UnmodifiableGraph
+removeVertexSetListener	ListenableGraph.java	/^    public void removeVertexSetListener( VertexSetListener l );$/;"	m	interface:ListenableGraph
+removeVertexSetListener	graph/DefaultListenableGraph.java	/^    public void removeVertexSetListener( VertexSetListener l ) {$/;"	m	class:DefaultListenableGraph
+reportPerformanceFor	demo/PerformanceDemo.java	/^    private static void reportPerformanceFor( String msg, long refTime ) {$/;"	m	class:PerformanceDemo	file:
+setCrossComponentTraversal	traverse/AbstractGraphIterator.java	/^    public void setCrossComponentTraversal( boolean crossComponentTraversal ) {$/;"	m	class:AbstractGraphIterator
+setEdge	graph/DefaultListenableGraph.java	/^        protected void setEdge( Edge e ) {$/;"	m	class:DefaultListenableGraph.FlyweightEdgeEvent
+setEdge	traverse/TraverseUtils.java	/^        protected void setEdge( Edge edge ) {$/;"	m	class:TraverseUtils.FlyweightEdgeEvent
+setLabel	LabeledElement.java	/^    public void setLabel( Object label );$/;"	m	interface:LabeledElement
+setReuseEvents	graph/DefaultListenableGraph.java	/^    public void setReuseEvents( boolean reuseEvents ) {$/;"	m	class:DefaultListenableGraph
+setReuseEvents	traverse/AbstractGraphIterator.java	/^    public void setReuseEvents( boolean reuseEvents ) {$/;"	m	class:AbstractGraphIterator
+setReuseEvents	traverse/GraphIterator.java	/^    public void setReuseEvents( boolean reuseEvents );$/;"	m	interface:GraphIterator
+setSpecifics	graph/AbstractBaseGraph.java	/^    private void setSpecifics(  ) {$/;"	m	class:AbstractBaseGraph	file:
+setType	graph/DefaultListenableGraph.java	/^        protected void setType( int type ) {$/;"	m	class:DefaultListenableGraph.FlyweightEdgeEvent
+setType	graph/DefaultListenableGraph.java	/^        protected void setType( int type ) {$/;"	m	class:DefaultListenableGraph.FlyweightVertexEvent
+setVerifyIntegrity	graph/Subgraph.java	/^    public void setVerifyIntegrity( boolean verifyIntegrity ) {$/;"	m	class:Subgraph
+setVertex	graph/DefaultListenableGraph.java	/^        protected void setVertex( Object vertex ) {$/;"	m	class:DefaultListenableGraph.FlyweightVertexEvent
+setVertex	traverse/TraverseUtils.java	/^        protected void setVertex( Object vertex ) {$/;"	m	class:TraverseUtils.FlyweightVertexEvent
+setWeight	Edge.java	/^    public void setWeight( double weight );$/;"	m	interface:Edge
+setWeight	edge/DefaulltEdge.java	/^    public void setWeight( double weight ) {$/;"	m	class:DefaulltEdge
+setWeight	edge/DefaultEdge.java	/^    public void setWeight( double weight ) {$/;"	m	class:DefaultEdge
+setWeight	edge/DirectedWeightedEdge.java	/^    public void setWeight( double weight ) {$/;"	m	class:DirectedWeightedEdge
+setWeight	edge/UndirectedWeightedEdge.java	/^    public void setWeight( double weight ) {$/;"	m	class:UndirectedWeightedEdge
+size	util/FibonacciHeap.java	/^    public int size(  ) {$/;"	m	class:FibonacciHeap
+toString	edge/DirectedEdge.java	/^    public String toString(  ) {$/;"	m	class:DirectedEdge
+toString	edge/UndirectedEdge.java	/^    public String toString(  ) {$/;"	m	class:UndirectedEdge
+toString	graph/AbstractBaseGraph.java	/^    public String toString(  ) {$/;"	m	class:AbstractBaseGraph
+toString	graph/AsUndirectedGraph.java	/^    public String toString(  ) {$/;"	m	class:AsUndirectedGraph
+toString	graph/GraphDelegator.java	/^    public String toString(  ) {$/;"	m	class:GraphDelegator
+toString	util/FibonacciHeap.java	/^        public String toString(  ) {$/;"	m	class:FibonacciHeap.Node
+toString	util/FibonacciHeap.java	/^    public String toString(  ) {$/;"	m	class:FibonacciHeap
+toStringFromSets	graph/AbstractGraph.java	/^    protected String toStringFromSets( Collection vertexSet, Collection edgeSet ) {$/;"	m	class:AbstractGraph
+undirectedGraph	GraphHelper.java	/^    public static UndirectedGraph undirectedGraph( Graph g ) {$/;"	m	class:GraphHelper
+union	util/FibonacciHeap.java	/^    public static FibonacciHeap union( FibonacciHeap h1, FibonacciHeap h2 ) {$/;"	m	class:FibonacciHeap
+usedMemory	demo/PerformanceDemo.java	/^    private static long usedMemory(  ) {$/;"	m	class:PerformanceDemo	file:
+vertexAdded	alg/ConnectivityInspector.java	/^    public void vertexAdded( GraphVertexChangeEvent e ) {$/;"	m	class:ConnectivityInspector
+vertexAdded	event/VertexSetListener.java	/^    public void vertexAdded( GraphVertexChangeEvent e );$/;"	m	interface:VertexSetListener
+vertexAdded	ext/JGraphModelAdapter.java	/^        public void vertexAdded( GraphVertexChangeEvent e ) {$/;"	m	class:JGraphModelAdapter.MyGraphListener
+vertexAdded	graph/Subgraph.java	/^        public void vertexAdded( GraphVertexChangeEvent e ) {$/;"	m	class:Subgraph.BaseGraphListener
+vertexRemoved	alg/ConnectivityInspector.java	/^    public void vertexRemoved( GraphVertexChangeEvent e ) {$/;"	m	class:ConnectivityInspector
+vertexRemoved	event/VertexSetListener.java	/^    public void vertexRemoved( GraphVertexChangeEvent e );$/;"	m	interface:VertexSetListener
+vertexRemoved	ext/JGraphModelAdapter.java	/^        public void vertexRemoved( GraphVertexChangeEvent e ) {$/;"	m	class:JGraphModelAdapter.MyGraphListener
+vertexRemoved	graph/Subgraph.java	/^        public void vertexRemoved( GraphVertexChangeEvent e ) {$/;"	m	class:Subgraph.BaseGraphListener
+vertexSet	Graph.java	/^    public Set vertexSet(  );$/;"	m	interface:Graph
+vertexSet	graph/AbstractBaseGraph.java	/^    public Set vertexSet(  ) {$/;"	m	class:AbstractBaseGraph
+vertexSet	graph/GraphDelegator.java	/^    public Set vertexSet(  ) {$/;"	m	class:GraphDelegator
+vertexSet	graph/Subgraph.java	/^    public Set vertexSet(  ) {$/;"	m	class:Subgraph
+vertexTraversed	alg/ConnectivityInspector.java	/^        public void vertexTraversed( VertexTraversalEvent e ) {$/;"	m	class:ConnectivityInspector.MyTraversalListener
+vertexTraversed	event/TraversalListener.java	/^    public void vertexTraversed( VertexTraversalEvent e );$/;"	m	interface:TraversalListener
+vertexTraversed	event/TraversalListenerAdapter.java	/^    public void vertexTraversed( VertexTraversalEvent e ) {}$/;"	m	class:TraversalListenerAdapter

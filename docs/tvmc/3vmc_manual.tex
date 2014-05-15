@@ -1,0 +1,146 @@
+\documentclass{article}
+\usepackage{alltt,gdefs,epsfig}
+
+%\usepackage[inactive]{srcltx} % SRC Specials for DVI Searching
+
+% Over-full v-boxes on even pages are due to the \v{c} in author's name
+\vfuzz2pt % Don't report over-full v-boxes if over-edge is small
+
+\newcommand{\lemref}[1]{Lemma~\ref{Lm:#1}}
+\newcommand{\figref}[1]{Figure~\ref{Fi:#1}}
+\newcommand{\defref}[1]{Definition~\ref{De:#1}}
+\newcommand{\tableref}[1]{Table~\ref{Ta:#1}}
+\newcommand{\subsubsubsection}[1]{\emph{#1}:}
+\newcommand{\impliesT}{\ \makebox{$\triangleright$}\ }
+\newcommand{\threeValue}[3]{{\lsyn #1 \rsyn_3^{#2}(#3)}}
+\newcommand{\evaluate}[3]{{\lsyn #1 \rsyn^{#2}(#3)}}
+\newcommand{\twoValue}[3]{\lsyn{#1}\rsyn_2^{#2}(#3)}
+\newcommand{\lt}{$<$}
+\newcommand{\gt}{$>$}
+\newcommand{\deref}{\makebox{{\tt ->}}}
+\newcommand{\PVar}{{\it PVar}}
+\newcommand{\param}[1]{$<$#1$>$}
+\newcommand{\freeVars}{{\it freeVars\/}}
+\newcommand{\closure}{{\it closure\/}}
+\newcommand{\blur}{{\it blur\/}}
+\newcommand{\coerce}{{\it Coerce\/}}
+\newcommand{\foreach}{\textbf{foreach}}
+\newcommand{\predbox}{\textbf{box}}
+\newcommand{\foreachI}{\textbf{for}\=\+\textbf{each}}
+\newcommand{\unique}{\textbf{unique}}
+\newcommand{\function}{\textbf{function}}
+\newcommand{\invfunction}{\textbf{invfunction}}
+\newcommand{\symmetric}{\textbf{symmetric}}
+\newcommand{\antisymmetric}{\textbf{antisymmetric}}
+\newcommand{\reflexive}{\textbf{reflexive}}
+\newcommand{\antireflexive}{\textbf{antireflexive}}
+\newcommand{\transitive}{\textbf{transitive}}
+\newcommand{\tvtitle}{\textbf{\%t}}
+\newcommand{\seperator}{\textbf{\%\%}}
+\newcommand{\tvimpl}{\deref}
+\newcommand{\STRUCT}[1]{\mbox{3-STRUCT}[#1]}
+\newcommand{\Voc}{{\cal P}}
+
+\newcommand{\CRewrites}{\C{\Rightarrow}}
+\newcommand{\Rewrites}{\Rightarrow}
+\newcommand{\heldby}{held\_by}
+\newcommand{\isacquired}{is\_acquired}
+\newcommand{\propertyoccurred}{property\_occurred}
+\newcommand{\isblocked}{is\_blocked}
+\newcommand{\iswaiting}{is\_waiting}
+\newcommand{\rby}{r\_by}
+\newcommand{\isthread}{isthread}
+\newcommand{\ready}{ready}
+\newcommand{\waitfor}{wait\_for}
+\newcommand{\tvmc}{$3$VMC}
+\newcommand{\new}{\textbf{\%new}}
+\newcommand{\newthread}{\textbf{\%newthread}}
+\newcommand{\retain}{\textbf{\%retain}}
+\newcommand{\tstart}{\textbf{\%start}}
+\newcommand{\tstop}{\textbf{\%stop}}
+\newcommand{\tvhalt}{\textbf{\%halt}}
+\newcommand{\tvfocus}{\textbf{\%f}}
+\newcommand{\tvprecond}{\textbf{\%p}}
+\newcommand{\tvmessage}{\textbf{\%message}}
+\newcommand{\tvinclude}{\textbf{\%include}}
+\newcommand{\tvexclude}{\textbf{\%exclude}}
+\newcommand{\tvexplicitat}{\textbf{\%explicitat}}
+
+\setcounter{topnumber}{5}
+\def\topfraction{0.99}
+\def\textfraction{0.05}
+\def\floatpagefraction{0.9}
+\setcounter{bottomnumber}{5}
+\def\bottomfraction{0.99}
+\setcounter{totalnumber}{10}
+\def\dbltopfraction{0.99}
+\def\dblfloatpagefraction{0.8}
+\setcounter{dbltopnumber}{5}
+
+%\author{Eran Yahav \thanks{Computer Sciences Department, School of
+%Mathematical Science, Tel-Aviv University, Tel-Aviv 69978, Tel:
+%+972-3-6407606, Fax: +972-3-6406761, yahave@math.tau.ac.il.}} \and
+%Mooly Sagiv \thanks{Computer Sciences Department, School of
+%Mathematical Science, Tel-Aviv University, Tel-Aviv 69978, Tel:
+%+972-3-6407606, Fax: +972-3-6406761, sagiv@math.tau.ac.il.}
+
+\author{Eran Yahav\thanks{School of Computer Science, Tel-Aviv University, Tel-Aviv 69978, Israel
+Tel: +972-3-6407606, Fax: +972-3-6406761 ; yahave@math.tau.ac.il}}
+
+%%% ----------------------------------------------------------------------
+\begin{document}
+
+
+\nocite{kn:SRW99} \nocite{CGP99}
+
+
+\title {$3$VMC User's Manual \\
+        \smallskip
+        \large{draft version} }
+
+%%\email{yahave@math.tau.ac.il}
+
+\date{January 27, 2001}
+
+%%% ----------------------------------------------------------------------
+
+\maketitle
+
+\begin{abstract}
+$3$VMC is a model checker which uses abstraction based on
+$3$-valued logic. $\tvmc$ is an extension of the TVLA framework.
+This document is a user's manual for $\tvmc$.
+\end{abstract}
+
+%%% ----------------------------------------------------------------------
+\maketitle
+%%% ----------------------------------------------------------------------
+
+
+\input{intro}
+\input{configurations}
+\input{tvmodels}
+\input{initialconfig}
+\input{properties}
+\input{summary}
+
+\appendix
+\input{onlinestuff}
+
+
+% ------------------------------------------------------------------------
+
+\subsection*{Acknowledgment}
+Thanks to Nurit Dor, Tal Lev-Ami, Noam Rinetskey and Alex
+Warshovski.
+
+% ------------------------------------------------------------------------
+
+\input{con_stat_tvm}
+
+%GATHER{Xbib.bib}   % For Gather Purpose Only
+%GATHER{Paper.bbl}  % For Gather Purpose Only
+\bibliographystyle{amsplain}
+\bibliography{c:/papers/bib/concurrent,c:/papers/bib/df,c:/papers/bib/modelcheck}
+\end{document}
+% ------------------------------------------------------------------------

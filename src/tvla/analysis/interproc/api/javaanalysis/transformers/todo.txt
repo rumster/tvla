@@ -1,0 +1,5 @@
+The hierarchy should b changed:
+The parameter binding mechanism should be delegated out of the object 
+isntead of inheritedfrom Return value / parameter binding.
+This is partially done in LocalHeap WithComon... which should replace 
+the current LocalHeap implmnetation

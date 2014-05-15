@@ -1,0 +1,16 @@
+#!/bin/tcsh -f
+setenv refDir ../tree_ref
+
+foreach one (non_tree DSW LDS InsertSorted3 InsertSorted2 InsertSorted \
+             DeleteSorted2 DeleteSorted \
+             Create3_freeSet CreateUnsorted3_freeSet \
+             CreateSorted3 CreateSorted3_freeSet)
+    rm -f $one.diff.dt $one.diff.ps
+    echo Diff: $one $refDir/$one.out.tvs $one.out.tvs -dot $one.diff.dt
+    tvla -diff $one $refDir/$one.out.tvs $one.out.tvs -dot $one.diff.dt
+    if ( -s $one.diff.dt ) then
+	dot -Tps $one.diff.dt >! $one.diff.ps
+    endif
+    echo ""
+    echo ""
+end

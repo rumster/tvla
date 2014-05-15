@@ -1,0 +1,414 @@
+/******************************************************************
+* nbq_stat.tvm
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+//%action verifyProperty() {
+//    %t "debug"
+//    %message E(v_1,v_2) (v_1 != 
+
+/*******************
+* skip()
+********************/
+%action skip() {
+    %t "skip"
+    %f { runnable(tr) }
+}
+
+/*MUT - added action*/
+/*******************
+* assignNull(ref,trnm) 
+* null assignment to local variable
+********************/
+%action assignNull(ref,trnm) {
+    %t "assignNull(" + ref + "," + trnm + ")"
+    %f { runnable(tr) }
+    {
+        
+            r_by[ref,trnm](o_1) = 0
+        
+    }
+}
+
+/*******************
+* nullifyLocals(trnm) 
+* null assignment to all local variables EXCEPT x_i
+********************/
+%action nullifyLocals(trnm) {
+    %t "nullifyLocals()"
+    %f { runnable(tr) }
+    {
+        foreach (fld in LocalFields-{x_i}) {
+            r_by[fld,trnm](o_1) = 0
+        }
+
+    }
+}
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+
+//NOTE: We assume that a node can exist only in the concurrent heap and not in
+//the sequential heap (and is then marked by dnode) but not vice versa.
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* Allocation to local variable.
+* note - the type is currently ignored.
+********************/
+//ref isn't assumed to be null before allocation.
+%action assignNew(ref,trnm) {
+    %t ref + "= new T()"
+    %f { runnable(tr) } 
+    %new 
+    {
+
+        r_by[ref,trnm](v) = isNew(v)
+
+        dnode(v) = dnode(v) | isNew(v)
+        
+        //updates due to universe-changing action:
+
+        foreach (fld in NextFields) {
+              rv[fld](o_1,o_2) = rv[fld](o_1,o_2)
+        }
+
+        foreach (fld in QFields) {
+              r_by[fld](o) = r_by[fld](o)
+        }
+
+        foreach (nm in StaticThreadNames-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](o) = r_by[fld,nm](o)
+             }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+        }
+
+        
+        dnext(v) = dnext(v)
+
+        foreach (nm in StaticThreadNames) {  
+           tNext[n,nm](v) = tNext[n,nm](v)  
+        }
+
+
+    }
+}
+
+
+//allocating in sequential heap a node that already appears in concurrent heap.
+%action assignNew_Seq(ref,trnm) {
+     %t "assignNew_Seq(ref)"
+     %f { runnable(tr) }
+     {
+        dnode(v) = dnode(v) & !r_by[ref,trnm](v)
+
+        //Before the action, the node pointed-to by ref didn't exist in the sequential heap
+        //and hence didn't have a sequential successor and also wasn't dnext
+        //(when allocating a node and when updating its next field (in con or seq),
+        // the node shouldn't become dnext if it's dnode).
+        //If it had a successor in the concurrent heap it becomes dnext.
+        dnext(v) = dnext(v) | (r_by[ref,trnm](v) & E(u) rv[n](v,u))
+        
+        //update to nextcon left to differencing 
+     }
+}
+
+/***
+* assignFromGlbField(ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a QUEUE field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromGlbField(ref,fld,trnm) {
+    %t ref + " = " + obj + "." + fld 
+    %f { runnable(tr) }
+    {   
+        r_by[ref,trnm](o_1) = r_by[fld](o_1)
+        
+    }
+}
+
+/***
+* assignFromNextField(ref,obj,trnm)
+* ref = obj.n where ref is a local field and obj is a local field
+***/
+//ref is not assumed to be null before assignment.
+%action assignFromNextField(ref,obj,trnm) {
+    %t ref + " = " + obj + "." + fld 
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,dst) }
+   //focus needed becuase we read a successor
+    %p E(o_h) r_by[Head_seq](o_h)
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {   
+        r_by[ref,trnm](o_1) = E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_1) 
+        
+    }
+}
+
+/***
+* isEqField(ref,fld,trnm)
+* ref == fld where ref is a local field and fld is a global field
+***/
+%action isEqField(ref,fld,trnm) {
+    %t ref + "==" + fld
+    %f { runnable(tr) }
+    %p A(o_f) (r_by[ref,trnm](o_f) <-> r_by[fld](o_f))  
+}
+
+
+/***
+* isNotEqField(ref,fld,trnm)
+* ref != fld where ref is a local field and fld is a global field
+***/
+%action isNotEqField(ref,fld,trnm) {
+    %t ref + "!=" + fld
+    %f { runnable(tr) }
+    %p !(A(o_f) (r_by[ref,trnm](o_f) <-> r_by[fld](o_f)))
+      
+}
+
+/*******************
+* isNull(ref,trnm)
+* (ref == null)
+********************/
+%action isNull(ref,trnm) {
+    %t ref + "== null"  
+    %f { runnable(tr) }
+    %p !E(o_ref) r_by[ref,trnm](o_ref)
+}
+
+
+/*******************
+* isNotNull(ref,trnm)
+* (ref != null)
+********************/
+%action isNotNull(ref,trnm) {
+    %t ref + "!= null"  
+    %f { runnable(tr) }
+    %p E(o_ref) r_by[ref,trnm](o_ref)
+}
+
+/***
+* SuccCAS(fld,oldVal,ref,trnm)
+* Successful CAS where fld is a QUEUE field.
+* fld == oldVal and we assign fld = ref.
+***/
+//fld is not assumed to be null before assignment.
+%action SuccCAS(fld,oldVal,ref,trnm) {
+    %t "SuccCAS(" + fld + "," + oldVal + "," + ref + "," + trnm + ")"
+    %f { runnable(tr) }
+    %p A(o_f) (r_by[fld](o_f) <-> r_by[oldVal,trnm](o_f))
+    {
+        r_by[fld](o_d) = r_by[ref,trnm](o_d)
+    }   
+}
+
+/***
+* FailCAS(fld,oldVal,ref,trnm)
+* Failed CAS where fld is a QUEUE field, since fld != oldVal.
+***/ 
+%action FailCAS(fld,oldVal,ref,trnm) {
+    %t "FailCAS(" + fld + "," + oldVal + "," + ref + "," + trnm + ")"
+    %f { runnable(tr) }
+    %p !(A(o_f) (r_by[fld](o_f) <-> r_by[oldVal,trnm](o_f)))
+    //NOTE: Nullifying locals cannot be performed as in stack,
+    //      since we don't wish to nullify in all calls to FailCAS.
+    //      Can be added as a separate action, for efficiency.
+     
+}
+
+
+/***
+* SuccCAS_Next(obj,oldVal,ref,trnm)
+* Successful CAS where obj is a thread-local variable and fld is n.
+* obj->n == oldVal and we assign obj->n = ref.
+***/
+
+//obj->n is not assumed to be null before assignment.
+%action SuccCAS_Next(obj,oldVal,ref,trnm) {
+    %t "SuccCAS_Next(" + obj + "," + oldVal + "," + ref + ")"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,o_f),
+         runnable(tr) & r_by[obj,trnm](o_t) & rv[n_seq](o_t,o_f) }
+    %p A(o_f) ((E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_f)) <-> r_by[oldVal,trnm](o_f))
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+    {
+  
+        rv[n](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                           r_by[ref,trnm](o_2) : rv[n](o_1,o_2) ) 
+        
+        rv[n_seq](o_1,o_2) = ( r_by[obj,trnm](o_1) ?
+                               !dnode(o_1) & 
+                               (rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2)))
+                               & !r_by[ref,trnm](o_2) :  
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[obj,trnm](o_1) ?
+                       !dnode(o_1) & 
+                       !A(o_2) ((rv[n_seq](o_1,o_2) | (!dnext(o_1) & rv[n](o_1,o_2))) <->
+                                r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+        
+    }   
+}
+
+/***
+* FailCAS_Next(obj,oldVal,ref,trnm)
+* Failed CAS where obj is a thread-local variable and fld is n,
+* since obj->n != oldVal.
+***/
+
+%action FailCAS_Next(obj,oldVal,ref,trnm) {
+    %t "FailCAS_Next(" + obj + "," + oldVal + "," + ref + ")"
+    %f { runnable(tr) & r_by[obj,trnm](o_t) & rv[n](o_t,o_f) }
+    %p !(A(o_f) ((E(o_t) r_by[obj,trnm](o_t) & rv[n](o_t,o_f)) <-> r_by[oldVal,trnm](o_f)))
+    %message (!(E(o_t) r_by[obj,trnm](o_t))) -> "possible null dereference of " + obj
+}
+
+
+/***
+* updateFieldNext_Seq(fld,ref,trnm)
+* fld.next = ref, in sequential ds. 
+* fld is a global field, ref is a local field.
+***/
+
+%action updateFieldNext_Seq(fld,ref,trnm) {
+    %t fld + "." + n + "=" + ref + "(sequential)"
+    %f { runnable(tr) & r_by[fld](o_f) & rv[n](o_f,dst) }
+    //is focus formula needed? is focus formula for n_seq also needed?
+    %message (!(E(o_f) r_by[fld](o_f))) -> "possible null dereference of " + fld                   
+    {
+
+        rv[n_seq](o_1,o_2) = ( r_by[fld](o_1) ?           
+                               r_by[ref,trnm](o_2) & !rv[n](o_1,o_2) : 
+                               rv[n_seq](o_1,o_2) )
+
+        dnext(o_1) = ( r_by[fld](o_1) ?
+                       !A(o_2) (rv[n](o_1,o_2) <-> r_by[ref,trnm](o_2)) :
+                       dnext(o_1) )
+        
+    }   
+}
+
+
+/***
+* assignField(fld,ref,trnm)
+* fld = ref where fld is a QUEUE field
+***/
+//We don't assume fld==null before assignment.
+%action assignField(fld,ref,trnm) {
+    %t fld + "=" + ref
+    %f { runnable(tr) }
+    {
+        r_by[fld](o_d) = r_by[ref,trnm](o_d)
+   
+    }   
+}
+
+/*******************
+* Clear(trnm) 
+* null assignment to all local variables
+********************/
+//We clear all local fields, no matter which action was performed (Enq or Deq).
+%action Clear(trnm) {
+    %t "Clear()"
+    %f { runnable(tr) }
+    {
+        foreach (fld in LocalFields) {
+            r_by[fld,trnm](o_1) = 0
+        }
+
+    }
+}
+
+
+/*********
+    //following messages check "atomicity" requirement:
+    %message ((A(t) (isthread(t) -> (at[li_exit](t) | at[ld_exit](t)))) &
+              (E(o_q) (rv[this](tr,o_q) & !(A(v) (rv[tail](o_q,v) <-> rv[tail_seq](o_q,v)))))) 
+             -> " note: tails may differ at quiescent point"
+    %message ((A(t) (isthread(t) -> (at[li_exit](t) | at[ld_exit](t)))) &
+              (E(o_q) (rv[this](tr,o_q) & !(A(v) (rv[head](o_q,v) <-> rv[head_seq](o_q,v)))))) 
+             -> " note: heads may differ at quiescent point"
+    %message ((A(t) (isthread(t) -> (at[li_exit](t) | at[ld_exit](t)))) &
+              (E(v) (dnode(v) | dnext(v)))) 
+             -> " note: heaps may differ at quiescent point"
+*********/
+
+
+/***
+* selectFieldNext_Seq(ref,fld,trnm)
+* ref = fld.next, in sequential ds.
+* ref is a local field and fld is a global field.
+***/
+//ref is NOT assumed to be null before assignment.
+%action selectFieldNext_Seq(ref,fld,trnm) {
+    %t ref + " = " + fld + "." + n + "(sequential)"
+    %f { runnable(tr) & r_by[fld](o_f) & rv[n](o_f,dst),
+         runnable(tr) & r_by[fld](o_f) & rv[n_seq](o_f,dst)
+       }
+    %message (!(E(o_f) r_by[fld](o_f))) -> "possible null dereference of " + fld
+    {   
+        r_by[ref,trnm](o_1) = E(o_f) (r_by[fld](o_f) & 
+                                      ((!dnext(o_f) & rv[n](o_f,o_1)) |
+                                       (dnext(o_f) & rv[n_seq](o_f,o_1)))) 
+       
+    }
+}
+
+
+/*******************
+* isEq(fld1,fld2,trnm)
+* fld1 == fld2
+********************/
+%action isEq(fld1,fld2,trnm) {
+    %t fld1 + " == " + fld2
+    %f { runnable(tr) }
+    %p A(o_t) (r_by[fld1,trnm](o_t) <-> r_by[fld2,trnm](o_t))
+}
+
+/*******************
+* isNotEq(fld1,fld2,trnm)
+* fld1 != fld2
+********************/
+%action isNotEq(fld1,fld2,trnm) {
+    %t fld1 + " != " + fld2
+    %f { runnable(tr) }
+    %p !(A(o_t) (r_by[fld1,trnm](o_t) <-> r_by[fld2,trnm](o_t)))
+}
+
+/****************************
+* verifySameDeqRes(trnm)
+* (next == next_seq)
+*****************************/
+%action verifySameDeqRes(trnm) {
+    %f { runnable(tr) }
+    %message (!A(v) (r_by[next,trnm](v) <-> r_by[next_seq,trnm](v))) 
+             -> "deq results may differ\n"
+}
+
+/*******************
+* isEqGlbs(fld1,fld2,trnm)
+* fld1 == fld2 for GLOBAL fields
+********************/
+%action isEqGlbs(fld1,fld2,trnm) {
+    %t fld1 + " == " + fld2
+    %f { runnable(tr) }
+    %p A(o_t) (r_by[fld1](o_t) <-> r_by[fld2](o_t))
+}
+
+/*******************
+* isNotEqGlbs(fld1,fld2,trnm)
+* fld1 != fld2 for GLOBAL fields
+********************/
+%action isNotEqGlbs(fld1,fld2,trnm) {
+    %t fld1 + " != " + fld2
+    %f { runnable(tr) }
+    %p !(A(o_t) (r_by[fld1](o_t) <-> r_by[fld2](o_t)))
+}

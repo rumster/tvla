@@ -1,0 +1,20 @@
+#!/bin/tcsh -f
+
+set defopts = ""
+
+set opts = "$defopts $*"
+@ i = 1
+#set tvsFiles = (non_tree DSW LDS InsertSorted3 InsertSorted2 InsertSorted DeleteSorted2 DeleteSorted CreateSorted3 CreateSorted3_freeSet)
+foreach one (non_tree DSW LDS InsertSorted3 InsertSorted2 InsertSorted \
+             DeleteSorted2 DeleteSorted \
+             Create3_freeSet CreateUnsorted3_freeSet \
+             CreateSorted3 CreateSorted3_freeSet)
+    rm -f $one.out.tvs $one.dt $one.ps $one.diff.log
+    #echo ${one} $tvsFiles[$i] $opts -props tree.properties -tvs $one.out.tvs
+    #tvla ${one} $tvsFiles[$i] $opts -props tree.properties -tvs $one.out.tvs
+    echo ${one} $opts -props tree.properties -tvs $one.out.tvs
+    tvla ${one} $opts -props tree.properties -tvs $one.out.tvs
+    echo ""
+    echo ""
+    @ i++
+end

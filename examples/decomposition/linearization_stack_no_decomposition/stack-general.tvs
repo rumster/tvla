@@ -1,0 +1,64 @@
+/*****
+* stack.tvs
+*****/
+
+//Concurrent and sequential stack initially the same.
+//All thread-local variables initially null.
+
+//empty stack: Top = Top_seq = null
+
+%n = {
+       tOne
+       #if(1 < GNUM)
+       , tTwo
+       #endif
+       #if(2 < GNUM)
+       , tThree
+       #endif
+       #if(3 < GNUM)
+       , tFour
+       #endif
+}
+
+%p = {
+
+    ready = { tOne
+              #if(1 < GNUM)
+              , tTwo
+              #endif
+              #if(2 < GNUM)
+              , tThree
+              #endif
+              #if(3 < GNUM)
+              , tFour
+              #endif
+            }
+
+//     general_g1 = {tOne}
+     at[l_dispatch_g1] = {tOne}
+              #if(1 < GNUM)
+//     general_g2 = {tTwo}
+     at[l_dispatch_g2] = {tTwo}
+              #endif
+              #if(2 < GNUM)
+//     general_g3 = {tThree}
+     at[l_dispatch_g3] = {tThree}
+              #endif
+              #if(3 < GNUM)
+//     general_g4 = {tFour}
+     at[l_dispatch__g4] = {tFour}
+              #endif
+
+    isthread = {
+       tOne
+       #if(1 < GNUM)
+       , tTwo
+       #endif
+       #if(2 < GNUM)
+       , tThree
+       #endif
+       #if(3 < GNUM)
+       , tFour
+       #endif
+    }
+}

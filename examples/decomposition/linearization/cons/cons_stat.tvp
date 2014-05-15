@@ -1,0 +1,229 @@
+/******************************************************************
+* set_stat.tvm
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+#define IF_IN_SET(var, set) foreach (dummy in {var} & set)
+#define CondAssign(cond,pred,result) pred = ((cond) ? (result) : (pred))
+
+%action schedule(loc) {
+  %param trnm in Threads
+  %t "schedule " + loc
+  %f { tr_scheduled(tr) }
+  // Free variable is there to case split on there tr goes to
+  %p tr_scheduled(tr) & trnm(tr) & at[loc](tr)
+}
+
+%action unschedule(to) {
+  %param trnm in Threads
+  %t "unschedule. going to " + to
+  %p E(tr) tr_scheduled(tr) & trnm(tr) 
+  {
+    CondAssign(tr_scheduled(v) & trnm(v), at[to](v), 1)
+    foreach (loc in locations-{to}) {
+      CondAssign(tr_scheduled(v) & trnm(v), at[loc](v), 0)
+    } 
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* Allocation to local variable.
+* note - the type is currently ignored.
+********************/
+//ref IS assumed to be null before allocation.
+
+%action assignNew(ref) {
+    %param trnm in Threads
+    %t ref + "= new T()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field in new"
+    %new
+    {
+#ifdef BINARY
+        ref(w, v) = (tr_scheduled(w) ? isNew(v) : ref(w,v))
+#endif
+        r_by[ref,trnm](v) = isNew(v)
+
+        //updates due to universe-changing action:
+
+        foreach (fld in GlobalFields) {
+              r_by[fld](o) = r_by[fld](o)
+        }
+
+        foreach (nm in Threads-{trnm}) {
+             foreach (fld in LocalFields) {
+                r_by[fld,nm](v) = r_by[fld,nm](v)
+	     }
+        }
+
+        foreach (fld in LocalFields-{ref}) {
+            r_by[fld,trnm](v) = r_by[fld,trnm](v)
+	}
+
+        foreach (op in Operations) {
+             choice[op](t) = choice[op](t)
+        }
+    }
+    %decompose
+}
+
+/***
+* consume(ref,fld,trnm)
+* ref = fld where ref is a local field and fld is a global field
+***/
+//ref is not assumed to be null before assignment.
+%action consume(ref,fld) {
+    %param trnm in Threads
+    %t ref + " = consume(" + fld + ")"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v)) -> "possible assignment to non-null field"
+    %message [trnm(v)] (E(v) r_by[ref,trnm](v) & markBit(v)) -> "accessing a deleted node"
+    {
+#ifdef BINARY
+      ref(w,v) = (tr_scheduled(w) ? r_by[fld](v) : ref(w,v))
+      foreach (otrnm in Threads-{trnm}) {
+        r_by[ref, otrnm](v) = r_by[ref, otrnm](v)
+      }
+#endif
+      r_by[ref, trnm](v) = r_by[fld](v)
+      r_by[fld](v) = 0
+      // We know ref is tracked by is[]
+      ///is[ref](v) = (r_by[fld](v) ? 1/2 | is[ref](v) : is[ref](v))
+    }
+    %decompose
+}
+
+/***
+* assignNull(ref,trnm)
+* ref = null where ref is a local field
+***/
+%action assignNull(ref) {
+    %param trnm in Threads
+    %t ref + " = null" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    {
+#ifdef BINARY
+         ref(w,o_1) = (tr_scheduled(w) ? 0 : ref(w,o_1))
+#endif
+         r_by[ref,trnm](o_1) = 0
+         //is[ref](v) = (r_by[ref,trnm](v) ? 1/2 & is[ref](v) : is[ref](v))
+    }
+    %decompose
+}
+
+/***
+* produce(ref1,ref2,trnm)
+***/
+//ref1 IS assumed to be null before assignment
+%action produce(ref1, ref2) {
+    %param trnm in Threads
+    %t ref1 + " = produce(" + ref2 + ")"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    %message [trnm(v)] (E(v) r_by[ref1](v)) -> "possible assignment to non-null field"
+    %message [trnm(v)] (E(v) r_by[ref1](v) & markBit(v)) -> "possible assignment to deleted field"
+    {
+      r_by[ref1](o_1) = r_by[ref2, trnm](o_1)
+    }
+    %decompose
+}
+
+/****
+* setChoice(op,trnm)
+* Set operation choice to op.
+***/
+%action setChoice(op) {
+    %param trnm in Threads
+    %t "setChoice(" + op + ")" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    %message [trnm(v)] (E(tr) trnm(tr) & |/{ choice[op2](tr) : op2 in Operations-{op}}) -> "Already performing another operation!"
+    {
+      choice[op](t) = choice[op](t) | tr_scheduled(t)
+    }
+    %decompose
+}
+
+/****
+* isChoice(op,trnm)
+* Is op the operation choice of tr.
+***/
+%action isChoice(op) {
+    %param trnm in Threads
+    %t "isChoice(" + op + ")" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & trnm(tr) & choice[op](tr)
+    {
+    }
+     %decompose
+}
+
+/*******************
+* Clear(trnm)
+* null assignment to all local variables 
+********************/
+//We clear all local fields, no matter which action was performed.
+%action Clear() {
+    %param trnm in Threads
+    %t "Clear()" + " [" + trnm + "]"
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    {
+#ifdef BINARY
+      foreach (fld in LocalFields) {
+        fld(w,o_1) = (tr_scheduled(w) ? 0 : fld(w,o_1))
+      }
+#endif
+      foreach (ref in LocalFields) {
+         r_by[ref,trnm](o_1) = 0
+         //is[ref](v) = (r_by[ref,trnm](v) ? 1/2 & is[ref](v) : is[ref](v))
+      }
+      foreach (otrnm in Threads-{trnm}) {
+        foreach (fld in LocalFields) {
+           r_by[fld,otrnm](o_1) = r_by[fld,otrnm](o_1)  
+        }
+      }
+    }
+    %decompose
+}
+
+
+%action isNull(ref) {
+    %param trnm in Threads
+    %t ref + "== null" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & trnm(tr) & !E(v) r_by[ref](v)
+    {
+    }
+    %decompose
+}
+
+
+%action isNotNull(ref) {
+    %param trnm in Threads
+    %t ref + "!= null" + " [" + trnm + "]"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & trnm(tr) & E(v) r_by[ref](v)
+    {
+    }
+    %decompose
+}
+
+%action setMarkBit(ref) {
+    %param trnm in Threads
+    %t "setMarkBit (" + ref + ")"
+    %compose |/{trnm(v1) & otrnm(v2) : otrnm in Threads-{trnm}}
+    %p E(tr) tr_scheduled(tr) & trnm(tr)
+    %message (E(v) r_by[ref,trnm](v) & markBit(v)) -> "trying to delete a deleted node"
+    // %message (E(v) r_by[ref,trnm](v) & is[ref](v)) -> "xi is shared!"
+    {
+       markBit(v) = (r_by[ref,trnm](v) ? 1 : markBit(v))
+    }
+    %decompose
+}
+

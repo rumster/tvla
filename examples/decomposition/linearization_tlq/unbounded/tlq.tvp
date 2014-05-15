@@ -1,0 +1,139 @@
+/************************************************************************ 
+ * tlq.tvm
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s QFields {Head,Head_seq,Tail,Tail_seq}
+
+%s LocalFields {x_i,t,node,new_head,new_head_seq}  
+//"node" is equivalent to "h" in nbq, 
+//"new_head" and "new_head_seq" equivalent to "next" and "next_seq".
+//"t" does not appear in original algorithm.
+
+%s EnqLocals {x_i,t} 
+
+%s DeqLocals {node,new_head,new_head_seq}  
+
+%s NextFields {n,n_seq}
+
+%s Locks {Hl,Tl}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+%pset Threads {t1,t2}
+//////////////////////////////////////////////////////////////
+
+
+/**************** Predicates **************/
+
+%s locations { 
+	init, pre_schedule, l_ready, l_dispatch,
+	li_1, li_2, li_3a, li_3, lis_1, lis_2, lis_3, li_4, li_5, li_exit,
+	ld_1, ld_2, ld_3, lds_1, lds_2, lds_3, ld_4, ld_5, ld_6, ld_7, ld_exit
+}
+
+#include "tlq_pred.tvp"
+
+%dname (|/{ r_by[fld](v) : fld in QFields}  | |/{holds[l](v) : l in Locks} ) &
+  (&/{ !at[loc](v) : loc in locations } & &/{ !rv[fld](v1,v2) : fld in NextFields } & 
+  !tr_scheduled(v) & !dnode(v) & !dnext(v) & !rest(v) &
+  &/{&/{ !r_by[fld,tn](v) : fld in LocalFields} & !tn(v) : tn in Threads}) locks
+
+%dname (rest(v) | |/{ r_by[fld](v) : fld in QFields} ) &
+  (&/{ !at[loc](v) : loc in locations} & !tr_scheduled(v) &
+  &/{&/{ !r_by[fld,tn](v) : fld in LocalFields} & !tn(v) : tn in Threads+{t_}}) rest
+
+foreach (tn in Threads) {
+	%dname (tn(v) | |/{ r_by[fld,tn](v) : fld in LocalFields} | |/{ r_by[fld](v) : fld in QFields}) &
+	  &/{&/{ !r_by[fld,tn2](v) : fld in LocalFields} & !tn2(v) : tn2 in (Threads+{t_})-{ tn }} tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "tlq_stat.tvp"
+
+%action schedule(loc) {
+  %param trnm in Threads
+  %t "schedule " + loc
+  %f { tr_scheduled(tr), tr_scheduled(tr) & trnm(tr) & at[loc](tr) }
+  %p tr_scheduled(tr) & trnm(tr) & at[loc](tr)  
+}
+
+%action unschedule() {
+  %t "unschedule"
+  {
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+/**************** Program *********************/
+
+%%
+
+pre_schedule unschedule() l_ready
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+/* Enq()      */ 
+/* concurrent */ 
+l_ready schedule(li_1) li_1 
+l_ready schedule(li_3a) li_3a 
+l_ready schedule(li_3) li_3 
+l_ready schedule(li_4) li_4 
+l_ready schedule(li_5) li_5 
+li_1 assignNew(li_1, li_2, x_i) li_2                       
+li_2 succLockField(li_2, li_3a, Tl) pre_schedule  
+li_3a assignFromGlbField(li_3a, li_3, t,Tail) pre_schedule    
+/* atomic { */ 
+li_3 updateNext(li_3, lis_1, t,x_i) lis_1    /*linearization point*/  
+lis_1 assignNew_Seq(lis_1, lis_2, x_i) lis_2 
+lis_2 updateFieldNext_Seq(lis_2, lis_3, Tail_seq,x_i) lis_3 
+lis_3 assignField(lis_3, li_4, Tail_seq,x_i) pre_schedule 
+/* } */ 
+li_4 assignField(li_4, li_5, Tail,x_i) pre_schedule 
+/* atomic { */ 
+li_5 unlockField(li_5, li_exit, Tl) li_exit 
+li_exit Clear(li_exit, l_dispatch) pre_schedule      /*can be merged with unlock into atomic block*/ 
+/* } */ 
+ 
+ 
+ 
+/* Deq() */    
+l_ready schedule(ld_1) ld_1 
+l_ready schedule(ld_2) ld_2 
+l_ready schedule(ld_3) ld_3 
+l_ready schedule(ld_4) ld_4 
+l_ready schedule(ld_6) ld_6 
+ld_1 succLockField(ld_1, ld_2, Hl) pre_schedule 
+ld_2 assignFromGlbField(ld_2, ld_3, node,Head) pre_schedule 
+/* atomic { */ 
+ld_3 assignFromNextField(ld_3, lds_1, new_head,node) lds_1     /*linearization point*/ 
+lds_1 selectFieldNext_Seq(lds_1, lds_2, new_head_seq,Head_seq) lds_2  
+lds_2 isNull(lds_2, ld_4, new_head_seq) ld_4   
+lds_2 isNotNull(lds_2, lds_3, new_head_seq) lds_3                                                
+lds_3 assignField(lds_3, ld_4, Head_seq,new_head_seq) pre_schedule 
+/* } */  
+/* atomic { */ 
+ld_4 isNull(ld_4, ld_6, new_head) pre_schedule    /*can be merged with assignField or above block*/ 
+ld_4 isNotNull(ld_4, ld_5, new_head) ld_5  /*can be merged with assignField or above block*/                                                
+ld_5 assignField(ld_5, ld_6, Head,new_head) pre_schedule 
+/* } */ 
+/* atomic { */ 
+ld_6 unlockField(ld_6, ld_7, Hl) ld_7 
+ld_7 verifySameDeqRes(ld_7, ld_exit) ld_exit     /*can be merged with unlock*/ 
+ld_exit Clear(ld_exit, l_dispatch) pre_schedule       /*can be merged with unlock*/ 
+/* } */ 
+
+
+
+/**********************    Thread Creation **********************/
+
+//general client
+/*nondeterministic choice of transaction*/ 
+l_ready schedule(l_dispatch) l_dispatch 
+l_dispatch skip(l_dispatch, li_1) li_1 
+l_dispatch skip(l_dispatch, ld_1) ld_1 

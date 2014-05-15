@@ -1,0 +1,71 @@
+///////
+// Sets
+
+%s PVar {t, y, x, h} // Names of pointer variables.
+%s PSel {n} // Names of pointer fields.
+%s HVar {}  // Names of pointer variables used for taking heap snapshots.
+%s HLoc {}  // Names of program labels where snapshots of the heap are taken.
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////
+// Transition system for a function that merges two sorted linked lists
+// into one sorted list.
+// (The corner cases x == NULL and y == NULL are not checked as the 
+//  input structures in merge.tvs are non-empty lists.)
+
+                                 // L merge(L x, L y) {
+L1  Is_Null_Var(x)          exit //   if (x == NULL) return y;
+L1  Is_Not_Null_Var(x)      L2
+L2  Is_Null_Var(y)          exit //   if (y == NULL) return x;
+L2  Is_Not_Null_Var(y)      L3
+L3  Greater_Data_L(y, x)    L4   //   if (x->d < y->d) {
+L3  Less_Equal_Data_L(y, x) L6
+L4  Copy_Var_L(h, x)        L5   //     h = x;
+L5  Get_Next_L(x, x)        L8   //     x = x->n;
+                                 //   } else {
+L6  Copy_Var_L(h, y)        L7   //     h = y;
+L7  Get_Next_L(y, y)        L8   //     y = y->n;
+                                 //   }
+L8  Copy_Var_L(t, h)        L9   //   t = h;
+L9  Is_Not_Null_Var(x)      L10  //   while (x != NULL && y ! = NULL) {
+L9  Is_Null_Var(x)          L19
+L10 Is_Not_Null_Var(y)      L11
+L10 Is_Null_Var(y)          L19
+L11 Greater_Data_L(y, x)    L12  //     if (x->data < y->data) {
+L11 Less_Equal_Data_L(y, x) L15
+L12 Set_Next_Null_L(t)      L13  //       t->n = NULL;
+L13 Set_Next_L(t, x)        L14  //       t->n = x;
+L14 Get_Next_L(x, x)        L18  //       x = x->n;
+                                 //     } else {
+L15 Set_Next_Null_L(t)      L16  //       t->n = NULL;
+L16 Set_Next_L(t, y)        L17  //       t->n = y;
+L17 Get_Next_L(y, y)        L18  //       y = y->n;
+                                 //     }
+L18 Get_Next_L(t, t)        L9   //     t = t->n;
+                                 //   }
+L19 Is_Not_Null_Var(x)      L20  //   if (x != NULL) {
+L19 Is_Null_Var(x)          L22
+L20 Set_Next_Null_L(t)      L21  //     t->n = NULL;
+L21 Set_Next_L(t, x)        L25  //     t->n = x;
+L22 Is_Not_Null_Var(y)      L23  //   } else if (y != NULL) {
+L22 Is_Null_Var(y)          L25
+L23 Set_Next_Null_L(t)      L24  //     t->n = NULL;
+L24 Set_Next_L(t, y)        exit //     t->n = x;
+                                 //   }
+                                 //   return h;
+                                 // }
+exit Assert_Sorted_L(h)     exit2                                 
+exit Assert_No_Leak(h)      exit2
+
+%% 
+
+/////////////////////////////////////////////////////////////////////////
+// Display structures that arise only at the following program locations.
+L1, exit

@@ -1,0 +1,67 @@
+/*****
+* tlq_enqueue.tvs
+* Initial structure for Two-Lock-Queue implementation.
+* Note that the queue must be initialized with a head item (terminator).
+* 
+* Initial Queue shape
+*
+* head  tail   tailLock   headLock 
+*   \    /         |         |
+*    \  /          |         |
+*     uh           tl        hl
+********************************************
+* Queue shape after a few insertions(not described in this file):
+* 
+* head        tail
+*  ||          ||
+*  ||          ||
+*  \/   next   \/
+*  uh ------> (u)  
+*****/
+
+%t = { tprd(producer) }
+%n = { uh, tl, hl, q }
+%p = { 
+    is_lock = { uh,tl,hl,q } 
+    ready = { tprd }
+    
+    rv[head] = { q->uh }
+    has[head] = { q }
+    r_by[head] = { uh }
+    rt[head,n] = { uh }
+    
+    rv[tail] = { q->uh }    
+    has[tail] = { q }
+    r_by[tail] = { uh }
+    rt[tail,n] = { uh }
+    
+    rv[tailLock] = { q->tl }
+    has[tailLock] = { q }
+    r_by[tailLock] = { tl }
+    rt[tailLock,n] = { tl }
+    
+    rv[headLock] = { q->hl }
+    has[headLock] = { q }
+    r_by[headLock] = { hl }
+    rt[headLock,n] = { hl }
+
+    rv[this] = {tprd -> q}
+    has[this] = { tprd }
+    r_by[this] = { q }
+    rt[this,n] = { q }
+    
+    rg[tail,n] = { uh }
+    rg[head,n] = { uh }
+    rg[tailLock,n] = { tl }
+    rg[headLock,n] = { hl }
+       
+    //rt[this,next] = { tprd -> q}
+    
+    #ifdef UBT
+    sm = { tprd : 1/2 }
+    bn = { uh -> uh, q->q, tl->tl,hl->hl,tprd->tprd : 1/2 }
+    is[this] = { q }
+    #else 
+    bn = { uh -> uh, q->q, tl->tl,hl->hl,tprd->tprd }
+    #endif
+}

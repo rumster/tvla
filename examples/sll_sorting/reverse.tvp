@@ -1,0 +1,36 @@
+///////
+// Sets
+
+%s PVar {x, y, t}
+%s HVar {}
+%s HLoc {}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that reverses a singly-linked list.
+
+                           // L reverse(L x) {
+L1 Set_Null_L(y)      L2   //   y = NULL;
+L2 Is_Null_Var(x)     exit //   while (x != NULL) {
+L2 Is_Not_Null_Var(x) L3
+L3 Copy_Var_L(t, y)   L4   //     t = y;
+L4 Copy_Var_L(y, x)   L5   //     y = x;
+L5 Get_Next_L(x, x)   L6   //     x = x->n;
+L6 Set_Next_Null_L(y) L7   //     y->n = NULL;
+L7 Set_Next_L(y, t)   L2   //     y->n = t;
+                           //   }
+                           // return y;
+exit Assert_Reverse_Sorted_L(y) exit2
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display structures that arise only at the following program locations.
+L1, exit

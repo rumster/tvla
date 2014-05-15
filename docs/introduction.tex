@@ -1,0 +1,44 @@
+\section{Introduction}
+
+This document is intended as a user's manual for the TVLA system.
+The reader should be familiar with the Three-Valued Logic based
+Analysis framework described in~\cite{TOPLAS:SRW02} before
+consulting this manual.  The manual is accompanied by an example
+of the analysis of the reverse function in \figref{Reverse}.
+
+The original algorithms in the system were designed and implemented
+by Tal Lev-Ami~\cite{kn:TalSAS00,Master:LevAmi00}.
+
+\subsection{Downloading and installing}
+
+The system and latest information is available at:\\
+\url{http://www.cs.tau.ac.il/~tvla/}.\\
+Please see the file LICESNE for licensing information.
+
+Installation procedure:
+\begin{enumerate}
+\item TVLA is written in Java and requires J2SE version 1.6 (or
+above), available from \url{http://java.sun.com/j2se/}. Before
+attempting to run TVLA, make sure it is possible to launch Java
+executables by entering ``java'' at the command-line prompt.
+
+\item TVLA uses DOT to generate Postscript files and requires
+Graphviz version 2.24 (or above), available from\\
+\url{http://www.research.att.com/sw/tools/graphviz/}.  After
+installing Graphviz, make sure the bin sub-directory is added to
+your path.
+
+\item Extract the archive's content and set the environment
+variable TVLA\_HOME to that location.
+
+\item Add the bin sub-directory to your path (the bin directory
+contains running scripts for Windows and Linux).
+
+\textbf{IMPORTANT:} Make sure the path does not contain trailing
+'$\backslash$' characters or trailing `/` characters.
+
+\item You are now ready to run the system.  Enter tvla to see
+usage information and command-line options.
+\end{enumerate}
+
+%\subsection{Summary of this document}

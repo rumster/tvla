@@ -1,0 +1,85 @@
+/* A Tvp program for the create function from elem_lib.c */
+
+/***********************************************************/
+/*********************** Sets ******************************/
+
+%s PVar {root, cur, el, t, t2}
+%s TSel {left, right}
+%s Sets {free}
+
+#include "pred_tree.tvp"
+#include "pred_set.tvp"
+%%
+#include "actions_tree.tvp"
+#include "actions_set.tvp"
+%%
+
+/***************** code *******************************/
+/*  for(i=0; i<size; i++) { */
+n01 uninterpreted() n02
+/*    t = malloc(sizeof(Elements)); */
+//n02 Malloc_T(t) n03
+n02 SetSelectAndRemove(free, t) n1
+
+/***** InsertSorted3 code below *****
+ ** with uninterpreted comparison ***/
+// if (root == NULL) {
+n1 Is_Null_Var(root) n2
+n1 Is_Not_Null_Var(root) n4
+//   root = t;
+  n2 Copy_Var_T(root, t) n3
+//   return;
+  // Null out t, as an optimizer could.
+  n3 Set_Null_T(t) n02 //test
+// }
+
+// cur = root;
+n4 Copy_Var_T(cur, root) n5
+// while (true) {
+n5 uninterpreted() n6
+//  if (*) {
+  n6 uninterpreted() n7
+  n6 uninterpreted() n12
+//    t2 = cur->left;
+    n7 Get_Sel_T(t2, cur, left) n8
+//    if (t2 == NULL) {
+    n8 Is_Null_Var(t2) n9
+    n8 Is_Not_Null_Var(t2) n11
+//      cur->left = t;
+      n9 Set_Sel_T(cur, left, t) n10
+//      return;
+      // Null out t and cur, as an optimizer could.
+      n10  Set_Null_T(t) n10a
+      n10a Set_Null_T(cur) n02 //test
+//    }
+//    cur = t2;
+    n11 Copy_Var_T(cur, t2) n5
+//  } else {
+//    t2 = cur->right;
+    n12 Get_Sel_T(t2, cur, right) n13
+//    if (t2 == NULL) {
+    n13 Is_Null_Var(t2) n14
+    n13 Is_Not_Null_Var(t2) n16
+//      cur->right = t;
+      n14 Set_Sel_T(cur, right, t) n15
+//      return;
+      // Null out t, as an optimizer could.
+      n15  Set_Null_T(t) n15a
+      n15a Set_Null_T(cur) n02 //test
+//    }
+//    cur = t2;
+    n16 Copy_Var_T(cur, t2) n5
+//  }
+//}
+/***** InsertSorted3 code above *****
+ ** with uninterpreted comparison ***/
+
+// Get rid of structures with a non-empty
+// free set in a transition from test to exit.
+n02 uninterpreted() test
+test SetIsEmpty(free) exit
+/* } */
+
+%% n01, test, exit
+
+// Remember to collect the answer at node exit.

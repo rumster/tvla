@@ -1,0 +1,22 @@
+%n = {n0, n1, producer1, producer2}
+%p = {
+  isthread = {producer1, producer2}
+  at[pl_1] = {producer1, producer2}
+  sm = {}
+  ready = {producer1, producer2}
+  n = {n0->n1}
+  global[S_Top] = {n0}
+  global[S_tail] = {n1}
+
+  tid1 = {producer1}
+  tid2 = {producer2}
+  /*tid3 = {producer3}*/
+
+  // instrumentation
+  is[n] = {}
+  r[S_Top,n] = {n0, n1}
+  r[S_tail,n] = {n1}
+  r_in[n] = {n1}
+  r_out[n] = {n0}
+  t[n] = {n0->n0, n1->n1, producer1->producer1, producer2->producer2, n0->n1}
+}

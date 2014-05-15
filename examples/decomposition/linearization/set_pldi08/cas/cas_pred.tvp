@@ -1,0 +1,183 @@
+/***********************************************************
+* set_pred.tvp
+***********************************************************/
+
+%p wasLin(thread)
+%p michal(thread)
+%p fromFail(thread)
+
+%p tr_scheduled(v) unique
+foreach (loc in locations) {
+  %p at[loc](thread) 
+  %r at[loc](v) ==> isthread(v)
+  %r !isthread(v) ==> !at[loc](v)
+}
+
+foreach (tname in Threads) {
+  %p tname(v) unique
+}
+
+foreach (bool in BoolFields) {
+   %p bool(v) nonabs
+   %r bool(v) ==> !isthread(v)
+   %r isthread(v) ==> !bool(v)
+}
+
+foreach (bool in BoolLocals) {
+   %p bool(v)
+   %r bool(v) ==> isthread(v)
+   %r !isthread(v) ==> !bool(v)
+}
+
+#define TRUE isthread
+%p FALSE(v)
+
+foreach (tn1 in Threads) {
+	%r tn1(v) ==> isthread(v)
+	%r !isthread(v) ==> !tn1(v)
+	%r A(v) !tn1(v) ==> 0
+	
+	foreach (tn2 in Threads-{tn1}) {
+  		%r tn1(v) ==> !tn2(v)
+  	}
+}
+
+/**********************************************/
+/*************** Core Predicates **************/
+//pointer field fld of object o_1 points to object o_2
+//NOTE: is "acyclic" correct?
+foreach (fld in NextFields) {
+    %p rv[fld](o_1, o_2) function acyclic
+}
+
+//referenced-by predicate for global variables (fields of shared ds)
+foreach (fld in GlobalFields) {
+    %p r_by[fld](o) unique pointer
+}
+
+//referenced-by prediacte for thread-local variables
+foreach (fld in LocalFields) {
+    %p fld(v1,v2) function
+    %r !isthread(w1) ==> !fld(w1,v1)
+    %r isthread(v1) ==> !fld(w1,v1)
+}
+foreach (nm in Threads) {
+    foreach (fld in LocalFields) {
+        %i r_by[fld,nm](v1) = E(w1) nm(w1) & fld(w1,v1) pointer unique
+        %r nm(w1) & r_by[fld,nm](v1) ==> fld(w1,v1)
+    }
+}
+
+//node v appears only in the concurrent heap or only in the sequential heap.
+%p dnode(v)
+
+//value of node v_1 is less or equal to value of node v_2
+%p dle(v_1, v_2) transitive reflexive
+
+//thread t (general client) is executing operation op (IN THE NON-COMMON PART OF THE CODE)
+foreach (op in Operations) {
+   %p choice[op](t) 
+   %r choice[op](v) ==> isthread(v)
+   %r !isthread(v) ==> !choice[op](v)
+}
+//node v is a member of the sequential set
+%p member(v)
+
+/*********************************************************/
+/*************** Instrumentation Predicates **************/
+
+%i eq(v1,v2) = dle(v1,v2) & dle(v2,v1) & v1 != v2 symmetric
+// michal -we need this because coerce doesnt get this.
+%r !eq(v1, v2) ==> !eq(v2, v1)
+%r !dle(v1, v2) ==> !eq(v1, v2)
+
+%r eq(v1, v2) & eq(v1, v3) & v2 != v3 ==> eq(v2, v3)
+%r eq(v1, v2) & !eq(v1, v3) & v1 != v3 ==> !eq(v2, v3)
+
+%r eq(v1, v2) & dle(v1, v3) ==> dle(v2, v3)
+%r eq(v1, v2) & !dle(v1, v3) ==> !dle(v2, v3)
+%r dle(v2, v3) & !dle(v1, v3) & v1 != v2 ==> !eq(v1, v2)
+
+%r eq(v1, v2) & !dle(v3, v1) ==> !dle(v3, v2)
+%r eq(v1, v2) & dle(v3, v1) ==> dle(v3, v2)
+%r dle(v3, v2) & !dle(v3, v1) & v1 != v2 ==> !eq(v1, v2)
+
+
+// michal - am pointed to by some local var of the rt_sched thread
+%i r_by_tr_sc(v) = E(w) tr_scheduled(w) & |/{ fld(w,v) : fld in LocalFields } nonabs  
+
+//node v is in ascending order with respect to its "n" successor
+//NOTE: 1) why nonabs? 2) is inSOrder needed instead:
+//node v is in strictly ascending order with respect to its "n" successor
+%i inSOrder[dle,n](v) = !isthread(v) &
+                        (A(v_1) (rv[n](v, v_1) -> (dle(v, v_1) & !dle(v_1, v)))) nonabs
+
+%i bn[n](o_1,o_2) = rv[n]*(o_1,o_2) transitive reflexive
+
+%i rt[Head](v) = E(w) r_by[Head](w) & bn[n](w,v)
+%i rt[Tail](v) = E(w) r_by[Tail](w) & bn[n](v,w)
+
+foreach (nm in Threads) {
+  %i memberEq[x_i,nm](v) = E(w) r_by[x_i,nm](w) & member(v) & eq(v,w)
+}
+
+/*********************************************************/
+/*************** Consistency Rules **************/
+
+//correct?
+//check generated constraints
+%r !isthread(v_1) & !isthread(v_2) & !dle(v_1, v_2) ==> dle(v_2, v_1)
+
+//replaces reflexivity of dle (since dle should apply only to list-nodes, not threads)
+%r (v_1 == v_2) & !isthread(v_1) ==> dle(v_1,v_2)
+
+//needed?
+%r dle(v_1,v_2) & dle(v_2,v_3) & !dle(v_3,v_2) ==> !dle(v_3,v_1)
+
+%r rv[n](v_1, v_2) ==> bn[n](v_1, v_2)
+%r !bn[n](v_1, v_2) ==> !rv[n](v_1, v_2)
+// michal 
+%r !bn[n](v_2, v_1) & E(v3) bn[n](v3, v_1) & bn[n](v3, v_2) ==> bn[n](v_1, v_2)
+
+// michal
+%r inSOrder[dle,n](v) & dle(u,v) ==> !rv[n](v,u)
+
+// transitivity
+%r E(v_2) bn[n](v_1,v_2) & bn[n](v_2,v_3) ==> bn[n](v_1,v_3)
+%r E(v_1) bn[n](v_1,v_2) & !bn[n](v_1,v_3) ==> !bn[n](v_2,v_3)
+%r E(v_3) bn[n](v_2,v_3) & !bn[n](v_1,v_3) ==> !bn[n](v_1,v_2)
+
+// Acyclicity
+%r bn[n](v_1, v_2) ==> !rv[n](v_2,v_1)
+
+%r E(v_1) rv[n](v_1,v_2) & bn[n](v_1,v_3) & v_1 != v_3 ==> bn[n](v_2,v_3)
+%r E(v_3) v_1 != v_3 & bn[n](v_1,v_3) & !bn[n](v_2,v_3) ==> !rv[n](v_1,v_2)
+%r E(v_2) rv[n](v_1,v_2) & v_1 != v_3 & !bn[n](v_2,v_3) ==> !bn[n](v_1,v_3)
+
+%r E(v_1,v_4) bn[n](v_1, v_2) & bn[n](v_1,v_3) & rv[n](v_2, v_4) & rv[n](v_3, v_4) ==> v_2 == v_3
+%r E(v_2,v_4) bn[n](v_1, v_2) & rv[n](v_2, v_4) & rv[n](v_3, v_4) & v_2 != v_3 ==> !bn[n](v_1,v_3)
+%r E(v_1,v_2) bn[n](v_1, v_2) & bn[n](v_1,v_3) & rv[n](v_2, v_4) & v_2 != v_3 ==> !rv[n](v_3, v_4) 
+
+// Order (n is a function)
+%r E(v_1) bn[n](v_1,v_2) & bn[n](v_1,v_3) & !bn[n](v_2,v_3) ==> bn[n](v_3,v_2)
+%r E(v_1) bn[n](v_1,v_3) & !bn[n](v_2,v_3) & !bn[n](v_3,v_2) ==> !bn[n](v_1,v_2)
+
+%r v_1 != v_2 & bn[n](v_1,v_2) & !E(v_3) (v_3 != v_1 & v_3 != v_2 & rv[n](v_1,v_3))
+   ==> rv[n](v_1,v_2)
+
+%r inSOrder[dle,n](v) & rv[n](v,v_1) ==> dle(v, v_1)
+%r inSOrder[dle,n](v) & rv[n](v,v_1) ==> !dle(v_1, v)
+
+%r u != v & bn[n](u,v) & A(w) (bn[n](u,w) -> inSOrder[dle,n](w)) ==> dle(u,v)
+%r u != v & bn[n](u,v) & A(w) (bn[n](u,w) -> inSOrder[dle,n](w)) ==> !dle(v,u)
+
+%r isthread(v_1) ==> !rv[n](v_1, v_2)
+%r isthread(v_2) ==> !rv[n](v_1, v_2)
+%r isthread(v_1) & v_1 != v_2 ==> !bn[n](v_1, v_2)
+%r isthread(v_2) & v_1 != v_2 ==> !bn[n](v_1, v_2)
+%r isthread(v_1) ==> !rt[Head](v_1)
+%r isthread(v_1) ==> !rt[Tail](v_1)
+
+%r r_by[Head](v_1) & rt[Head](v_2) ==> bn[n](v_1,v_2)
+%r r_by[Tail](v_1) & rt[Tail](v_2) ==> bn[n](v_2,v_1)
+

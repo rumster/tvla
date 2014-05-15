@@ -1,0 +1,81 @@
+// Empty structure
+
+%n = {}
+
+%p = {
+  sm = {}
+  
+	root = {}
+  
+	left = {}
+  
+	right = {}
+  
+	r[root] = {}
+  
+	unique_selection = {}
+
+}
+
+
+
+// Structure containing only garbage
+
+%n = {u1}
+
+%p = {
+  sm = {u1:1/2}
+  
+	root = {}
+  
+	left = {u1 -> u1:1/2}
+  
+	right = {u1 -> u1:1/2}
+  
+	r[root] = {}
+  
+	unique_selection = {u1:1/2}
+
+}
+
+
+
+// Structure containing no garbage
+
+%n = {u0}
+
+%p = {
+  sm = {u0:1/2}
+  
+	root = {u0:1/2}
+  
+	left = {u0 -> u0:1/2}
+  
+	right = {u0 -> u0:1/2}
+  
+	r[root] = {u0}
+  
+	unique_selection = {u0:1/2}
+
+}
+
+
+
+// Structure containing some garbage and some non-garbage
+
+%n = {u0, u1}
+
+%p = {
+  sm = {u0:1/2, u1:1/2}
+  
+	root = {u0:1/2}
+  
+	left = {u0 -> u0:1/2, u1 -> u1:1/2, u1 -> u0:1/2}
+  
+	right = {u0 -> u0:1/2, u1 -> u1:1/2, u1 -> u0:1/2}
+  
+	r[root] = {u0}
+  
+	unique_selection = {u0:1/2, u1:1/2}
+
+}

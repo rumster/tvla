@@ -1,0 +1,94 @@
+package org._3pq.jgrapht.traverse;
+
+import org._3pq.jgrapht.Edge;
+import org._3pq.jgrapht.Graph;
+import org._3pq.jgrapht.traverse.TraverseUtils.XXFirstIterator;
+import java.util.LinkedList;
+
+public class BipartiteBreadthFirstIterator extends XXFirstIterator {
+    private BipartiteBreadthFirstQueue m_queue;
+
+    private class QueueEntry {
+        private Object m_vertex;
+        private double m_distance;
+
+        QueueEntry( Object vertex, double distance ) {
+            m_vertex   = vertex;
+            m_distance = distance;
+        }
+
+        double getDistance(  ) {
+            return m_distance;
+        }
+
+        Object getVertex(  ) {
+            return m_vertex;
+        }
+    }
+
+    private static class BipartiteBreadthFirstQueue
+        implements TraverseUtils.SimpleContainer {
+        private LinkedList m_elementList = new LinkedList(  );
+
+        public boolean isEmpty(  ) {
+            return m_elementList.size(  ) == 0;
+        }
+
+        public void add( Object o ) {
+            m_elementList.addLast( o );
+        }
+
+        public Object remove(  ) {
+            // Note: decode and return the actual *vertex*, and not
+            // the QueueEntry object! (this is the way the XXFirstIterator
+            // is currently implemented)
+            QueueEntry entry = (QueueEntry) m_elementList.removeFirst(  );
+            return entry.getVertex(  );
+        }
+    }
+
+    public BipartiteBreadthFirstIterator( Graph g ) {
+        this( g, null );
+    }
+
+    public BipartiteBreadthFirstIterator( Graph g, Object startVertex ) {
+        this( g, startVertex, new BipartiteBreadthFirstQueue(  ) );
+    }
+
+    private BipartiteBreadthFirstIterator( Graph g, Object startVertex,
+                                           BipartiteBreadthFirstQueue queue ) {
+        super( g, startVertex, queue);
+        m_queue = queue;
+    }
+
+    protected Object newSeenData( Object vertex, Edge edge ) {
+        double distance;
+        
+        if( edge == null ) {
+            distance = 0;
+        }
+        else {
+            Object otherVertex = edge.oppositeVertex( vertex );
+            QueueEntry otherEntry = (QueueEntry) getSeenData( otherVertex );
+            distance = otherEntry.getDistance(  ) + 1;
+        }
+
+        QueueEntry entry = new QueueEntry( vertex, distance );
+
+        return entry;
+    }
+
+    protected void encounterVertexAgain( Object vertex, Edge edge ) {
+        QueueEntry entry = (QueueEntry) getSeenData( vertex );
+        double distance = entry.getDistance(  );
+        
+        Object otherVertex = edge.oppositeVertex( vertex );
+        QueueEntry otherEntry = (QueueEntry) getSeenData( otherVertex );
+        double otherDistance = otherEntry.getDistance(  );
+        
+        if (distance == otherDistance) {
+            throw new IllegalArgumentException( "bipartite property violated" );
+        }
+    }
+}
+

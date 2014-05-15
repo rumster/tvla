@@ -1,0 +1,36 @@
+277 Patch Control
+
+1
+1
+1
+manual.tex
+1
+1
+0
+
+
+
+
+
+
+manual.tex
+TeX
+403714043 0 -1 1035 -1 616 110 145 916 494 0 126 17 -1 -1 0 0 -1 -1 -1 -1 1 0 616 -1   0
+
+*manual.tex
+>
+*macros
+*introduction
+*reverse_program
+*graphical_representation
+*tvp
+>
+*reverse_tvp
+<
+*tvs
+*command_line
+*property_files
+*changes_since_091
+*additional_references
+*tvla_references.bib
+<

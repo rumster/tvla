@@ -1,0 +1,157 @@
+/***********************************************************
+* set_pred.tvm
+***********************************************************/
+
+/**********************************************/
+/*************** Core Predicates **************/
+//pointer field fld of object o_1 points to object o_2
+//NOTE: is "acyclic" correct?
+foreach (fld in NextFields) {
+    %p rv[fld](o_1, o_2) function acyclic
+}
+
+//referenced-by predicate for global variables (fields of shared ds)
+foreach (fld in GlobalFields) {
+    %p r_by[fld](o) unique pointer
+}
+
+//referenced-by prediacte for thread-local variables
+foreach (nm in StaticThreadNames) {
+    foreach (fld in LocalFields) {
+        %p r_by[fld,nm](o) unique pointer
+    }
+}
+
+
+//node v has different successors in the two heaps
+%p dnext(v)
+
+//node v appears only in the concurrent heap or only in the sequential heap.
+%p dnode(v)
+
+//lock representation (predicate not unique - several nodes may be locked by same thread)
+foreach (nm in StaticThreadNames) {
+   %p locked_by[nm](v)
+}
+
+//value of node v_1 is less or equal to value of node v_2
+%p dle(v_1, v_2) transitive
+
+//thread t (general client) is executing operation op (IN THE NON-COMMON PART OF THE CODE)
+foreach (op in Operations) {
+   %p choice[op](t) 
+}
+      
+/*********************************************************/
+/*************** Instrumentation Predicates **************/
+
+//node v is in ascending order with respect to its "n" successor
+//NOTE: 1) why nonabs? 2) is inSOrder needed instead:
+//node v is in strictly ascending order with respect to its "n" successor
+%i inSOrder[dle,n](v) = !isthread(v) & 
+                        (A(v_1) (rv[n](v, v_1) -> (dle(v, v_1) & !dle(v_1, v)))) nonabs
+//%i inOrder[dle,n](v) = !isthread(v) & (A(v_1) (rv[n](v, v_1) -> dle(v, v_1))) nonabs
+
+//binary reachability via "n" field. IRREFLEXIVE
+//NOTE: 1) appears in some old set version? 2) use * instead of +?
+//%i bn[n](o_1,o_2) = !isthread(o_1) & !isthread(o_2) & rv[n]*(o_1,o_2)
+//Check if + matches consistency rules.
+%i bn[n](o_1,o_2) = rv[n]*(o_1,o_2) transitive reflexive
+
+//reachability from global fields
+//NOTE: needed from all fields (seq in particular)?
+foreach (fld in GlobalRt) {
+   %i rt[fld,n](o) = (E(o_1) (r_by[fld](o_1) & bn[n](o_1,o)))
+}
+
+
+//reachability from local fields
+//NOTE: needed from all LocalFields (seq in particular)?
+foreach (nm in StaticThreadNames) {
+    foreach (fld in LocalRt) {
+        %i rt[fld,nm,n](o) = (E(o_1) (r_by[fld,nm](o_1) & bn[n](o_1,o)))
+    }
+}
+
+
+//node v is on a cycle of "n" pointers
+//NOTE: 1) needed? 2) Use bn in definition? (especially when bn is defined with +) 
+//%i c[n](v) =  E(v_1) (rv[n](v_1, v) & rv[n]*(v, v_1))
+
+
+//sharing
+//NOTE: needed?
+%i is[n](v) =   E(v_1, v_2) ( v_1 != v_2 & rv[n](v_1, v) & rv[n](v_2, v) )
+
+
+/*********************************************************/
+/*************** Consistency Rules **************/
+
+//DEBUG
+//%r !isthread(v) & !r_by[x_i,one](v) & !r_by[Head](v) & !E(t) (at[li1_3](t) | at[l1_end](t))  
+//   ==> rt[Head,n](v)
+
+//correct?
+//check generated constraints
+
+%r !isthread(v_1) & !isthread(v_2) & !dle(v_1, v_2) ==> dle(v_2, v_1)
+
+//replaces reflexivity of dle (since dle should apply only to list-nodes, not threads)
+%r (v_1 == v_2) & !isthread(v_1) ==> dle(v_1,v_2)
+
+//needed?
+%r dle(v_1,v_2) & dle(v_2,v_3) & !dle(v_3,v_2) ==> !dle(v_3,v_1)
+
+//%r (v_1 == v_2) & !c[n](v_1) ==> !rv[n](v_1,v_2)
+
+%r rv[n](v_1,v_2) ==> bn[n](v_1,v_2)
+
+%r E(v_2) bn[n](v_1,v_2) & bn[n](v_2,v_3) ==> bn[n](v_1,v_3)
+
+//Since bn[n] is irreflexive, v_2 != v_3 is added
+%r v_2 != v_3 & E(v_1) bn[n](v_1,v_2) & bn[n](v_1,v_3) & !bn[n](v_2,v_3) ==> bn[n](v_3,v_2)
+
+%r v_1 != v_2 & bn[n](v_1,v_2) & !E(v_3) (v_3 != v_1 & v_3 != v_2 & rv[n](v_1,v_3))
+   ==> rv[n](v_1,v_2)
+
+//Since bn[n] is irreflexive, v_2 != v_3 is added
+%r E(v_2) (v_1 != v_2 & v_3 != v_2 & bn[n](v_1,v_2) & !bn[n](v_3,v_2)) ==> !rv[n](v_1,v_3)
+
+%r inSOrder[dle,n](v) & rv[n](v,v_1) ==> dle(v, v_1)
+%r inSOrder[dle,n](v) & rv[n](v,v_1) ==> !dle(v_1, v)
+
+/********************* consistency rules **************************/
+/*
+//%r rt[head_a,n_a](v) & rv[n_a](v,w) ==> rt[head_a,n_a](w)
+//%r rt[head_b,n_b](v) & rv[n_b](v,w) ==> rt[head_b,n_b](w)
+%r sameNext(v) & rv[n_a](v,w) ==> rv[n_b](v,w)
+%r sameNext(v) & rv[n_b](v,w) ==> rv[n_a](v,w)
+//%r (v_1 == v_2) & !c[n_a](v_1) ==> !rv[n_a](v_1,v_2)
+//%r (v_1 == v_2) & !c[n_b](v_1) ==> !rv[n_b](v_1,v_2)
+foreach (n_f in {n_a,n_b}) {
+%r rv[n_f](v_1,v_2) ==> bn[n_f](v_1,v_2)
+%r E(v_2) bn[n_f](v_1,v_2) & bn[n_f](v_2,v_3) ==> bn[n_f](v_1,v_3)
+%r E(v_1) bn[n_f](v_1,v_2) & bn[n_f](v_1,v_3) & !bn[n_f](v_3,v_2) ==> bn[n_f](v_2,v_3)
+%r v_1 != v_2 & bn[n_f](v_1,v_2) & !E(v_3) (v_3 != v_1 & v_3 != v_2 & rv[n_f](v_1,v_3))
+   ==> rv[n_f](v_1,v_2)
+%r E(v_2) (v_1 != v_2 & bn[n_f](v_1,v_2) & !bn[n_f](v_3,v_2)) ==> !rv[n_f](v_1,v_3)
+}
+*/
+/********************* consistency rules **************************/
+/*
+//%r A(v) rt[head_a,n_a](v) & rv[n_a](v,w) ==> rt[head_a,n_a](w)
+//%r rv[head_a](q,v_1) & rv[new_head_a](t,v_2) & rv[n_a](v_1,v_2)
+//   & rt[head_a,n_a](v_3) & !rv[head_a](q,v_3)
+//   ==> rt[new_head_a](v_3)
+//%r sameNext(v) & rv[n_a](v,w) ==> rv[n_b](v,w)
+//%r sameNext(v) & rv[n_b](v,w) ==> rv[n_a](v,w)
+//%r (v_1 == v_2) & !c[n_a](v_1) ==> !rv[n_a](v_1,v_2)
+//%r (v_1 == v_2) & !c[n_b](v_1) ==> !rv[n_b](v_1,v_2)
+
+%r rv[n_a](v_1,v_2) ==> bn[n_a](v_1,v_2)
+%r E(v_2) bn[n_a](v_1,v_2) & bn[n_a](v_2,v_3) ==> bn[n_a](v_1,v_3)
+%r E(v_1) bn[n_a](v_1,v_2) & bn[n_a](v_1,v_3) & !bn[n_a](v_3,v_2) ==> bn[n_a](v_2,v_3)
+%r v_1 != v_2 & bn[n_a](v_1,v_2) & !E(v_3) (v_3 != v_1 & v_3 != v_2 & rv[n_a](v_1,v_3))
+   ==> rv[n_a](v_1,v_2) 
+%r E(v_2) (v_1 != v_2 & bn[n_a](v_1,v_2) & !bn[n_a](v_3,v_2)) ==> !rv[n_a](v_1,v_3)
+*/

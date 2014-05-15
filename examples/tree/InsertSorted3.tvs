@@ -1,0 +1,24 @@
+// Tree with root "root" and new element pointed to by el.
+%n = {u, us, u1}
+%p = {
+	sm = {us:1/2}
+	root = {u}
+	el = {u1}
+	left = {u->us:1/2, us->us:1/2}
+	right = {u->us:1/2, us->us:1/2}
+	down = {u->us:1/2,us->us:1/2}
+	downStar = {u->u, u->us, us->us:1/2, u1->u1}
+        r[root] = {u,us}
+        r[el] = {u1}
+
+	inOrder[dle,left] = {u, us, u1}
+	inOrder[dle,right] = {u, us, u1}
+	inOrder[dle] = {u, us, u1}
+
+	dle = {u->u, u->us:1/2, us->u:1/2, us->us:1/2,
+	       u1->u1, u1->u:1/2, u1->us:1/2, u->u1:1/2, us->u1:1/2}
+	cmp[dle,right] = {u->u, u->us:1/2, us->u:1/2, us->us:1/2,
+			  u1->u1, u1->u:1/2, u1->us:1/2, u->u1:1/2, us->u1:1/2}
+	cmp[dle,left] = {u->u, u->us:1/2, us->u:1/2, us->us:1/2,
+			 u1->u1, u1->u:1/2, u1->us:1/2, u->u1:1/2, us->u1:1/2}
+}

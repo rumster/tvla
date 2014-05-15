@@ -1,0 +1,12 @@
+$Id: changes_log.txt 1848 2007-11-01 14:15:07Z rumster $
+
+changes.log
+------------
+[29/4/03]
+- added constraint to kill structures that have reached the "end"
+of integers (i.e., some integer node has no successor). This should
+reduce the number of structures explored.
+- added
+
+[30/4/03]
+- added an erroneous version nonblockq_err1

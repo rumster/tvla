@@ -1,0 +1,2 @@
+set PATH=%PATH%;g:\tvla2\bin;"c:\Program Files\graphviz\bin"
+set TVLA_HOME=g:\tvla2

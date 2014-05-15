@@ -1,0 +1,22 @@
+%n = {dummy, tr1, tr2}
+%p = {
+  at[lp_1] = {tr1}
+  at[lt_1] = {tr2}
+  g[head] = {dummy}
+  g[tail] = {dummy}
+  isthread = {tr1, tr2}
+  r[head,n] = {dummy}
+  r[tail,n] = {dummy}
+  r_plus[head,n] = {dummy}
+  r_plus[tail,n] = {dummy}
+  t[QueueItem] = {dummy}
+  tid1 = {tr1}
+  tid2 = {tr2}
+
+  t[n] = {dummy->dummy, tr1->tr1, tr2->tr2}
+
+  id_eq[tid1,tid1] = 1
+  id_eq[tid2,tid2] = 1
+  id_eq[tid1,tid2] = 0
+  id_eq[tid2,tid1] = 0
+}

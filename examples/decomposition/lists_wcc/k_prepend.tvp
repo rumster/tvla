@@ -1,0 +1,43 @@
+///////
+// Sets
+
+%s PVar {x, l1, l2, l3, l4 /* , l5, l6, l7, l8 */}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+#define ADD_TO_LIST(list, elem, beforeL, afterL) \
+beforeL 	uninterpreted() 	   Ladd1##list \
+Ladd1##list Set_Next_L(elem, list) Ladd2##list \
+Ladd2##list Set_Null_L(list) 	   Ladd3##list \
+Ladd3##list Copy_Var_L(list, elem) Ladd4##list \
+Ladd4##list Set_Null_L(elem) 	   afterL
+
+///////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that reverses a singly-linked list in-situ.
+
+L1 uninterpreted() 	  exit
+L1 uninterpreted() 	  L2
+L2 Malloc_L(x)		  L3
+ADD_TO_LIST(l1, x, L3, L1)
+ADD_TO_LIST(l2, x, L3, L1)
+ADD_TO_LIST(l3, x, L3, L1)
+ADD_TO_LIST(l4, x, L3, L1)
+//ADD_TO_LIST(l5, x, L3, L1)
+//ADD_TO_LIST(l6, x, L3, L1)
+//ADD_TO_LIST(l7, x, L3, L1)
+//ADD_TO_LIST(l8, x, L3, L1)
+
+exit Assert_ListInvariants(l1) error
+exit Assert_ListInvariants(l2) error
+exit Assert_ListInvariants(l3) error
+exit Assert_ListInvariants(l4) error
+//exit Assert_ListInvariants(l5) error
+//exit Assert_ListInvariants(l6) error
+//exit Assert_ListInvariants(l7) error
+//exit Assert_ListInvariants(l8) error

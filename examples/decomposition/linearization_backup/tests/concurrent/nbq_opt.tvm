@@ -1,0 +1,239 @@
+/************************************************************************ 
+ * nbq.tvm
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+//%s FieldsAndParameters {tail,tail_seq,x_i,this,n,n_seq,
+//                        head,head_seq,t_enq,next_enq,
+//                        t_deq,h_deq,new_head_c,new_head_s}
+
+%s QFields {Head,Head_seq,Tail,Tail_seq}
+
+%s LocalFields {x_i,h,t,next,next_seq}  
+
+%s EnqLocals {x_i,t,next} 
+
+%s DeqLocals {h,t,next,next_seq}  
+
+%s NextFields {n,n_seq}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+#if(0 < GNUM)
+%s StaticThreadNames {g1}
+#endif
+#if(1 < GNUM)
+%s StaticThreadNames {g1,g2}
+#endif
+#if(2 < GNUM)
+%s StaticThreadNames {g1,g2,g3}
+#endif
+#if(3 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4}
+#endif
+
+//// Consumer Producer
+#if(0 < KNUM)
+%s StaticThreadNames {c1,p1}
+#endif
+#if(1 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2}
+#endif
+#if(2 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3}
+#endif
+#if(3 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3,c4,p4}
+#endif
+//////////////////////////////////////////////////////////////
+
+
+/**************** Predicates **************/
+
+#include "nbq_opt_pred.tvm"
+
+
+%%
+/********************* Actions *******************/
+
+#include "nbq_opt_stat.tvm"
+
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+%thread nop {
+ln_1 skip() ln_1
+}
+
+//general client
+
+/***************** CFG for one thread  *********************************/
+
+#define PRD(TN) \
+/* Enq()      */ \
+/* concurrent */ \
+\
+atomic { \
+li_1_##TN assignNew(x_i,TN) li_2_##TN \  
+/*concurrent*/ \ 
+li_2_##TN nullifyLocals(TN) li_2a_##TN \                    
+li_2a_##TN assignFromGlbField(t,Tail,TN) li_3_##TN \
+} \
+li_3_##TN assignFromNextField(next,t,TN) li_4_##TN \
+li_4_##TN isNotEqField(t,Tail,TN) li_2_##TN \
+li_4_##TN isEqField(t,Tail,TN) li_5_##TN \
+atomic { \
+li_5_##TN isNull(next,TN) li_7_##TN \
+li_5_##TN isNotNull(next,TN) li_6_##TN \
+li_6_##TN FailCAS(Tail,t,next,TN) li_2_##TN \
+li_6_##TN SuccCAS(Tail,t,next,TN) li_2_##TN \  
+} \       
+atomic { \
+li_7_##TN FailCAS_Next(t,next,x_i,TN) li_2_##TN \
+li_7_##TN SuccCAS_Next(t,next,x_i,TN) lis_1_##TN \       
+lis_1_##TN assignNew_Seq(x_i,TN) lis_2_##TN \
+lis_2_##TN updateFieldNext_Seq(Tail_seq,x_i,TN) lis_3_##TN \
+lis_3_##TN assignField(Tail_seq,x_i,TN) li_8_##TN \
+} \ 
+atomic { \
+li_8_##TN SuccCAS(Tail,t,x_i,TN) li_exit_##TN \
+li_8_##TN FailCAS(Tail,t,x_i,TN) li_exit_##TN \
+/*li_exit_##TN Clear(TN) li_end_##TN*/ \
+li_exit_##TN Clear(TN) l_dispatch_##TN \ 
+} \                  
+
+
+#define CNS(TN) \
+/* Deq() */ \
+\
+atomic { \
+ld_1_##TN nullifyLocals(TN) ld_1a_##TN \
+ld_1a_##TN assignFromGlbField(h,Head,TN) ld_2_##TN \
+} \
+atomic { \
+ld_2_##TN assignFromNextField(next,h,TN) lds_1a_##TN  /*first commit point*/ \
+lds_1a_##TN selectFieldNext_Seq(next_seq,Head_seq,TN) ld_3_##TN \    
+} \
+atomic { \
+ld_3_##TN isNotEqField(h,Head,TN) ld_1_##TN \
+ld_3_##TN isEqField(h,Head,TN) ld_4_##TN \
+ld_4_##TN isNull(next,TN) ld_ver_##TN \
+ld_4_##TN isNotNull(next,TN) ld_5_##TN \
+} \
+atomic { \
+ld_5_##TN FailCAS(Head,h,next,TN) ld_1_##TN \
+ld_5_##TN SuccCAS(Head,h,next,TN) lds_1_##TN         /*second commit point*/ \
+lds_1_##TN selectFieldNext_Seq(next_seq,Head_seq,TN) lds_2_##TN \
+lds_2_##TN isNull(next_seq,TN) ld_6_##TN \  
+lds_2_##TN isNotNull(next_seq,TN) lds_3_##TN \                                                
+lds_3_##TN assignField(Head_seq,next_seq,TN) ld_6_##TN \
+} \
+atomic { \
+ld_6_##TN assignFromGlbField(t,Tail,TN) ld_7_##TN \
+ld_7_##TN isNotEq(h,t,TN) ld_ver_##TN \
+ld_7_##TN isEq(h,t,TN) ld_8_##TN \
+} \
+atomic { \
+ld_8_##TN FailCAS(Tail,t,next,TN) ld_ver_##TN \
+ld_8_##TN SuccCAS(Tail,t,next,TN) ld_ver_##TN \
+ld_ver_##TN verifySameDeqRes(TN) ld_exit_##TN   /*linearizability test*/ \
+/*ld_exit_##TN Clear(TN) ld_end_##TN*/ \
+ld_exit_##TN Clear(TN) l_dispatch_##TN \
+} \    
+ 
+
+
+/**********************    Thread Creation **********************/
+
+//producer
+#define CREATE_P(TN) \
+%thread producer_##TN { \
+l_dispatch_##TN skip() li_1_##TN \
+ \
+PRD(TN) \
+ \
+} \
+
+//consumer
+#define CREATE_C(TN) \
+%thread consumer_##TN { \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+CNS(TN) \
+ \
+} \
+
+//general client
+#define CREATE_G(TN) \
+%thread general_##TN { \
+/*nondeterministic choice of transaction*/ \
+l_dispatch_##TN skip() li_1_##TN \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+PRD(TN) \
+ \
+CNS(TN) \
+ \
+} \
+
+
+//create producer types
+#if(0 < KNUM)
+CREATE_P(p1)
+#endif
+
+#if(1 < KNUM)
+CREATE_P(p2)
+#endif
+
+#if(2 < KNUM)
+CREATE_P(p3)
+#endif
+
+#if(3 < KNUM)
+CREATE_P(p4)
+#endif
+
+//create consumer types
+#if(0 < KNUM)
+CREATE_C(c1)
+#endif
+
+#if(1 < KNUM)
+CREATE_C(c2)
+#endif
+
+#if(2 < KNUM)
+CREATE_C(c3)
+#endif
+
+#if(3 < KNUM)
+CREATE_C(c4)
+#endif
+
+//create general types
+#if(0 < GNUM)
+CREATE_G(g1)
+#endif
+
+#if(1 < GNUM)
+CREATE_G(g2)
+#endif
+
+#if(2 < GNUM)
+CREATE_G(g3)
+#endif
+
+#if(3 < GNUM)
+CREATE_G(g4)
+#endif
+
+
+%%

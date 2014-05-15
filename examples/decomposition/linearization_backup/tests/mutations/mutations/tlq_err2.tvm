@@ -1,0 +1,209 @@
+/************************************************************************ 
+ * tlq.tvm
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s QFields {Head,Head_seq,Tail,Tail_seq}
+
+%s LocalFields {x_i,t,node,new_head,new_head_seq}  
+//"node" is equivalent to "h" in nbq, 
+//"new_head" and "new_head_seq" equivalent to "next" and "next_seq".
+//"t" does not appear in original algorithm.
+
+%s EnqLocals {x_i,t} 
+
+%s DeqLocals {node,new_head,new_head_seq}  
+
+%s NextFields {n,n_seq}
+
+%s Locks {Hl,Tl}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+#if(0 < GNUM)
+%s StaticThreadNames {g1}
+#endif
+#if(1 < GNUM)
+%s StaticThreadNames {g1,g2}
+#endif
+#if(2 < GNUM)
+%s StaticThreadNames {g1,g2,g3}
+#endif
+#if(3 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4}
+#endif
+
+//// Consumer Producer
+#if(0 < KNUM)
+%s StaticThreadNames {c1,p1}
+#endif
+#if(1 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2}
+#endif
+#if(2 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3}
+#endif
+#if(3 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3,c4,p4}
+#endif
+//////////////////////////////////////////////////////////////
+
+
+/**************** Predicates **************/
+
+#include "tlq_pred.tvm"
+
+
+%%
+/********************* Actions *******************/
+
+#include "tlq_stat.tvm"
+
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+#define PRD(TN) \
+/* Enq()      */ \
+/* concurrent */ \
+\
+li_1_##TN assignNew(x_i,TN) li_2_##TN \                      
+li_2_##TN succLockField(Tl,TN) li_3a_##TN     /*NOT merged into an atomic block*/ \
+li_3a_##TN assignFromGlbField(t,Tail,TN) li_3_##TN \   
+atomic { \
+/*li_3_##TN updateFieldNext(Tail,x_i,TN) lis_1_##TN*/    /*linearization point*/ \       
+li_3_##TN updateNext(t,x_i,TN) lis_1_##TN    /*linearization point*/ \ 
+lis_1_##TN assignNew_Seq(x_i,TN) lis_2_##TN \
+lis_2_##TN updateFieldNext_Seq(Tail_seq,x_i,TN) lis_3_##TN \
+lis_3_##TN assignField(Tail_seq,x_i,TN) li_4_##TN \
+} \
+li_4_##TN assignField(Tail,x_i,TN) li_5_##TN \
+atomic { \
+li_5_##TN unlockField(Tl,TN) li_exit_##TN \
+li_exit_##TN Clear(TN) l_dispatch_##TN      /*can be merged with unlock into atomic block*/ \
+/*li_exit_##TN Clear(TN) li_end_##TN*/ \
+} \
+ 
+ 
+ 
+#define CNS(TN) \
+/* Deq() */ \
+\   
+ld_1_##TN succLockField(Hl,TN) ld_2_##TN \
+ld_2_##TN assignFromGlbField(node,Head,TN) ld_3_##TN \
+atomic { \
+ld_3_##TN assignFromNextField(new_head,node,TN) lds_1_##TN     /*linearization point*/ \
+lds_1_##TN selectFieldNext_Seq(new_head_seq,Head_seq,TN) lds_2_##TN \ 
+lds_2_##TN isNull(new_head_seq,TN) ld_err1_##TN /*MUT*/ \  
+lds_2_##TN isNotNull(new_head_seq,TN) lds_3_##TN \                                               
+lds_3_##TN assignField(Head_seq,new_head_seq,TN) ld_err1_##TN /*MUT*/ \
+} \ 
+ld_err1_##TN unlockField(Hl,TN) ld_4_##TN /*MUT*/ \
+atomic { \
+ld_4_##TN isNull(new_head,TN) ld_7_##TN /*MUT*/   /*can be merged with assignField or above block*/ \
+ld_4_##TN isNotNull(new_head,TN) ld_err2_##TN  /*MUT*/ /*can be merged with assignField or above block*/ \                                               
+} /*MUT*/ \ 
+ld_err2_##TN succLockField(Hl,TN) ld_5_##TN /*MUT*/ \
+ld_5_##TN assignField(Head,new_head,TN) ld_6_##TN \
+atomic { \
+ld_6_##TN unlockField(Hl,TN) ld_7_##TN \
+ld_7_##TN verifySameDeqRes(TN) ld_exit_##TN     /*can be merged with unlock*/ \
+ld_exit_##TN Clear(TN) l_dispatch_##TN       /*can be merged with unlock*/ \
+/*ld_exit_##TN Clear(TN) ld_end_##TN*/ \
+} \
+
+
+
+/**********************    Thread Creation **********************/
+
+//producer
+#define CREATE_P(TN) \
+%thread producer_##TN { \
+l_dispatch_##TN skip() li_1_##TN \
+ \
+PRD(TN) \
+ \
+} \
+
+//consumer
+#define CREATE_C(TN) \
+%thread consumer_##TN { \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+CNS(TN) \
+ \
+} \
+
+//general client
+#define CREATE_G(TN) \
+%thread general_##TN { \
+/*nondeterministic choice of transaction*/ \
+l_dispatch_##TN skip() li_1_##TN \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+PRD(TN) \
+ \
+CNS(TN) \
+ \
+} \
+
+
+//create producer types
+#if(0 < KNUM)
+CREATE_P(p1)
+#endif
+
+#if(1 < KNUM)
+CREATE_P(p2)
+#endif
+
+#if(2 < KNUM)
+CREATE_P(p3)
+#endif
+
+#if(3 < KNUM)
+CREATE_P(p4)
+#endif
+
+//create consumer types
+#if(0 < KNUM)
+CREATE_C(c1)
+#endif
+
+#if(1 < KNUM)
+CREATE_C(c2)
+#endif
+
+#if(2 < KNUM)
+CREATE_C(c3)
+#endif
+
+#if(3 < KNUM)
+CREATE_C(c4)
+#endif
+
+//create general types
+#if(0 < GNUM)
+CREATE_G(g1)
+#endif
+
+#if(1 < GNUM)
+CREATE_G(g2)
+#endif
+
+#if(2 < GNUM)
+CREATE_G(g3)
+#endif
+
+#if(3 < GNUM)
+CREATE_G(g4)
+#endif
+
+
+%%

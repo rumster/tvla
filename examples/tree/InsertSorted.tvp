@@ -1,0 +1,80 @@
+%s PVar {root, cur, prev, el, t}
+%s TSel {left, right}
+%s Sets {free}
+
+#define VARSEL
+
+#include "pred_sort.tvp"
+#include "pred_set.tvp"
+%%
+#include "actions_sort.tvp"
+#include "actions_set.tvp"
+%%
+
+// cur = root;
+start Copy_Var_T(cur, root) n1
+
+// while (cur != NULL && cur->data != el->data) {
+   n1 Is_Not_Null_Var(cur) n2
+   n1 Is_Null_Var(cur) n7
+
+   // For now not interpreting non-equality (while not using DataIsNequal).
+   n2 uninterpreted() n7
+   n2 uninterpreted() n3
+
+   // prev = cur;
+   n3 Copy_Var_T(prev, cur) n4
+
+   // if (el->data < cur->data)
+      n4 Less_Data_T(el, cur) n5
+      n4 Greater_Equal_Data_T(el, cur) n6
+
+      // cur = cur->left;
+      n5 Get_Sel_T(cur, cur, left) n1
+
+   // else cur = cur->right;
+      n6 Get_Sel_T(cur, cur, right) n1
+// }
+
+
+// Don't insert duplicates
+// if (cur == NULL) {
+   n7 Is_Null_Var(cur) n8
+   n7 Is_Not_Null_Var(cur) n7_a
+   // Null out cur and prev, as an optimizer could.
+   n7_a Set_Null_T(cur) n7_b
+   n7_b Set_Null_T(prev) found
+
+   // if (cur == root)
+   n8 Is_Eq_Var(cur, root) n9
+   n8 Is_Not_Eq_Var(cur, root) n10
+   // root = el;
+   n9 Copy_Var_T(root, el) notFound
+
+   // if (el->data < prev->data)
+      n10 Less_Data_T(el, prev) n11
+      n10 Greater_Equal_Data_T(el, prev) n13
+
+      // prev->left = el;
+      n11 Set_Sel_Null_T(prev, left) n12
+      n12 Set_Sel_T(prev, left, el) n12_a
+      // Null out el and prev, as an optimizer could.
+      n12_a Set_Null_T(el) n12_b
+      n12_b Set_Null_T(prev) notFound
+
+   // else prev->right = el;
+      n13 Set_Sel_Null_T(prev, right) n14
+      n14 Set_Sel_T(prev, right, el) n14_a
+      // Null out el and prev, as an optimizer could.
+      n14_a Set_Null_T(el) n14_b
+      n14_b Set_Null_T(prev) notFound
+// }
+
+found uninterpreted() test
+notFound uninterpreted() test
+
+// Now test the structures
+test Is_Sorted_Data_T(root) exit
+test Is_Not_Sorted_Data_T(root) error
+
+%% error, exit, found, notFound

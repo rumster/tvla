@@ -1,0 +1,185 @@
+////////////////////////////////////////////////////////////////
+// Sets
+////////////////////////////////////////////////////////////////
+
+%s types            {StackItem}
+%s globalpointers   {stack}
+%s localpointers    {p, stack_n, c, cn}
+%s recfields        {n}
+%s nonrecfields     {}
+%s fields recfields + nonrecfields
+%s globalbools      {}
+%s localbools       {}
+
+// Fixed thread ids
+%s threadIds {tid1, tid2}
+
+%s locations {
+              p1_1, p1_2, p1_3, p1_4, p1_5, p1_6, p1_7, p1_8, p1_9, p1_10,
+              p1_exit,
+              p2_1, p2_2, p2_3, p2_4, p2_5, p2_6, p2_7, p2_8, p2_9, p2_10, p2_11,
+              p2_exit // p2_13, p2_14, p2_15, p2_16, p2_17, p2_18
+              }
+
+////////////////////////////////////////////////////////////////
+// Predicates
+////////////////////////////////////////////////////////////////
+
+#include "predicates.tvp"
+
+//////////////////////////////////////
+// Program specific typing constraints
+// Theoretically, these could be automatically generated.
+
+// Every two types are disjoint
+foreach (tp1 in types) {
+  %r isthread(v) ==> !t[tp1](v)
+  %r t[tp1](v) ==> !isthread(v)
+  foreach (tp2 in types-{tp1}) {
+    %r t[tp2](v) ==> !t[tp1](v)
+  }
+}
+%r acq(u,v) ==> isthread(v)
+%r n(u,v) ==> !isthread(u)
+%r n(u,v) ==> !isthread(v)
+
+foreach (var in localpointers) {
+  %r rv[var](u,v) ==> isthread(u)
+  %r rv[var](u,v) ==> !isthread(v)
+}
+
+////////////////////////////////////////////////////////////////
+// Decomposition names
+////////////////////////////////////////////////////////////////
+
+#include "dnames.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////
+// Actions
+////////////////////////////////////////////////////////////////
+
+#include "actions.tvp"
+
+%action verifyProperty() {
+  %t "verify property"
+//r[lock1,n](v3) & r[lock2,n](v4) &
+//  %compose tid1(v1) //& tmain(v2) //r[stack,n](v1) & r[StackItemList2,n](v2) & alloc[m_1](t)
+//  %messagecompose tid1(v1) //& tmain(v2) //r[stack,n](v1) & r[StackItemList2,n](v2) & alloc[m_1](t)
+
+//  %message (E(t) at[m_14](t) & at[m_13](t) & !outside(t)) -> "at[] is imprecise\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[stack](v)) -> "stack is null\n"
+//  %message (E(t) alloc[m_1](t) & (at[m_13](t)|at[m_14](t)|at[m_15](t)) & A(v) !g[StackItemList2](v)) -> "StackItemList2 is null\n"
+//  %message (E(v) !isthread(v) & !(|/{ r[gvar,n](v) : gvar in globalpointers }) & !(|/{ r_rv[var](v) : var in localpointers}))
+//                -> "Possible memory leak detected!"
+//   %message (E(o,t) acq(o,t) & !acq(o,t)) -> "acq is imprecise\n"
+//
+//   %message (E(v) is[n](v) &  !is[n](v)) -> "is[n] is imprecise\n"
+//   %message (E(v) r_in[n](v) &  !r_in[n](v)) -> "r_in[n] is imprecise\n"
+//   %message (E(v) r_out[n](v) &  !r_out[n](v)) -> "r_out[n] is imprecise\n"
+//   %message (E(o,t) |/{rv[var](t,o) & !rv[var](t,o) : var in localpointers}) -> "rv[var](t,o) is imprecise\n"
+//
+//   %message (E(v) r[stack,n](v) &  !r[stack,n](v)) -> "r[stack,n] is imprecise\n"
+//   %message (E(v) r[StackItemList2,n](v) &  !r[StackItemList2,n](v)) -> "r[StackItemList2,n] is imprecise\n"
+
+// //  %message (A(v) global[S_Top](v)->global[S_tail](v)) -> "tail is not reachable from Top\n"
+// //  %message (E(v) !isthread(v) & !(|/{ r[g,n](v) : g in globals}) & !(|/{ r_in[z](v) : z in locals}) ) -> "garbage detected\n"
+}
+
+%%
+
+/***********************************
+// Pseudo-code
+StackItem * stack;
+
+void producer1() {
+  while (nondet()) {
+    StackItem * p = new StackItem();
+    lock(stack);
+      p->next = stack->next;
+      stack->next = p;
+    release(stack);
+    p = null;
+  }
+}
+
+void consumer1() {
+  while (nondet()) {
+    lock(stack);
+      c = stack->next;
+      if (c != null) {
+        cn = c->next;
+        stack->next = cn;
+      }
+    release(stack);
+    // c->next = null;
+    delete c;
+  }
+}
+************************************/
+
+////////////////////////////////////////////////////////////////
+// Thread scheduling mechanism and global property checking
+init verifyProperty() init
+init unschedule() l_ready
+
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+// Transition system for each function
+////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// CFG
+// Threads are created in the .tvs file
+// A schedule transition to every label where interleaving can happen
+l_ready schedule(tid1, p1_1) p1_1
+l_ready schedule(tid1, p1_2) p1_2
+l_ready schedule(tid1, p1_3) p1_3
+l_ready schedule(tid1, p1_4) p1_4
+l_ready schedule(tid1, p1_5) p1_5
+l_ready schedule(tid1, p1_7) p1_7
+l_ready schedule(tid1, p1_10) p1_10
+//
+p1_1  ifNonDet(tid1, p1_1, p1_2) init // while (nondet())
+p1_1  ifNonDet(tid1, p1_1, p1_exit) init
+p1_2  newObject(tid1, p1_2, p1_3, p, StackItem) init // p = new StackItem()
+p1_3  acquireGlobal_succeded(tid1, p1_3, p1_4, stack) init // acquire(stack)
+p1_3  acquireGlobal_failed(tid1, p1_3, p1_3, stack) init
+                                                                             // p->next = stack->next;
+p1_4  getFieldGlobalToLocal(tid1, p1_4, p1_5, stack_n, stack, n) init // (stack_n = stack->next)
+p1_5  assignField(tid1, p1_5, p1_6, p, n, stack_n) p1_6 // (p->next = stack_n)
+p1_6  assignNullToLocal(tid1, p1_6, p1_7, stack_n) init // (stack_n = null)
+p1_7  assignFieldNullGlobal(tid1, p1_7, p1_8, stack, n) p1_8 // stack->n = p
+p1_8  assignFieldLocalToGlobal(tid1, p1_8, p1_9, stack, n, p) p1_9
+p1_9  assignNullToLocal(tid1, p1_9, p1_10, p) init
+p1_10 releaseGlobal(tid1, p1_10, p1_1, stack) init // release(stack)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+l_ready schedule(tid2, p2_1) p2_1
+l_ready schedule(tid2, p2_2) p2_2
+l_ready schedule(tid2, p2_3) p2_3
+l_ready schedule(tid2, p2_4) p2_4
+l_ready schedule(tid2, p2_5) p2_5
+l_ready schedule(tid2, p2_6) p2_6
+l_ready schedule(tid2, p2_11) p2_11
+//
+p2_1  ifNonDet(tid2, p2_1, p2_2) init // while (nondet())
+p2_1  ifNonDet(tid2, p2_1, p2_exit) init
+p2_2  acquireGlobal_succeded(tid2, p2_2, p2_3, stack) init // acquire(stack)
+p2_2  acquireGlobal_failed(tid2, p2_2, p2_2, stack) init
+p2_3  getFieldGlobalToLocal(tid2, p2_3, p2_4, c, stack, n) init
+p2_4  ifNullLocal(tid2, p2_4, p2_11, c) init
+p2_4  ifNotNullLocal(tid2, p2_4, p2_5, c) init
+p2_5  getField(tid2, p2_5, p2_6, cn, c, n) init
+p2_6  assignFieldNullGlobal(tid2, p2_6, p2_7, stack, n) p2_7
+p2_7  assignFieldLocalToGlobal(tid2, p2_7, p2_8, stack, n, cn) p2_8
+p2_8  assignFieldNull(tid2, p2_8, p2_9, c, n) p2_9
+p2_9  assignNullToLocal(tid2, p2_9, p2_10, c) p2_10
+p2_10 assignNullToLocal(tid2, p2_10, p2_11, cn) p2_11
+p2_11 releaseGlobal(tid2, p2_11, p2_1, stack) init // release(stack)
+
+//%%
+//l_ready

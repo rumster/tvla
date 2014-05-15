@@ -1,0 +1,89 @@
+/************************************************************************ 
+ * A Concurrent TVM program for concurrent queue manipulations 
+ * Name: twolockqn.tvm
+ * $Id: twolockqn_sy.tvm 1848 2007-11-01 14:15:07Z rumster $
+ * Description: Two Lock Queue.
+ * A queue with two locks - one associated with the head, and one associated with the tail.
+ * Note that a head node always exists, otherwise, the queue is not safe.
+ *
+ ***********************************************************************/
+
+
+/*********************** Macros ******************************/
+// use referenced_by instrumentation
+#define RBY
+// use reachability instrumentation
+#define REACH
+// use sharing instrumentation
+#define SHARE
+
+
+/*********************** Sets ******************************/
+
+%s FieldsAndParameters { x_i,x_d, newTail, next, node, new_head, head,tail,tailLock,headLock,this }
+
+/**************** Predicates **************/
+
+#include "con_pred.tvm"
+#include "shape_pred.tvm"
+
+
+%%
+/********************* Actions *******************/
+
+#include "con_stat.tvm"
+#include "shape_stat.tvm"
+
+#include "tlq_properties.tvm"
+
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+%thread producer {
+li_1 assignNew(x_i) li_2                       // x_i = new Item()     (1->2)
+li_2 succLockField(this,tailLock) li_3         // lock tailLock        (2->3)
+li_2 blockLockField(this,tailLock) li_2        //                      (2->2)
+li_3 updateFieldNext(this,tail,x_i) li_4       // this.tail.next = x_i (3->4)
+atomic {
+li_4 assignFieldNull(this,tail) li_5           // this.tail = null     (4->5) (atomic)
+li_5 assignField(this,tail,x_i) li_6           // this.tail = x_i      (5->6) (endatomic)
+}
+li_6 assignNull(x_i) li_7                    // exit scope for x_i   (7->end)
+li_7 unlockField(this,tailLock) li_end       // unlock(this.tailLock)  (6->7)
+li_end skip() li_1                             // loop back to li_1    (end->1)
+}
+
+
+/***********************************************/
+/************** Consumer Threads ****************/
+%thread consumer {
+ld_1 succLockField(this,headLock) ld_2          // lock this.headLock    (1->2)
+ld_1 blockLockField(this,headLock) ld_1         //                       (1->1)
+atomic {
+ld_2 assignNull(node) ld_2a
+ld_2a assignFromField(node,this,head) ld_3   // node = this.head  (2->3)
+}
+atomic {
+ld_3 assignNull(new_head) ld_3a                    // new_head=null                   (atomic)
+ld_3a selectFieldNext(new_head,this,head) ld_4     // new_head=this.head.next  (3->4) (atomic)
+}
+ld_4 isNull(new_head) ld_9                      //                       (4->9)
+ld_4 isNotNull(new_head) ld_5                   // if (new_head != null)    (4->5)
+ld_5 skip() ld_6                                // x_d = new_head.value
+atomic {
+  ld_6 assignFieldNull(this,head) ld_6a         // this.head = null      (6->6a) (atom)
+  ld_6a assignField(this,head,new_head) ld_7    // this.head = new_head  (6a->7) (endatom)
+}
+ld_7 freeNode(node) ld_8
+ld_8 unlockField(this,headLock) ld_end          // unlock this.headLock  (7->8)
+ld_9 unlockField(this,headLock) ld_end        // unlock with no free
+ld_end skip() ld_1                            //     (end->1)
+}
+%%
+/***********************************************/
+/**************  Claims        ****************/
+verifyProperty()

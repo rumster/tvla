@@ -1,0 +1,13 @@
+REM echo off
+REM 1 --- name of TVM to execute
+REM 2 --- name of TVS file
+REM 3 --- name of resulting log and dt,ps files
+REM 4-9 --- parameters to TVLA 
+if exist %3.log goto ex1exist
+call tvla %1 %2 %4 %5 %6 %7 %8 %9 -log %3.log
+if exist %3.dt del %3.dt
+ren %1.dt %3.dt
+if exist %3.ps del %3.ps
+ren %1.ps %3.ps
+call notifydone %3.log
+:ex1exist

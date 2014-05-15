@@ -1,0 +1,61 @@
+//////////////////////////////////////////////////////////////////////////////////////
+// TVLA specification to analyze the following mobile ambients program:
+// p[ in r1 || ! open r ] || r1[ ! r[ in p. out r1. in r2] ]
+//                        || r2[ ! r[ in p. out r2. in r3] || ! r[ in p. out r2. in r1 ] ]
+//                        || r3[ ]
+//
+// The analysis successfuly verifies the following properties for all executions
+// of the program:
+// 1. There is always exactly one copy of the ambient p (see the verify_unique action below).
+// 2. p is always inside at most one of the ambients r1, r2 and r2.
+
+///////
+// Sets
+
+%s AmbientNames {p, r, r_1, r_2, r_3, top}
+
+%s Labels {l_0,  l_1,  l_2,  l_3,  l_4,  l_5,  l_6,  l_7,  l_8,  l_9,  l_10,
+           l_11, l_12, l_13, l_14, l_15, l_16, l_17, l_18, l_19, l_20, l_21, l_22}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%action verify_unique() {
+  %t "verify_unique"
+  %p p(v_1) & p(v_2) & (v_1 != v_2)
+  %message 1 -> "Unique breached!"
+  {
+    error() = 1
+  }
+}
+
+%action verify_position() {
+  %t "verify_position"
+  %p p(v_1) & |/{z(v_2) : z in {r_1, r_2, r_3}} &
+              |/{z(v_3) : z in {r_1, r_2, r_3}} & (v_2 != v_3) &
+              pa+(v_1, v_2) & pa+(v_1, v_3)
+  %message 1 -> "Position breached!"
+  {
+    error() = 1
+  }
+}
+
+%%
+
+////////////////////////////////////////////////
+// Transition system for the program shown above
+
+all bang()            all
+all in(r_1)           cap
+all in(r_2)           cap
+all in(r_3)           cap
+all in(p)             cap
+all out(r_1)          cap
+all out(r_2)          cap
+all open(r)           cap
+cap nothing()         all
+all verify_position() bug
+all verify_unique()   bug

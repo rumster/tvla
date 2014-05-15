@@ -1,0 +1,80 @@
+///////
+// Sets
+
+%s PVar {root, x, t}
+%s PVarR {root}
+%s PSel {right, left}
+%s Sets{marked, pending, unexplored, collected}
+
+#include "predicates_set.tvp"
+#include "predicates.tvp"
+
+%%
+
+#include "actions_assertions.tvp"
+#include "actions_set.tvp"
+#include "actions_shape.tvp"
+
+%%
+                                           // void MarkAndSweep(Node root) {
+// Mark phase -----------------------------------------------------------------------
+L0  IsNotNull(root)                   L1   //   if (root != null) {
+L0  IsNull(root)                      L19  //
+L1  SetClear(pending)                 L2   //     pending.clear();
+L2  SetAdd(pending, root)             L3   //     pending.add(root);
+L3  SetClear(marked)                  L4   //     marked.clear();
+L4  SetNotIsEmpty(pending)            L5   //     while (!pending.isEmpty()) {
+L4  SetIsEmpty(pending)               L6
+L5  SetSelectAndRemove(pending, x)    L7   //       x = pending.selectAndRemove();
+L7  SetAdd(marked, x)                 L8   //       marked.add(x);
+L8  AssignFieldSelect(t, x, left)     L9   //       t = x.left;
+L9  IsNotNull(t)                      L10  //       if (t != null) {
+L9  IsNull(t)                         L13
+L10 SetNotContains(marked, t)         L12  //         if (!marked.contains(t)) {
+L10 SetContains(marked, t)            L13
+L12 SetAdd(pending, t)                L13  //           pending.add(t)
+                                           //         }
+                                           //       }
+L13 AssignNull(t)                     L13_5 //      t = null;
+L13_5 AssignFieldSelect(t, x, right)  L14  //       t = x.right;
+L14 AssignNull(x)                     L14_5 //      x = null;
+L14_5 IsNotNull(t)                    L15   //      if (t != null) {
+L14_5 IsNull(t)                       L18
+L15 SetNotContains(marked, t)         L17   //        if (!marked.contains(t)) {
+L15 SetContains(marked, t)            L18
+L17 SetAdd(pending, t)                L18   //          pending.add(t)
+                                            //        }
+                                            //      }
+L18 AssignNull(t)                     L4    //      t = null;
+                                            //    }
+L6 AssignNull(x)                      L19   //    x = null;
+L19 SetNotEqualReachset(marked, root) error
+                                            //    if (marked.setNotEqualReachset(root)) {
+                                            //      System.err.println("Internal error: mark phase of gc")
+                                            //  }
+L19 SetEqualReachset(marked, root)    L30
+
+// Sweep phase -----------------------------------------------------------------------
+L30 SetAssignUniverse(unexplored)     L31   //  unexplored.assignUniverse();
+L31 SetClear(collected)               L32   //  collected.clear();
+L32 SetNotIsEmpty(unexplored)         L33   //  while (!unexplored.isEmpty()) {
+L32 SetIsEmpty(unexplored)            L37
+L33 SetSelectAndRemove(unexplored, x) L34   //    x = unexplored.selectAndRemove();
+L34 SetNotContains(marked, x)         L35   //    if (!marked.contains(x)) {
+L34 SetContains(marked, x)            L36
+L35 SetAdd(collected, x)              L36  //       collected.add(x)
+                                           //     }
+L36 AssignNull(x)                     L32  //     x = null;
+                                           //   }
+L37 SetNotEqualComplementOfReachset(collected, root) error
+                                           //   if (collected.SetNotEqualComplementOfReachset(root)) {
+                                           //     System.err.println("Internal error: sweep phase of gc")
+                                           //   }
+L37 SetEqualComplementOfReachset(collected, root) exit
+                                           // }
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display only structures that arise at the following program locations.
+L0, L30, exit, error

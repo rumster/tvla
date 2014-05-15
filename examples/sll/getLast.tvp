@@ -1,0 +1,24 @@
+///////
+// Sets
+
+%s PVar {p, x, e}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that returns a pointer (variable p)
+// to the last element of a list.
+
+L1 Copy_Var_L(e,x)    L2   // e = x;  
+L2 Set_Null_L(p)      L3   // p = NULL;
+L3 Is_Null_Var(e)     exit // while (e != NULL) {
+L3 Is_Not_Null_Var(e) L4
+L4 Copy_Var_L(p, e)   L5   //   p = e;
+L5 Get_Next_L(e, e)   L3   //   e = e->n;
+                           // }

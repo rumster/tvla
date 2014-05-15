@@ -1,0 +1,113 @@
+/*****
+* nbq.tvs
+* Initial structure for nonblocking queue implementation.
+* head always points to dummy node. 
+*****/
+
+//All local variables initially null
+
+//empty queue
+//%t = { tOne(general_one), tTwo(nop) }
+%t = { tOne(general_g1)
+       #if(1 < GNUM)
+       , tTwo(general_g2)
+       #endif
+       #if(2 < GNUM)
+       , tThree(general_g3)
+       #endif
+       #if(3 < GNUM)
+       , tFour(general_g4)
+       #endif 
+     }
+%n = { uh }
+%p = { 
+    
+    //is_node = {uh}
+    ready = { tOne 
+              #if(1 < GNUM)
+              , tTwo
+              #endif
+              #if(2 < GNUM)
+              , tThree
+              #endif
+              #if(3 < GNUM)
+              , tFour
+              #endif 
+            }
+    
+    //is_name[one] = {tprd}
+    //is_name[two] = {tcns}
+    
+    r_by[Tail] = {uh}
+
+    r_by[Tail_seq] = {uh}
+
+    r_by[Head] = {uh}
+
+    r_by[Head_seq] = {uh}
+
+}
+
+
+//queue with one element
+/*
+%t = { tOne(general_one), tTwo(nop) }
+%n = { uh, ut }
+%p = { 
+    
+    //is_node = {uh, ut}
+    ready = { tOne, tTwo }
+    
+    //is_name[one] = {tprd}
+    //is_name[two] = {tcns}
+    
+    r_by[Tail] = {ut}
+
+    r_by[Tail_seq] = {ut}
+
+    r_by[Head] = {uh}
+
+    r_by[Head_seq] = {uh}
+
+    rv[n] = { uh -> ut }
+
+}
+*/
+
+//queue with two elements or more
+/*
+%t = { tprd(producer), tcns(consumer) }
+//%t = { tprd(producer), tcns(producer) }
+%n = { uh, u, ut, q }
+%p = { 
+    
+    is_node = {uh, u, ut}
+    ready = { tprd, tcns }
+    sm = {u: 1/2}
+    
+    is_name[one] = {tprd}
+    is_name[two] = {tcns}
+    is_q = {q}
+
+    rv[this] = {tprd -> q, tcns -> q}
+    
+    rv[tail] = { q->ut }
+
+    rv[tail_seq] = { q->ut}
+
+    rv[head] = { q->uh }
+
+    rv[head_seq] = { q->uh }
+    
+    r_by[tail] = {ut}
+
+    r_by[tail_seq] = {ut}
+
+    r_by[head] = {uh}
+
+    r_by[head_seq] = {uh}
+
+    rv[n] = { uh -> u: 1/2, u -> u: 1/2, u -> ut: 1/2 }
+
+}
+*/

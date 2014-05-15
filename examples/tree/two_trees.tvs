@@ -1,0 +1,26 @@
+// Trees with roots "root1,root2"
+%n = {n_root1, n_root2}
+%p = {
+	sm = {n_root1:1/2, n_root2: 1/2}
+	root1 = {n_root1:1/2}
+        root2 = {n_root2:1/2}
+	left = {
+                n_root1 ->n_root1:1/2, 
+                n_root2 ->n_root2:1/2
+               }
+        right = {
+                n_root1 ->n_root1:1/2, 
+                n_root2 ->n_root2:1/2
+               }
+        down = {
+                n_root1 ->n_root1:1/2, 
+                n_root2 ->n_root2:1/2
+               }
+        downStar = {
+                n_root1 ->n_root1:1/2, 
+                n_root2 ->n_root2:1/2
+               }      
+	r[root1] = {n_root1}
+        r[root2] = {n_root2}
+}
+

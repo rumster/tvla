@@ -1,0 +1,25 @@
+%t = { reader1(reader), reader2(reader), reader3(reader), reader4(reader), reader5(reader), writers(writer) }
+%n = { n0, n1, n2, n3, n4, n5, s_succ}
+%p = {
+    ready = { reader1, reader2, reader3, reader4, reader5, writers }
+    sm = { s_succ : 1/2, writers : 1/2 }
+    reader = {reader1, reader2, reader3, reader4}
+    rid[one] = { reader1 }
+    rid[two] = { reader2 }
+    rid[three] = { reader3 }
+    rid[four] = { reader4 }
+    rid[five] = { reader5 }
+    readcount = { n0 }
+//    crit = { n0 }
+    num0 = { n0 }
+    num1 = { n1 }
+    num2 = { n2 }
+    num3 = { n3 }
+    num4 = { n4 }
+    num5 = { n5 }
+    number = { n0, n1, n2, n3, n4, n5, s_succ }
+    successor = { n0 -> n1, n1 -> n2, n2 -> n3, n3 -> n4, n4 -> n5, n5 -> s_succ : 1/2, s_succ -> s_succ : 1/2}
+//    rt[z,successor] = { n0, n1, n2, n3, n4, n5, s_succ }
+    mutex = 1
+    w = 1
+}

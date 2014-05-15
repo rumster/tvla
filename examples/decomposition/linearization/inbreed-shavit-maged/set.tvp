@@ -1,0 +1,214 @@
+/************************************************************************
+ * pldi 
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s GlobalFields {Head,Tail}
+
+%s LocalFields {x_i,pred,curr,next,res,res_seq}
+%s LocalFieldsDle {curr}
+%s BoolLocals {currMark}
+%s BoolFields {markBit}
+
+//%s LocalBooleans {res,res_seq}
+
+%s NextFields {n}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+%pset Threads {t1,t2}
+//////////////////////////////////////////////////////////////
+
+%s locations { 
+  l_dispatch,l_0, l_2, l_3, l_4, l_6, l_8, l_10, ld_2a, ld_3a
+  ,lf_2, lf_3
+} 
+
+%s Operations {insert,delete,find,locateAfterDelete}
+
+/**************** Predicates **************/
+
+#include "set_pred.tvp"
+
+foreach (tn in Threads) {
+	%p fake[tn](v) 
+}
+
+%dname (rt[Head](v) | rt[Tail](v) |
+		|/{ r_by[fld](v) : fld in GlobalFields}) &
+    &/{&/{ !r_by[fld,tn](v) : fld in LocalFields} & !tn(v) & !fake[tn](v) : tn in Threads}  member
+
+foreach (tn in Threads) {
+  %dname (tn(v) | fake[tn](v) |
+        |/{ r_by[fld,tn](v) : fld in LocalFields} |
+  		|/{ r_by[fld](v) : fld in GlobalFields}) &
+    	&/{&/{ !r_by[fld,other](v)  : fld in LocalFields } & !fake[other](v) & !other(v) : other in (Threads)-{ tn }} tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "set_stat.tvp"
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+
+l_ready schedule(l_dispatch) l_dispatch 
+
+l_dispatch setChoice(insert) l_00          /*local action */            
+l_dispatch setChoice(delete) l_00          /*local action  /DEBUG COMMENT  */    
+l_dispatch setChoice(find) lf_00          /*local action  /DEBUG COMMENT  */    
+//****** Code for one thread *****************************
+l_ready schedule(lf_2) lf_2
+l_ready schedule(lf_3) lf_3
+
+lf_00 Clear() lf_00a
+lf_00a assignNew(x_i) lf_1                
+
+lf_1 assignFromGlbField(pred,Head) lf_1p  
+lf_1p unschedule(lf_2) l_ready
+
+lf_2 assignFromNextField(curr, pred) lf_2p
+lf_2p unschedule(lf_3) l_ready
+
+lf_3 isDataGreaterEq(curr,x_i) lf_1fin
+lf_3 isDataLess(curr,x_i) lf_4            
+
+lf_4 assignNull(pred) lf_5        
+lf_5 assignRef(pred,curr) lf_6            
+lf_6 assignNull(curr) lf_7 
+lf_7 assignFromNextField(curr,pred) lf_7p
+lf_7p unschedule(lf_3) l_ready
+
+
+/* locate     */                                            
+/* concurrent */                                            
+l_ready schedule(l_0) l_0 
+l_ready schedule(l_2) l_2 
+l_ready schedule(l_3) l_3 
+l_ready schedule(l_4) l_4 
+l_ready schedule(l_6) l_6 
+l_ready schedule(l_8) l_8 
+l_ready schedule(l_10) l_10 
+
+l_00 Clear() l_00a
+l_00a assignNew(x_i) l_1			/*x_i expected to be null, local action */ 
+
+l_0 Clear2() l_1
+
+l_1 assignFromGlbField(pred,Head) l_1p
+l_1p unschedule(l_2) l_ready
+
+// Read the mark bit
+l_2 assignFromNextField(curr, pred) l_2p
+l_2p unschedule(l_3) l_ready
+
+l_3 getBooleanLocalFromField(currMark, curr, markBit) l_3a
+l_3a assignFromNextField(next, curr) l_3p
+l_3p unschedule(l_4) l_ready
+
+l_4 isDataNotMarked(pred) l_4a
+l_4 isDataMarked(pred) l_4p
+l_4p unschedule(l_0) l_ready
+
+// check if pred->next is curr
+l_4a isNextEq(pred,curr) l_4b
+l_4a isNotNextEq(pred, curr) l_4ap
+l_4ap unschedule(l_0) l_ready
+
+l_4b isLocalBoolEq(currMark, FALSE) l_5
+l_4b isLocalBoolNotEq(currMark, FALSE) l_12
+
+l_12 SuccCAS_NextBoolean(pred, markBit, curr, FALSE, next, FALSE) l_12succp
+l_12 FailCAS_NextBoolean(pred, markBit, curr, FALSE, next, FALSE) l_12p
+l_12p unschedule(l_0) l_ready
+l_12succp unschedule(l_6) l_ready
+
+l_5 isDataGreaterEq(curr,x_i) ll_dispatch
+l_5 isDataLess(curr,x_i) l_6	
+
+l_6 assignNull(pred) l_7
+l_7 assignRef(pred,curr) l_8		
+
+l_8 assignNull(curr) l_9	
+l_9 assignFromNextField(curr,pred) l_9a 
+l_9a getBooleanLocalFromField(currMark, curr, markBit) l_9b
+l_9b assignFromNextField(next, curr) l_9p
+l_9p unschedule(l_10) l_ready
+
+l_10 isNull(curr) l_11
+l_10 isNotNull(curr) l_10p
+l_10p unschedule(l_4) l_ready
+
+l_11 assignNull(pred) l_11p
+l_11p unschedule(l_0) l_ready
+
+
+
+/*final actions - common to all operations, including linearization point */
+                                            
+/*choice of transaction according to concurrent choice */               
+ll_dispatch isChoice(insert) li_1                   
+ll_dispatch isChoice(delete) ld_1                   
+ll_dispatch isChoice(locateAfterDelete) l_exit                   
+					    
+l_exit ClearOp() l_dispatch			/*local action  */     
+
+/*in all operations: res expectd to be null*/
+
+/* find */
+lf_1fin isDataEq(curr, x_i) lf_2fin			/*local action */                  
+lf_1fin isDataNotEq(curr, x_i) lf_3fin
+
+lf_2fin assignRef(res,curr) l_exit
+lf_3fin assignNull(res) l_exit    
+
+/*insert */
+li_1 isDataEq(curr, x_i) li_5                  /*local action */                  
+li_1 isDataNotEq(curr, x_i) li_2               /*local action */                  
+li_2 updateNextNoIncoming(x_i, curr) li_3                /*local action - new node not accessible by other threads */ 
+
+// If <pred-> mext, b> == <curr, markBitForCurr> then pred -> next = xi
+li_3 SuccCAS_NextBoolean(pred, markBit, curr, FALSE, x_i, FALSE) li_4a
+li_3 FailCAS_NextBoolean(pred, markBit, curr, FALSE, x_i, FALSE) li_3p
+li_3p unschedule(l_0) l_ready
+                                                        
+li_4a removeDnode(x_i) li_4                 /*local action */                  
+li_4 assignRef(res,x_i) l_exit                 /*local action */                  
+li_5 assignNull(res) l_exit                     /*local action   / Vafeiadis lp */         
+
+/*delete*/
+l_ready schedule(ld_2a) ld_2a 
+l_ready schedule(ld_3a) ld_3a 
+ 
+/*atomic {*/                                                    
+ld_1 isDataNotEq(curr,x_i) ld_5             /*local action */                   
+ld_1 isDataEq(curr,x_i) ld_2                /*local action */                  
+ld_2 assignFromNextField(next, curr) ld_2p    
+ld_2p unschedule(ld_2a) l_ready
+
+// Michal - read curr's mark bit for the CAS Should this be here??
+ld_2a getBooleanLocalFromField(currMark, curr, markBit) ld_3
+
+ld_3 SuccCAS_NextOnlyBoolean(curr, markBit, next, currMark, TRUE) ld_3succ
+// In case of failure - restart the locate step
+ld_3 FailCAS_NextBoolean(curr, markBit, next, currMark, next, TRUE) ld_3fail
+ld_3succ unschedule(ld_3a) l_ready
+ld_3fail unschedule(l_0) l_ready
+
+ld_3a SuccCAS_NextBoolean(pred, markBit, curr, FALSE, next, FALSE) ld_4
+ld_3a FailCAS_NextBoolean(pred, markBit, curr, FALSE, next, FALSE) ld_3afail_0
+ld_3afail_0 ClearOp() ld_3afail
+ld_3afail setChoice(locateAfterDelete) ld_3afailp
+ld_3afailp unschedule(l_0) l_ready
+
+ld_4 assignRef(res, curr) l_exit             /*local action */                   
+ld_5 assignNull(res) l_exit                     /*local action   / Vafeiadis lp */         
+

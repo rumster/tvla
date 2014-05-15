@@ -1,0 +1,129 @@
+/***
+* tmutex_bug2.tvm
+* mutual exclusion examples for unbound number of threads.
+* based on the example from "symmetry and model checking" 
+*
+* This is the same program as tmutex.tvm
+* only difference is the additional predicates is_u1 and is_t1 used to separate threads and locks into 
+* two groups -- each thread group using a different lock.
+* Mistakenly using different locks to protect the same critical section may be a common problem in Java
+* where synchronized(expr) takes a reference expression as parameter. 
+*
+* This TVM should be analyzed using the corresponding tmutex_bug2.tvs file.
+***/
+
+/*********************** Sets ******************************/
+%s FieldsAndParameters { myLock }
+%s Globals { aLock } 
+
+/**************** Predicates **************/
+
+#include "../shape_pred.tvm"
+
+%p is_lock(l) 
+%p property_occured()
+
+%p held_by(l, t) 
+%p blocked(t, l)
+
+%p is_u1(u)
+%p is_t1(t)
+
+%i is_acquired(l) = is_lock(l) & E(t) isthread(t) & held_by(l,t)
+
+
+
+%%
+/********************* Actions *******************/
+
+%action skip() { 
+    %t "skip ()"
+    %p  !property_occured() 
+}
+
+%action succLock(fld) {
+    %t "SuccesfulLocGlobal (" + glb + ")"
+    %f  { is_acquired(l), runnable(tr) & rvalue[fld](tr,l) } 
+    %p  !property_occured() & rvalue[fld](tr,l) & (!is_acquired(l) | held_by(l, tr))
+    {
+        
+        held_by(l_1, t_1) = 
+            (held_by(l_1, t_1) &  (t_1 != tr | l_1 != l)) |
+            (t_1 == tr & l_1 == l)
+            
+        blocked(t_1,l_1) = blocked(t_1,l_1) & ((t_1 != tr) | (l_1 != l))
+            
+        is_acquired(l_1) = is_acquired(l_1) | (l_1 == l) 
+        
+                
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) & (t_1 != tr)
+        #endif
+        
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif // slock
+   }
+}
+
+%action blockLock(fld) {
+    %t "blockLocGlobal (" + fld + ")"
+    %f { runnable(tr) & rvalue[fld](tr,l), is_acquired(l) }
+    %p  !property_occured() & rvalue[fld](tr,l) & is_acquired(l) & !held_by(l,tr)
+    {
+        blocked(t_1, l_1) = 
+            (blocked(t_1, l_1) &  (t_1 != tr | l_1 != l)) |
+            (t_1 == tr & l_1 == l) 
+        
+        #ifdef THREAD_STATE
+        ts_blocked(t_1) = ts_blocked(t_1) | (t_1 == tr)
+        #endif
+            
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) | ((t_1==tr) 
+          & |/{ (E(l_v) rvalue[v_1](t_1,l_v) & held_by(l_v,t_1) & fidlt[v,v_1](tr))
+            : v_1 in FieldsAndParameters - {v}})
+        #endif // slock
+
+   }
+}
+
+%action unlock(fld) {
+    %t "unLocGlobal (" + fld + ")"
+    %f { is_acquired(l), runnable(tr) & rvalue[fld](tr,l) }
+    %p  !property_occured() & rvalue[fld](tr,l)   
+    {
+        held_by(l_1, t_1) = held_by(l_1, t_1) &  (t_1 != tr | l_1 != l) 
+        is_acquired(l_1) = is_acquired(l_1) & (l_1 != l)
+        
+        #ifdef SLOCK
+        slock(t_1) = slock(t_1) & (t_1 != tr) // since there's no lock we are blocked-on
+        #endif
+   }
+}
+
+
+%action verifyProperty() { 
+    %p  !property_occured() 
+    %message (E(t_1,t_2) (t_1 != t_2) & at[gl_2](t_1) & at[gl_2](t_2)) ->  "mutual exclusion may be violated"
+}
+
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/**************  Threads ****************/
+%thread main {
+gl_1 blockLock(myLock) gl_1                  // lock(aLock)
+gl_1 succLock(myLock) gl_2                   //
+gl_2 skip() gl_3                                  // 
+gl_3 unlock(myLock) gl_4                     // unlock(aLock)
+gl_4 skip() gl_1
+}
+
+%%
+/***********************************************/
+/**************  Claims        ****************/
+verifyProperty()

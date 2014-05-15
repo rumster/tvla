@@ -1,0 +1,61 @@
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+%\begin{verbatim}
+% /***********************************************************
+%* con_stat.tvm
+%* include file for simple concurrency
+%***********************************************************/
+%\end{verbatim}
+
+\%ac\=tion skip() \{ \+ \\
+   \tvtitle "skip ()" \\
+   \tvprecond !\propertyoccurred() \- \\
+\} \\
+
+\%ac\=tion succLockGlobal(glb) \{ \+ \\
+    \tvtitle "SuccesfulLocGlobal (" + glb + ")" \\
+    \tvfocus  \{ \isacquired(l), global[glb](l) \} \\
+    \tvprecond  !\propertyoccurred() \& global[glb](l) \& (!\isacquired(l) | \heldby(l,
+    tr)) \\
+    \{ \\
+
+       \heldby\=(l\_1, t\_1) = \+ \\
+            (\heldby(l\_1, t\_1) \&  (t\_1 != tr | l\_1 != l)) | \\
+            (t\_1 == tr \& l\_1 == l) \- \\
+       blocked(t\_1,l\_1) = blocked(t\_1,l\_1) \& ((t\_1 != tr) | (l\_1 != l)) \\
+       \isacquired(l\_1) = \isacquired(l\_1) | (l\_1 == l) \\
+   \} \- \\
+\} \\
+
+\%ac\=tion blockLockGlobal(glb) \{ \+ \\
+    \tvtitle "blockLocGlobal (" + glb + ")" \\
+    \tvfocus \{ global[glb](l) \& \isacquired(l) \} \\
+    \tvprecond  !\propertyoccurred() \& global[glb](l) \& \isacquired(l) \&
+    !\heldby(l,tr) \\
+    \{ \\
+        blocked\=(t\_1, l\_1) = \+ \\
+            (blocked(t\_1, l\_1) \&  (t\_1 != tr | l\_1 != l)) | \\
+            (t\_1 == tr \& l\_1 == l) \- \\
+   \} \- \\
+\} \\
+
+\%ac\=tion unlockGlobal(glb) \{ \+ \\
+    \tvtitle "unLocGlobal (" + glb + ")" \\
+    \tvfocus \{ \isacquired(l), global[glb](l) \} \\
+    \tvprecond !\propertyoccurred() \& global[glb](l) \\
+    \{ \\
+        \heldby(l\_1, t\_1) = \heldby(l\_1, t\_1) \&  (t\_1 != tr | l\_1 != l) \\
+        \isacquired(l\_1) = \isacquired(l\_1) \& (l\_1 != l) \\
+   \} \- \\
+\} \\
+
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:ConcTVM}TVM file for simple concurrency
+semantics.}
+\end{figure}

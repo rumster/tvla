@@ -1,0 +1,107 @@
+/***********************************************************
+* con_pred.tvm
+* include file for concurrency predicates
+***********************************************************/
+
+/**********************************************/
+/*************** Core Predicates **************/
+%p is_lock(l) 
+%p property_occured()
+
+%p held_by(l, t) function
+%p blocked(t, l) function
+
+/****
+* special predicates for resource ordering
+****/
+
+#ifdef SLOCK
+%p idlt(l_1, l_2) transitive antireflexive 
+#endif
+/****
+* end of special predicates for resource ordering
+****/
+
+
+
+/****
+* special predicates for wait/notify semantics
+****/
+#ifdef WAIT_NOTIFY
+
+    %p waiting(t,l) function
+
+#endif
+/****
+* end of special predicates for wait/notify semantics
+****/
+
+/****
+* special predicates for thread state semantics
+****/
+
+#ifdef THREAD_STATE
+    %p ts_created(t)
+    %p ts_running(t)
+    %p ts_blocked(t)
+    %p ts_waiting(t)
+    %p ts_dead(t)
+#endif
+
+/****
+* end of special predicates for thread state semantics
+****/
+
+#ifdef RECORD_RW
+
+foreach (l in Labels) {
+    %p prev[l](t)
+    }    
+#endif
+    
+
+
+/**********************************************************/
+/**************** Instrumentation Predicates **************/
+
+%i is_acquired(l) = is_lock(l) & E(t) isthread(t) & held_by(l,t)
+
+// slock(t) = 1 when a thread is blocked on a lock that is smaller than
+// one of the lock it is holding
+#ifdef SLOCK
+%i slock(t) = isthread(t) & E(l_1,l_2) blocked(t,l_1) & held_by(l_2,t) & !idlt(l_2,l_1)
+
+foreach (v1 in FieldsAndParameters) {
+    foreach (v2 in FieldsAndParameters - {v1} ) {
+        %i fidlt[v1,v2](t) = E(l_1,l_2) is_lock(l_1) & is_lock(l_2) 
+                    & rvalue[v1](t,l_1) & rvalue[v2](t,l_2) & idlt(l_1,l_2)
+    }
+}
+#endif // slock
+
+#ifdef WAIT_NOTIFY
+%i tw(t) = E(l) is_lock(l) & waiting(t,l)
+#endif
+
+/*************************************************/
+/**************** Consistency Rules **************/
+%r runnable(t) ==> isthread(t)
+
+%r blocked(t, l) ==> !held_by(l, t)
+%r held_by(l, t) ==> !blocked(t, l)
+
+%r !(E(t) isthread(t)  & runnable(t)) ==> 0 // kill structures where no thread is runnable
+
+#ifdef SLOCK
+%r idlt(l_1, l_2) ==> !idlt(l_2, l_1) // asymmetric 
+// no need for antitransitive since there is no such predicate fidlt[v,v]
+foreach (v1 in FieldsAndParameters) {
+    foreach (v2 in FieldsAndParameters - {v1} ) {
+        %r fidlt[v1,v2](t) ==> !fidlt[v2,v1](t)
+    }
+}
+#endif
+
+#ifdef THREAD_STATE
+%r ts_dead(t) ==> !ts_running(t)
+#endif

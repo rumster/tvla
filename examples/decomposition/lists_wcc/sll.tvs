@@ -1,0 +1,30 @@
+// An acyclic singly-linked list with two or more elements pointed by program x.
+%n = {head, tail}
+%p = {
+       sm = {tail:1/2}
+       n = {head->tail:1/2, tail->tail:1/2}
+       x = {head}
+       t[n] = {head->head, head->tail, tail->tail:1/2}
+       r[n,x] = {head, tail}
+       wcc[x] = {head, tail}
+#ifndef DISABLE_NON_NULL       
+	   nonNull[x] = 1
+#endif
+}
+
+// An acyclic singly-linked list with a single element pointed by x.
+%n = {head}
+%p = {
+       x = {head}
+       t[n] = {head->head}
+       r[n,x] = {head}
+       wcc[x] = {head}
+#ifndef DISABLE_NON_NULL       
+	   nonNull[x] = 1
+#endif
+}
+
+// An empty list (x points to NULL).
+%n = {}
+%p = {
+}

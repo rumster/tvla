@@ -1,0 +1,52 @@
+\section{Changes since version 0.91}
+
+The following changes are incorporated:
+\begin{itemize}
+\item Two multi-threading engines are now available for analyzing
+multi-threaded programs. Currently, documentation for using them
+is only available from
+\url{http://www.cs.tau.ac.il/~yahave/3vmc.htm}.
+
+%\item Many-sorted logics is supported with predicates of arbitrary
+%order, see \secref{Predicates}. Type checking will be conducted.
+
+\item A properties mechanism is added. This is described in
+\ref{Se:PropertyFiles}.
+
+\item The command-line options -b2 and -rotate have been moved to
+property file.
+
+\item The -significant option is no longer supported. This was
+done in order to offer better performance by adding different
+implementations for three-valued structures.
+
+\item The -dump option is no longer supported.
+
+\item The command-line option -join has been renamed to -save.
+
+\item The command-line option -single has been replaced with the
+-join option, which also includes a partial join (see the
+command-line options section for more details).
+
+\item The command-line option -action includes blur as a mandatory
+operation, which is applied last.
+
+\item The following command-line options are new :
+%%-mode, -backward,
+-props, -tvs, -dot, -D, -terse,  and -nowarnings. Consult the
+command-line options sections before using them.
+
+\item It is now possible to specify empty predicate update
+sections.
+
+\item Nullary predicates can be presented as either diamonds or
+listed in a box. Use the tvla.dot.nullaryStyle property to choose
+the desired presentation.
+
+%\item Properties are used to control various the graphical
+%representation of predicates, which are no longer part of the TVP
+%specification. Use the tvla.dot.boxedPredicates to specify which
+%predicates should be displayed in a box and the
+%tvla.dot.displayedKleeneValues property to specify which Kleene
+%values should be displayed for predicates.
+\end{itemize}

@@ -1,0 +1,965 @@
+/******************************************************************
+* shape_stat.tvm
+* statements for shape analysis
+*
+* assumptions:
+* 1. thread objects can not be referenced by any other object (they are like globals)
+* 2. the list is acyclic
+*
+******************************************************************/
+
+/*******************
+* isGlobalEqual(glb, ref)
+* (glb == ref)
+********************/
+%action isGlobalEqual(glb, ref) {
+    %t glb + "=="  + ref
+    %f { global[glb](o_t) }
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrgat[lw,glb]() & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    {
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+     
+    }
+    #endif
+}
+
+/*******************
+* isGlobalEqualGlobal(glb1, glb2)
+* (glb1 == glb2)
+********************/
+%action isGlobalEqualGlobal(glb1, glb2) {
+    %t glb1 + "=="  + glb2
+    %f { global[glb1](o_1), global[glb2](o_2) }
+    %p E(o_1,o_2) global[glb1](o_1) & global[glb2](o_2) & (o_1 == o_2)
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrgat[lw,glb]() & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    {
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+     
+    }
+    #endif
+}
+
+
+/*******************
+* isGlobalNotEqualGlobal(glb1, glb2)
+* (glb1 == glb2)
+********************/
+%action isGlobalNotEqualGlobal(glb1, glb2) {
+    %t glb1 + "=="  + glb2
+    %f { global[glb1](o_1), global[glb2](o_2) }
+    %p E(o_1,o_2) global[glb1](o_1) & global[glb2](o_2) & (o_1 != o_2)
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrgat[lw,glb]() & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    {
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+     
+    }
+    #endif
+}
+
+
+/*******************
+* isGlobalNull(glb)
+* (glb == null)
+********************/
+%action isGlobalNull(glb) {
+    %t ref + "== null"  
+    %f { global[glb](o_t) }
+    %p !E(o_t) global[glb](o_t)
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrgat[lw,glb]() & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb 
+    {    
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+        
+    }
+    #endif
+}
+
+/*******************
+* isGlobalNotNull(glb)
+* (glb != null)
+********************/
+%action isGlobalNotNull(glb) {
+    %t glb + "!= null"  
+    %f { global[glb](o_t) }
+    %p E(o_t) global[glb](o_t)
+    #ifdef RECORD_RW
+         %message (E(t_w) (t_w != tr) & |/{ wrgat[lw,glb]() & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    {
+    
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+
+    }
+    #endif
+}
+
+/*******************
+* isNull(ref)
+* (ref == null)
+********************/
+%action isNull(ref) {
+    %t ref + "== null"  
+    %f { runnable(tr) & rvalue[ref](tr,o_t) }
+    %p !E(o_t) rvalue[ref](tr,o_t)
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrat[lw,ref](tr) & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + ref + " at " + sl 
+    {    
+
+            reading[sl,ref](t_1,t_1) = reading[sl,ref](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref](o) = rdat[sl,ref](o) | (o == tr)
+
+    }
+    #endif
+}
+
+/*******************
+* isNotNull(ref)
+* (ref != null)
+********************/
+%action isNotNull(ref) {
+    %t ref + "!= null"  
+    %f { runnable(tr) & rvalue[ref](tr,o_t) }
+    %p E(o_t) rvalue[ref](tr,o_t)
+    #ifdef RECORD_RW
+        %message (E(t_w) (t_w != tr) & |/{ wrat[lw,ref](tr) & prev[lw](t_w) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + ref + " at " + sl 
+
+    { 
+            reading[sl,ref](t_1,t_1) = reading[sl,ref](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref](o) = rdat[sl,ref](o) | (o == tr)
+      
+    }
+    #endif
+}
+
+
+/****
+* assignNull(fld) (field or reference)
+****/
+%action assignNull(fld) {
+    %t tr + "." + fld + " = null"
+    %f { runnable(tr) & rvalue[fld](tr,dst) }
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,fld](tr) & at[lr](t_r) : lr in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + fld + " at " + sl
+    #endif
+    {
+    //x1(v) = 0 
+    //r[n,x1](v) = 0
+
+        rvalue[fld](t_1,o) = rvalue[fld](t_1,o) & (t_1 != tr)
+        
+        #ifdef RBY
+        r_by[fld](o_1) = r_by[fld](o_1) &
+            E(o_p,dst) ((o_p != tr) & rvalue[fld](o_p,dst) & rvalue[fld](tr,dst)) 
+        #endif 
+        
+        #ifdef REACH
+        rt[fld,next](t_1,o) = rt[fld,next](t_1,o) & (t_1 != tr)
+        
+        #endif
+            
+        #ifdef RECORD_RW
+            writing[sl,fld](t_1,t_1) = writing[sl,fld](t_1,t_1) | (t_1 == tr)
+            wrat[sl,fld](o) = wrat[sl,fld](o) | (o == tr)
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) & (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) &
+            |/{ rvalue[f](o_1,o) : f in FieldsAndParameters} &
+            |/{ rvalue[f](o_2,o) : f in FieldsAndParameters}) |
+            (E(o_1) (o_1 != o_t) & (|/{ rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ( |/{global[g](o) : g in Globals}))
+        
+        is[fld](o) = is[fld](o) & 
+            (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) & 
+                rvalue[fld](o_1,o) & rvalue[fld](o_2,o))
+        
+        #endif
+    }
+}
+
+
+/****
+* killReference(fld) (field or reference)
+* !!! NOTE: No UNSCHEDULE !!!
+****/
+%action killReference(fld) {
+    %t tr + "." + fld + " = null (kill)"
+    %f { runnable(tr) & rvalue[fld](tr,dst) }
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,fld](tr) & at[lr](t_r) : lr in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + fld + " at " + sl
+    #endif
+    {
+    //x1(v) = 0 
+    //r[n,x1](v) = 0
+
+        rvalue[fld](t_1,o) = rvalue[fld](t_1,o) & (t_1 != tr)
+        
+        #ifdef RBY
+        r_by[fld](o_1) = r_by[fld](o_1) &
+            E(o_p,dst) ((o_p != tr) & rvalue[fld](o_p,dst) & rvalue[fld](tr,dst)) 
+        #endif 
+        
+        #ifdef REACH
+        rt[fld,next](t_1,o) = rt[fld,next](t_1,o) & (t_1 != tr)
+        
+        #endif
+            
+        #ifdef RECORD_RW
+            writing[sl,fld](t_1,t_1) = writing[sl,fld](t_1,t_1) | (t_1 == tr)
+            wrat[sl,fld](o) = wrat[sl,fld](o) | (o == tr)
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) & (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) &
+            |/{ rvalue[f](o_1,o) : f in FieldsAndParameters} &
+            |/{ rvalue[f](o_2,o) : f in FieldsAndParameters}) |
+            (E(o_1) (o_1 != o_t) & (|/{ rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ( |/{global[g](o) : g in Globals}))
+        
+        is[fld](o) = is[fld](o) & 
+            (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) & 
+                rvalue[fld](o_1,o) & rvalue[fld](o_2,o))
+        
+        #endif
+    }
+}
+
+
+/*******************
+* assignReference(ref_1,ref_2)
+* [ref_1 = ref_2]
+********************/
+%action assignReference(ref_1, ref_2) {
+    %t ref_1 + "=" + ref_2
+    %f { runnable(tr) & rvalue[ref_2](tr,o_t) }
+    %p rvalue[ref_2](tr,o_t)
+    #ifdef RECORD_RW
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,ref_2](tr) & prev[lw](tw) : lw in Labels}) ->
+            "thread " + tr + " may RW interfere on " + ref_2 + " at " + sl
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,ref_1](tr) & at[lr](t_r) : lr in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + ref_1 + " at " + sl
+    #endif
+    {     
+        rvalue[ref_1](t_1,o_1) = rvalue[ref_1](t_1,o_1) | 
+                ((t_1 == tr) & (o_1 == o_t))
+            
+        #ifdef RBY
+        r_by[ref_1](o_1) = r_by[ref_1](o_1) | (o_1 == o_t)
+        #endif
+            
+        #ifdef REACH
+        
+        rt[ref_1,next](t_1,o_1) = rt[ref_2,next](t_1,o_1) & (t_1 == tr)
+        #endif 
+    
+        #ifdef RECORD_RW
+            writing[sl,ref_1](t_1,t_1) = writing[sl,ref_1](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref_1](o) = wrat[sl,ref_1](o) | (o == tr)
+            reading[sl,ref_2](t_1,t_1) = reading[sl,ref_2](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref_2](o) = rdat[sl,ref_2](o) | (o == tr)
+        #endif
+    
+        #ifdef SHARE
+        
+        is(o) = is(o) | (o == o_t)
+
+        is[ref_1](o) = is[ref_1](o) | (E(o_1) (o_1 != tr) & rvalue[ref_1](o_1,o) & (o==o_t))
+
+        #endif
+    }
+}
+
+/*******************
+* assignFromGlobal(ref,glb)
+* [ref = glb]
+********************/
+%action assignFromGlobal(ref, glb) {
+    %t ref + "=" + glb 
+    %f { global[glb](o_t) }
+    %p global[glb](o_t)
+    #ifdef RECORD_RW
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,ref](tr) & prev[lw](tw) : lw in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + ref + " at " + sl
+        %message (E(t_r) (t_r != tr) & |/{ rdgat[lr,glb]() & prev[lr](t_r) : lr in Labels}) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    #endif
+    {     
+        rvalue[ref](t_1,o_1) = rvalue[ref](t_1,o_1) | 
+                ((t_1 == tr) & (o_1 == o_t))
+
+        #ifdef RBY
+        r_by[ref](o_1) = r_by[ref](o_1) | (o_1 == o_t)
+        #endif
+            
+        #ifdef REACH
+        rt[ref,next](t_1,o_1) = rg[glb](o_1) & (t_1 == tr)
+        #endif
+    
+        #ifdef RECORD_RW
+            writing[sl,ref](t_1,t_1) = writing[sl,ref](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+        #endif
+    
+        #ifdef SHARE
+        
+        is(o) = is(o) | (o == o_t)
+        is[ref](o) = is[ref](o) | (E(o_1) (o_1 != tr) & rvalue[ref](o_1,o) & (o == o_t))
+        
+        #endif
+    }
+}
+
+/*******************
+* assignNullToGlobal
+* [glb = null]
+********************/
+
+%action assignNullToGlobal(glb) {
+    %t glb + "= null" 
+    %f { global[glb](o) } 
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdgat[lr,glb]() & at[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+    #endif
+    {
+        global[glb](o) = 0
+        
+        #ifdef REACH
+        rg[glb](o) = 0
+        #endif
+              
+        #ifdef RECORD_RW
+            writeglob[sl,glb](t_1) = writeglob[sl,glb](t_1) | (t_1 == tr)
+            wrgat[sl,glb]() = 1
+        #endif
+        
+        #ifdef SHARE
+        
+         is(o) = is(o) & (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) &
+            |/{ rvalue[f](o_1,o) : f in FieldsAndParameters} &
+            |/{ rvalue[f](o_2,o) : f in FieldsAndParameters}) |
+            (E(o_1) (o_1 != o_t) & (|/{ rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ( |/{global[g](o) : g in Globals - {glb}}))
+        
+        #endif
+    }
+}   
+
+/*******************
+* killGlobal
+* [glb = null]
+* !!! does not perform unschedule !!!
+********************/
+
+%action killGlobal(glb) {
+    %t "kill " + glb 
+    %f { global[glb](o) } 
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdgat[lr,glb]() & at[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl 
+    #endif
+    {
+        global[glb](o) = 0
+
+        #ifdef REACH
+        rg[glb](o) = 0
+        #endif
+        
+         #ifdef RECORD_RW
+            writeglob[sl,glb](t_1) = writeglob[sl,glb](t_1) | (t_1 == tr)
+            wrgat[sl,glb]() = 1
+        #endif
+        
+        #ifdef SHARE
+        
+         is(o) = is(o) & (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) &
+            |/{ rvalue[f](o_1,o) : f in FieldsAndParameters} &
+            |/{ rvalue[f](o_2,o) : f in FieldsAndParameters}) |
+            (E(o_1) (o_1 != o_t) & (|/{ rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ( |/{global[g](o) : g in Globals - {glb}}))
+        
+        #endif
+    }
+}   
+
+
+/*******************
+* assignGlobal
+* [glb = ref]
+********************/
+
+%action assignGlobal(glb, ref) {
+    %t glb + "=" + ref 
+    %f { runnable(tr) & rvalue[ref](tr,o_t) }
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdgat[lr,glb]() & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may RW interfere on " + glb + " at " + sl
+        %message (E(t_w) (t_w != tr) & |/{ wrat[lw,ref](t) & prev[lw](t_w) : lw in Labels} ) -> 
+            "thread " + tr + " may RW interfere on " + ref + " at " + sl
+
+    #endif
+    {
+        global[glb](o) = global[glb](o) | (E(o_t) rvalue[ref](tr,o_t) & (o == o_t))
+        #ifdef REACH
+        rg[glb](o) = rt[ref,next](tr,o)
+        #endif
+        
+        #ifdef RECORD_RW
+            reading[sl,ref](t_1,t_1) = reading[sl,ref](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+            writeglob[sl,glb](t_1) = writeglob[sl,glb](t_1) | (t_1 == tr)
+            wrgat[sl,glb]() = 1
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) | (E(o_t) rvalue[ref](tr,o_t) & (o == o_t))
+        
+        #endif
+    }
+}   
+
+
+/*******************
+* assignNew(ref)
+* [ref = new T()]
+* note - the type is currently ignored.
+********************/
+%action assignNew(ref) {
+    %t ref + "= new T()" 
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,ref](tr) & at[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may RW interfere on " + ref 
+    #endif
+    %new 
+    {
+        rvalue[ref](t_1,o_t) = rvalue[ref](t_1,o_t) | ((t_1 ==tr) & isNew(o_t))
+        is_lock(o_1) = is_lock(o_1) | isNew(o_1)
+
+        #ifdef RBY
+        r_by[ref](o_1) = r_by[ref](o_1) | isNew(o_1)
+        #endif
+        
+        #ifdef REACH
+
+        rt[ref,next](t_1,o_1) = rt[ref,next](t_1,o_1) | ((t_1 == tr) & isNew(o_1))
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,ref](t_1,t_1) = writing[sl,ref](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+        #endif
+    }
+} 
+
+/***
+* selectField(ref,obj)
+* ref = obj.fld
+***/
+%action selectField(ref,obj,fld) {
+    %t ref + " = " + obj + "." + fld 
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & rvalue[fld](o_t,dst) }
+    %p rvalue[obj](tr,o_t) & rvalue[fld](o_t,dst)
+    #ifdef RECORD_RW
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,fld](o_t) & prev[lw](tw) : lw in Labels} ) -> 
+                       "thread " + tr + " may RW interfere on " + obj 
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,ref](tr) & prev[lr](t_r) : lr in Labels} ) -> 
+                        "thread " + tr + " may RW interfere on " + ref 
+    #endif
+    {   
+        
+        rvalue[ref](t_1,o_1) = rvalue[ref](t_1,o_1) | 
+                ((t_1 == tr) & (o_1 == dst))
+
+        #ifdef RBY
+        r_by[ref](o_1) = r_by[ref](o_1) | (o_1 == dst)
+        #endif
+            
+        #ifdef REACH    
+        rt[ref,fld](t_1,o_1) = rt[ref,fld](t_1,o_1) | 
+            (rt[obj,fld](t_1,o_1) & (o_1 != o_t) & (t_1 == tr))
+            
+
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,ref](t_1,t_1) = writing[sl,ref](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+            reading[sl,fld](t_1,o) = reading[sl,fld](t_1,o) | ((t_1 == tr) & (o == o_t))
+            rdat[sl,fld](o) = rdat[sl,fld](o) | (o == o_t)
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) | (o == dst)
+        
+        is[ref](o) = is[ref](o) | (E(o_1) (o_1 != tr) & rvalue[ref](o_1,o) & (o==dst))
+        
+        #endif
+        
+    }
+}
+
+
+
+/***
+* SelectNextField(ref,obj)
+* ref = obj.next
+***/
+%action selectNextField(ref,obj) {
+    %t ref + " = " + obj + ".next"
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & rvalue[next](o_t,dst) }
+    %p rvalue[obj](tr,o_t) & rvalue[next](o_t,dst)
+    #ifdef RECORD_RW
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,next](o_t) & prev[lw](tw) : lw in Labels} ) -> 
+                       "thread " + tr + " may interfere on " + obj + " at " + sl
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,ref](tr) & prev[lr](t_r) : lr in Labels} ) -> 
+                        "thread " + tr + " may interfere on " + ref + " at " + sl
+    #endif
+    {   
+        rvalue[ref](t_1,o_1) = rvalue[ref](t_1,o_1) | 
+                ((t_1 == tr) & (o_1 == dst))
+
+        #ifdef RBY
+        r_by[ref](o_1) = r_by[ref](o_1) | (o_1 == dst)
+        #endif
+                
+        #ifdef REACH
+        rt[ref,next](t_1,o_1) = rt[ref,next](t_1,o_1) | 
+            (rt[obj,next](t_1,o_1) & (o_1 != o_t) & (t_1 == tr))
+            
+
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,ref](t_1,t_1) = writing[sl,ref](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+            reading[sl,next](t_1,o) = reading[sl,next](t_1,o) | ((t_1 == tr) & (o == o_t))
+            rdat[sl,next](o) = rdat[sl,next](o) | (o == o_t)
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) | (o == dst)
+        
+        is[ref](o) = is[ref](o) | (E(o_1) (o_1 != o_t) & rvalue[ref](o_1,dst) & (o == dst))
+        
+        #endif // SHARE
+    }
+}
+
+/***
+* SelectGlobalNext(ref,glb)
+* ref = glb.next
+* NOTE: We allow glb.next to be null and be assigned to ref.
+***/
+%action selectGlobalNext(ref,glb) {
+    %t ref + " = " + glb + ".next"
+    %f { global[glb](o_t) & rvalue[next](o_t,dst) }
+    %p global[glb](o_t) 
+    #ifdef RECORD_RW
+        %message (E(tw) (tw != tr) & |/{ wrgat[lw,glb]() & prev[lw](tw) : lw in Labels} ) -> 
+                    "thread " + tr + " may interfere on" + glb 
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,ref](tr) & prev[lr](t_r) : lr in Labels} ) -> 
+                    "thread " + tr + " may interfere on" + ref 
+    #endif
+    {   
+   
+        rvalue[ref](t_1,o_1) = rvalue[ref](t_1,o_1) | 
+            (E(dst) rvalue[next](o_t,dst) & ((t_1 == tr) & (o_1 == dst)))
+
+        #ifdef RBY
+        r_by[ref](o_1) = r_by[ref](o_1) | 
+            (E(dst) rvalue[next](o_t,dst) & (o_1 == dst))
+        #endif
+            
+        #ifdef REACH
+        rt[ref,next](t_1,o_1) = rt[ref,next](t_1,o_1) | 
+            (rg[glb](o_1) & (o_1 != o_t) & (t_1 == tr))
+            
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,ref](t_1,t_1) = writing[sl,ref](t_1,t_1) | (t_1 == tr)
+            wrat[sl,ref](o) = wrat[sl,ref](o) | (o == tr)
+            reading[sl,next](t_1,o) = reading[sl,next](t_1,o) | ((t_1 == tr) & (o == o_t))
+            rdat[sl,next](o) = rdat[sl,next](o) | (o == o_t)
+        #endif
+        
+        #ifdef SHARE
+        
+        is(o) = is(o) | (o == dst)
+        
+        is[ref](o) = is[ref](o) | (E(o_1) (o_1 != o_t) & rvalue[ref](o_1,dst) & (o == dst))
+        
+        #endif
+    }
+}
+
+/***
+* updateNextField(obj,ref)
+* obj.next = ref
+***/
+%action updateNextField(obj,ref) {
+    %t obj + ".next =" + ref
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & rvalue[ref](tr,dst) }
+    %p rvalue[obj](tr,o_t) & rvalue[ref](tr,dst)
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,next](o_t) & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may interfere on " + obj + " at " + sl
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,ref](tr) & prev[lw](tw) : lw in Labels} ) -> 
+            "thread " + tr + " may interfere on " + ref + " at " + sl
+    #endif
+    {
+        
+        rvalue[next](o_s,o_d) = rvalue[next](o_s,o_d) |
+                ((o_s == o_t) & (o_d == dst))
+
+        #ifdef RBY 
+        r_by[next](o_1) = r_by[next](o_1) | (o_1 == dst)                
+        #endif
+        
+        #ifdef REACH
+
+                
+        // note that this updates all threads that reach o_t with some field
+        foreach (v in FieldsAndParameters) {
+            rt[v,next](t_1,o_1) = rt[v,next](t_1,o_1) |
+                (rt[v,next](t_1,o_t) & rt[ref,next](tr,o))
+        }
+        
+        foreach (g in Globals) {
+            rg[g](o_1) = rg[g](o_1) | 
+                (rg[g](o_t) & rt[ref,next](tr,o_1))
+        }
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,next](t_1,o) = writing[sl,next](t_1,o) | ((t_1 == tr) & (o == o_t))
+            wrat[sl,next](o) = wrat[sl,next](o) | (o == o_t)
+            
+            reading[sl,ref](t_1,t_1) = reading[sl,ref](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref](o) = rdat[sl,ref](o) | (o == tr)
+        #endif
+        
+        #ifdef SHARE
+        
+        is[next](o) = is[next](o) | ((o==dst) & (E(o_s) rvalue[next](o_s,o)))
+        is(o) = is(o) | ((|/{E(o_s) (o_s != tr) & rvalue[f](o_s,o) : f in FieldsAndParameters} 
+            | (|/{global[g](o) : g in Globals })))
+        
+        #endif // SHARE
+        
+    }   
+}
+
+
+/***
+* updateField(obj,fld,ref)
+* obj.fld = ref
+***/
+%action updateField(obj,fld,ref) {
+    %t obj + "." + fld + "=" + ref
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & rvalue[ref](tr,dst) }
+    %p rvalue[obj](tr,o_t) & rvalue[ref](tr,dst)
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,fld](o_t) & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may interfere on " + obj 
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,ref](tr) & prev[lw](tw) : lw in Labels} ) -> 
+            "thread " + tr + " may interfere on " + ref 
+    #endif
+    {
+        rvalue[fld](o_s,o_d) = rvalue[fld](o_s,o_d) |
+                ((o_s == o_t) & (o_d == dst))
+
+        #ifdef RBY 
+        r_by[fld](o_1) = r_by[fld](o_1) | (o_1 == dst)                
+        #endif
+        
+        #ifdef REACH
+
+        // note that this updates all threads that reach o_t with some field
+        foreach (v in FieldsAndParameters) {
+            rt[v,fld](t_1,o_1) = rt[v,fld](t_1,o_1) |
+                (rt[v,fld](t_1,o_t) & rt[ref,fld](tr,o))
+        }
+        
+        foreach (g in Globals) {
+            rg[g](o_1) = rg[g](o_1) | 
+                (rg[g](o_t) & rt[ref,fld](tr,o_1))
+        }
+        #endif
+        
+        #ifdef RECORD_RW
+            writing[sl,fld](t_1,o) = writing[sl,fld](t_1,o) | ((t_1 == tr) & (o == o_t))
+            wrat[sl,fld](o) = wrat[sl,fld](o) | (o == o_t)
+            
+            reading[sl,ref](t_1,t_1) = reading[sl,ref](t_1,t_1) | (t_1 == tr)
+            rdat[sl,ref](o) = rdat[sl,ref](o) | (o == tr)
+        #endif
+        
+        #ifdef SHARE
+        
+        is[fld](o) = is[fld](o) | ((o==dst) & (E(o_s) (o_s != tr) & rvalue[fld](o_s,o)))
+        is(o) = is(o) | ((|/{E(o_s) (o_s != tr) & rvalue[f](o_s,o) : f in FieldsAndParameters} 
+            | (|/{global[g](o) : g in Globals })))
+        
+        #endif // SHARE
+    }   
+}
+
+
+/***
+* updateNextFromGlobal(obj,glb)
+* obj.next = glb
+***/
+%action updateNextFromGlobal(obj,glb) {
+    %t obj + ".next =" + glb
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & global[glb](dst) }
+    %p rvalue[obj](tr,o_t) & global[glb](dst)
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,next](o_t) & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may interfere on " + obj 
+        %message (E(tw) (tw != tr) & |/{ wrgat[lw,glb]() & prev[lw](tw) : lw in Labels} ) -> 
+            "thread " + tr + " may interfere on " + glb 
+    #endif
+    {        
+         
+        rvalue[next](o_s,o_d) = rvalue[next](o_s,o_d) |
+                ((o_s == o_t) & (o_d == dst))
+
+        #ifdef RBY
+        r_by[next](o_1) = r_by[next](o_1) | (o_1 == dst)
+        #endif
+                
+        #ifdef REACH
+
+                
+        // note that this updates all threads that reach o_t with some field
+        foreach (v in FieldsAndParameters) {
+            rt[v,next](t_1,o_1) = rt[v,next](t_1,o_1) |
+                (rt[v,next](t_1,o_t) & rg[glb](o_1))
+        }
+        
+        foreach (g in Globals - {glb} ) {
+            rg[g](o_1) = rg[g](o_1) | 
+                (rg[g](o_t) & rg[glb](o_1))
+        }
+        #endif //ifdef REACH
+        
+        #ifdef RECORD_RW
+            writing[sl,next](t_1,o) = writing[sl,next](t_1,o) | ((t_1 == tr) & (o == o_t))
+            wrat[sl,next](o) = wrat[sl,next](o) | (o == o_t)
+            
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+        #endif
+        
+        
+        #ifdef SHARE
+        
+        is[next](o) = is[next](o) | ((o==dst) & (E(o_s) rvalue[next](o_s,o)))
+        
+        is(o) = is(o) | 
+            ((|/{E(o_s) rvalue[f](o_s,o) : f in FieldsAndParameters} | 
+            (|/{global[g](o) : g in Globals-{glb}})))
+        
+        #endif        
+    }
+}
+
+
+/***
+* updateGlobalNext(glb,ref)
+* glb.next = ref
+***/
+%action updateGlobalNext(glb,ref) {
+    %t glb + ".next =" + ref
+    %f { runnable(tr) & global[glb](o_t) & rvalue[ref](tr,dst) }
+    %p global[glb](o_t) & rvalue[ref](tr,dst)
+    #ifdef RECORD_RW
+        %message (E(tr) (t_r != tr) & |/{ rdgat[lr,glb]() & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may interfere on " + glb
+        %message (E(tw) (tw != tr) & |/{ wrat[lw,ref](tr) & prev[lw](tw) : lw in Labels} ) -> 
+            "thread " + tr + " may interfere on " + ref 
+    #endif
+    {
+        rvalue[next](o_s,o_d) = rvalue[next](o_s,o_d) |
+                ((o_s == o_t) & (o_d == dst))
+
+        #ifdef RBY
+        r_by[next](o_1) = r_by[next](o_1) | (o_1 == dst)
+        #endif
+                
+                
+        #ifdef REACH
+        // note that this updates all threads that reach o_t with some field
+        foreach (v in FieldsAndParameters) {
+            rt[v,next](t_1,o_1) = rt[v,next](t_1,o_1) |
+                (rt[v,next](t_1,o_t) & rt[ref,next](tr,o_1))
+        }
+        
+        foreach (g in Globals) {
+            rg[g](o_1) = rg[g](o_1) | 
+                (rg[g](o_t) & rt[ref,next](tr,o_1))
+        }
+        #endif
+        
+         #ifdef RECORD_RW
+            writing[sl,next](t_1,o) = writing[sl,next](t_1,o) | ((t_1 == t) & (o == o_t))
+            wrat[sl,next](o) = wrat[sl,next](o) | (o == o_t)
+            
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+        #endif
+        
+        #ifdef SHARE
+        
+        is[next](o) = is[next](o)| ((o==dst) & E(o_s) (o_s != tr) & rvalue[next](o_s,o))
+        is(o) = is(o) | (o == dst)
+        
+        #endif
+    }
+}
+ 
+/***
+* killGlobalNext(glb)
+* glb.next = null
+***/
+%action killGlobalNext(glb) {
+    %t glb + ".next = null" 
+    %f { runnable(tr) & global[glb](o_t) }
+    %p global[glb](o_t) 
+    #ifdef RECORD_RW
+        %message (E(tr) (t_r != tr) & |/{ rdgat[lr,glb]() & prev[lr](t_r) : lr in Labels} ) -> 
+            "thread " + tr + " may interfere on " + glb
+    #endif
+    {
+        rvalue[next](o_s,o_d) = rvalue[next](o_s,o_d) & (o_s != o_t)
+
+        #ifdef RBY
+        r_by[next](o_1) = r_by[next](o_1) & E(o_s) (o_s != o_t) & rvalue[next](o_s,o_1)
+        #endif
+                
+                
+        #ifdef REACH
+            
+        // reachability from globals
+        foreach (g in Globals) {
+            rg[g](o_1) = rg[g](o_1) & 
+                !(rg[g](o_t) & rg[g](o_1) & (o_1 != o_t))
+        }    
+        
+        // note that this updates all threads that reach o_t with some field
+        //foreach (v in FieldsAndParameters) {
+        //    rt[v,next](t_1,o_1) = rt[v,next](t_1,o_1) |
+        //        (rt[v,next](t_1,o_t) & rt[ref,next](tr,o_1))
+        //}
+        
+        //foreach (g in Globals) {
+        //    rg[g](o_1) = rg[g](o_1) | 
+        //        (rg[g](o_t) & rt[ref,next](tr,o_1))
+        //}
+        #endif
+        
+         #ifdef RECORD_RW
+            writing[sl,next](t_1,o) = writing[sl,next](t_1,o) | ((t_1 == t) & (o == o_t))
+            wrat[sl,next](o) = wrat[sl,next](o) | (o == o_t)
+            
+            readglob[sl,glb](t_1) = readglob[sl,glb](t_1) | (t_1 == tr)
+            rdgat[sl,glb]() = 1
+        #endif
+        
+        #ifdef SHARE
+        // needs some fixing
+        //is[next](o) = is[next](o)| ((o==dst) & E(o_s) (o_s != tr) & rvalue[next](o_s,o))
+        //is(o) = is(o) | (o == dst)
+        
+        #endif
+    }
+}
+ 
+
+    
+    
+/***
+* assignNextFieldNull(obj)
+* obj.next = null
+***/
+
+%action assignNextFieldNull(obj) {
+    %t obj + ".next = null"   
+    %f { runnable(tr) & rvalue[obj](tr,o_t) & rvalue[next](o_t,dst) }
+    %p rvalue[obj](tr,o_t) 
+    #ifdef RECORD_RW
+        %message (E(t_r) (t_r != tr) & |/{ rdat[lr,next](o_t) & at[lr](t_r) : lr in Labels}) -> 
+            "thread " + tr + " may interfere "  + obj + " at " + sl
+    #endif
+    {
+ 
+    
+    rvalue[next](o_s,o_d) = rvalue[next](o_s,o_d) & (o_s != o_t)
+
+    #ifdef RBY
+    r_by[next](o_1) = r_by[next](o_1) & E(op) (op != o_t) & rvalue[next](op,o_1)
+    #endif
+    
+    #ifdef REACH
+
+    
+    foreach (v in FieldsAndParameters) {
+        rt[v,next](t_1,o_1) = rt[v,next](t_1,o_1) & 
+                    (!(rt[v,next](t_1,o_t) & rt[obj,next](tr,o_1) & (o_1 != o_t)) |
+                    ((t_1 == tr) & (o_1 == o_t)))
+    }
+    
+    // reachability from globals
+    foreach (g in Globals) {
+        rg[g](o_1) = rg[g](o_1) & 
+                !(rg[g](o_t) & rg[g](o_1) & (o_1 != o_t))
+    }    
+    #endif
+    
+    #ifdef RECORD_RW
+            writing[sl,next](t_1,o) = writing[sl,next](t_1,o) | ((t_1 == tr) & (o == o_t))
+            wrat[sl,next](o) = wrat[sl,next](o) | (o == o_t)
+    #endif
+    
+    #ifdef SHARE
+    
+    is[next](o) = is[next](o) & 
+        (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) & rvalue[next](o_1,o) 
+            & rvalue[next](o_2,o))
+
+    // this needs some correction to the case when more than one field of o_t references
+    // the target object. But for simplicity, we will assume that two fields of an object
+    // do not reference the same target.
+    is(o) = is(o) & (E(o_1,o_2) (o_1 != o_2) & (o_1 != o_t) & (o_2 != o_t) &
+            |/{ rvalue[f](o_1,o) : f in FieldsAndParameters} &
+            |/{ rvalue[f](o_2,o) : f in FieldsAndParameters}) |
+            (E(o_1) (o_1 != o_t) & (|/{ rvalue[f](o_1,o) : f in FieldsAndParameters})
+            & ( |/{global[g](o) : g in Globals}))
+    #endif
+        
+    }
+}

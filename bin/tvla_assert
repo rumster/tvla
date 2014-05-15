@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# A TVLA activation script for UNIX platforms.
+# Note that the memory limitation is set to 800MB, using the -mx
+# option.
+# Last modification: 12.3.2002
+################################################################
+
+java -ea -Dtvla.home="$TVLA_HOME" -mx800m -jar $TVLA_HOME/lib/tvla.jar $*
+
+if [ -e $1.dt ] 
+then
+	echo "Converting output to PostScript..."
+	dot -Tps -o$1.ps < $1.dt
+fi

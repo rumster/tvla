@@ -1,0 +1,87 @@
+/*****
+* set.tvs
+* Initial structure for set implementation.
+* The list has two dummy node: Head with value -inf and Tail with value +inf. 
+*****/
+
+//All local variables initially null.
+//Both locks initially unacquired.
+
+//empty set
+
+
+%t = { 
+       tOneP(producer_p1) 
+        , tOneC(consumer_c1)
+       #if(1 < KNUM)
+        , tTwoP(producer_p2) 
+        , tTwoC(consumer_c2)
+       #endif
+       #if(2 < KNUM)
+        , tThreeP(producer_p3) 
+        , tThreeC(consumer_c3)
+       #endif
+       #if(3 < KNUM)
+        , tFourP(producer_p4) 
+        , tFourC(consumer_c4)
+       #endif 
+     }
+%n = { uh, ut }
+%p = { 
+    
+    ready = { 
+          tOneP, 
+          tOneC
+              #if(1 < KNUM)
+              , tTwoP
+              , tTwoC
+              #endif
+              #if(2 < KNUM)
+              , tThreeP
+              , tThreeC
+              #endif
+              #if(3 < KNUM)
+              , tFourP
+              , tFourC
+              #endif 
+            }
+
+    r_by[Head] = {uh}
+
+    r_by[Head_seq] = {uh}
+    
+    r_by[Tail] = {ut}
+
+    r_by[Tail_seq] = {ut}
+
+    rv[n] = {uh -> ut}
+
+    dle = {uh->uh, uh->ut, ut->ut}
+
+    inSOrder[dle,n] = {uh,ut}
+
+    bn[n] = {uh->uh, ut->ut, uh->ut
+              , tOneP->tOneP 
+              , tOneC->tOneC 
+              #if(1 < KNUM)
+              , tTwoP->tTwoP
+              , tTwoC->tTwoC
+              #endif
+              #if(2 < KNUM)
+              , tThreeP->tThreeP
+              , tThreeC->tThreeC
+              #endif
+              #if(3 < KNUM)
+              , tFourP->tFourP
+              , tFourC->tFourC
+              #endif     
+    }
+
+    rt[Head,n] = {uh,ut}
+
+    //rt[Head,n] = {uh,ut}
+
+    //rt[Tail,n] = {ut}
+}
+
+

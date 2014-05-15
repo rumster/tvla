@@ -1,0 +1,49 @@
+///////
+// Sets
+
+%s PVar {x, y, z, t}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////
+// Transition system for a function that removes a segment from a cyclic
+// list.
+
+
+// x points to a cyclic singly-linked list
+// low and high are two integer values, low < high.
+L1 Copy_Var_L(y, x)         L2      // y = x;
+L2 Is_Not_Eq_Var(t,x)       L3_1    // while (t != x && y.data < low) {
+L2 Is_Eq_Var(t,x)           L7
+L3_1 uninterpreted()        L3
+L3_1 uninterpreted()        L7
+L3 Get_Next_L(t, y)        L4      //   t = y.n;
+L4 Set_Null_L(y)            L5      //   y = null;
+L5 Copy_Var_L(y, t)         L6      //   y = t;
+L6 Set_Null_L(t)            L2      //   t = null;
+                                    // }
+L7 Copy_Var_L(z, y)         L8      // z = y;                                    
+L8 Is_Not_Eq_Var(z,x)       L9_1    // while (z != x && z.data < high) {
+L8 Is_Eq_Var(z,x)           L13
+L9_1 uninterpreted()        L9
+L9_1 uninterpreted()        L13
+L9 Get_Next_L(t, z)         L10     //   t = z.n;
+L10 Set_Null_L(z)           L11     //   z = null;
+L11 Copy_Var_L(z, t)        L12     //   z = t;
+L12 Set_Null_L(t)           L8      //   t = null;
+                                    // }
+L13 Is_Not_Eq_Var(y,z)      L14     // if (y != z) {
+L13 Is_Eq_Var(y,z)          L16
+L14 Set_Next_Null_L(y)      L15     //   y.n = null;
+L15 Set_Next_L(y,z)         L16     //   y.n = z;
+                                    // }
+L16 Set_Null_L(y)           L17     // y = null;
+L17 Set_Null_L(z)           exit    // z = null;
+
+exit Assert_CyclicList(x)   error                                

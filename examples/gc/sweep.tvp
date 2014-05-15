@@ -1,0 +1,43 @@
+///////
+// Sets
+
+%s PVar {root, x}
+%s PVarR {root}
+%s PSel {right, left}
+%s Sets{marked, unexplored, collected}
+
+#include "predicates_set.tvp"
+#include "predicates.tvp"
+
+%%
+
+#include "actions_assertions.tvp"
+#include "actions_set.tvp"
+#include "actions_shape.tvp"
+
+%%
+
+                                          // void Sweep() {
+L30 SetAssignUniverse(unexplored)     L31 //   unexplored.assignUniverse();
+L31 SetClear(collected)               L32 //   collected.clear();
+L32 SetNotIsEmpty(unexplored)         L33 //   while (!unexplored.isEmpty()) {
+L32 SetIsEmpty(unexplored)            L37
+L33 SetSelectAndRemove(unexplored, x) L34 //     x = unexplored.selectAndRemove();
+L34 SetNotContains(marked, x)         L35 //     if (!marked.contains(x)) {
+L34 SetContains(marked, x)            L36
+L35 SetAdd(collected, x)              L36 //       collected.add(x)
+                                          //     }
+L36 AssignNull(x)                     L32 //     x = null;
+                                          //   }
+L37 SetNotEqualComplementOfReachset(collected, root) error
+                                          //   if (collected.SetNotEqualComplementOfReachset(root)) {
+                                          //     System.err.println("Internal error: sweep phase of gc");
+                                          //   }
+L37 SetEqualComplementOfReachset(collected, root) exit
+                                          // }
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display only structures that arise at the following program locations.
+L30, exit

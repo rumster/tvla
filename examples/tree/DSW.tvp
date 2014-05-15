@@ -1,0 +1,124 @@
+// Deutsch-Schorr-Waite (DFS using pointer reversal)
+//#include "tree.h"
+%s TSel {left, right}
+%s PVar {x, t, y}
+
+#include "pred_tree.tvp"
+#include "pred_dfs.tvp"
+%%
+#include "actions_tree.tvp"
+#include "actions_dfs.tvp"
+%%
+
+//if (x == NULL) return;
+n0	Is_Null_Var(x)		exit
+n0	Is_Not_Null_Var(x)	n1
+
+//	Tree *y = NULL, *t = NULL;
+n1	Set_Null_T(y)		n2
+n2	Set_Null_T(t)		n3
+n3	SetNotMarkedAll()	n4
+n4	SetNotDoneAll()		n5
+n5	SetNotDoneRightAll()	n6
+
+//x->marked = 1;
+n6	SetMarked(x)		n7
+// while (1) 
+	//if (!x->done) // x is not done
+n7	IsNotDone(x)		n8
+n7	IsDone(x)			n9
+
+		//if ( ! x->done_right)  //right sub-tree of x is not done
+n8		IsNotDoneRight(x)		n10	
+n8		IsDoneRight(x)			n11
+
+			//y = x->right;
+n10			Get_Sel_T(y, x, right)	n12
+
+			//if (y == NULL)
+n12			Is_Null_Var(y)			n13
+n12			Is_Not_Null_Var(y)		n14
+				//x->done_right = 1;
+n13				SetDoneRight(x)				n7
+
+			//else if (!y->marked) //y is not marked
+n14			IsNotMarked(y)			n16
+n14			IsMarked(y)				n17
+
+				//x->right = t; 
+n16				Set_Sel_Null_T(x, right)	n16_1
+n16_1			Set_Sel_T(x, right, t)		n18
+				//t = x; 
+n18				Copy_Var_T(t, x)			n19
+				//x = y;
+n19				Copy_Var_T(x, y)			n20
+				// x->marked = 1;
+n20				SetMarked(x)				n7
+
+			//else 
+				// { x->done_right = 1; //set: right sub-tree of x is done 
+n17				SetDoneRight(x)				n7
+			
+		//else	
+			// {	y = x->left;
+n11			Get_Sel_T(y, x, left)			n21
+
+			//if (y == NULL)
+n21			Is_Null_Var(y)			n22
+n21			Is_Not_Null_Var(y)		n23
+
+				//x->done = 1;
+n22				SetDone(x)					n7
+
+			//else if (!y->marked) //y is not marked
+n23			IsNotMarked(y)			n25
+n23			IsMarked(y)				n26
+
+				//x->left = t; 
+n25				Set_Sel_Null_T(x, left)		n25_1
+n25_1			Set_Sel_T(x, left, t)		n27
+				//t = x; 
+n27				Copy_Var_T(t, x)			n28
+				//x = y;
+n28				Copy_Var_T(x, y)			n29
+				//x->marked = 1; 
+n29				SetMarked(x)				n7
+
+			//else {	
+				// x->done = 1; // x is done
+n26				SetDone(x)					n7
+	// else { 
+		// y = x; 
+n9		Copy_Var_T(y, x)		n30
+		//x = t;
+n30		Copy_Var_T(x, t)		n31
+
+		//if (x == NULL) return
+n31		Is_Null_Var(x)			exit
+n31		Is_Not_Null_Var(x)		n33
+
+		// else { 
+			// if (!x->done_right)  //right sub-tree of x is not done
+n33			IsNotDoneRight(x)		n34
+n33			IsDoneRight(x)			n35
+		
+				//t = x->right; 
+n34				Get_Sel_T(t, x, right)		n36
+				//x->right = y; 
+n36				Set_Sel_Null_T(x, right)	n36_1
+n36_1			Set_Sel_T(x, right, y)		n37
+				//x->done_right = 1;	//set: right sub-tree of x is done
+n37				SetDoneRight(x)				n7
+			
+			// else  {
+				// t = x->left; 
+n35				Get_Sel_T(t, x, left)		n39
+				// x->left = y; 
+n39				Set_Sel_Null_T(x, left)		n39_1
+n39_1			Set_Sel_T(x, left, y)		n40
+				// x->done = 1; //set: x is done
+n40				SetDone(x)					n7
+
+
+%%
+exit

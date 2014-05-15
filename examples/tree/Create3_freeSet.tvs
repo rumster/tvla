@@ -1,0 +1,12 @@
+%n = {}
+%p = {
+}
+
+%n = {uf}
+%p = {
+  sm = {uf:1/2}
+  downStar = {uf->uf:1/2}
+
+  set[free] = {uf}
+  unique_selection = {uf:1/2}
+}

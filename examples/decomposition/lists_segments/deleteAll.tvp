@@ -1,0 +1,24 @@
+///////
+// Sets
+
+%s PVar {x, elem}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that deallocates all elements in a list.
+
+L1 Is_Null_Var(x)        exit // while (x != NULL) {
+L1 Is_Not_Null_Var(x)    L2
+L2 Copy_Var_L(elem, x)   L3   //   elem = x;
+L3 Get_Next_L(x, x)      L4   //   x = x->n;
+L4 Set_Next_Null_L(elem) L5   //   elem->n = NULL;
+L5 Free_L(elem)          L1   //   free(elem);
+                              // }
+exit Assert_No_Leak(x)   error

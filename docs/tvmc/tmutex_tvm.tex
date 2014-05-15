@@ -1,0 +1,61 @@
+\begin{figure}
+\begin{center}
+\framebox{ \vbox{
+\begin{alltt}
+\begin{tabbing}
+
+/*** \\
+** mutex.tvm \\
+** mutual exclusion examples for unbound number of threads. \\
+** based on the example from "symmetry and model checking" \\
+***/ \\
+
+
+/*********************** Sets ******************************/ \\
+\%s FieldsAndParameters \{ \} \\
+\%s Globals \{ aLock \} \\
+
+/**************** Predicates **************/ \\
+
+\#include "con\_pred.tvm" \\
+\#include "shape\_pred.tvm" \\
+
+\%p \propertyoccurred() \\
+
+\seperator \\
+/********************* Actions *******************/ \\
+
+\#include "con\_stat.tvm" \\
+
+\%action verifyProperty() \{ \\
+    \tvprecond  !\propertyoccurred() \\
+    \tvmessage\= (E(t\_1,t\_2) (t\_1 != t\_2) \& at[gl\_2](t\_1) \& at[gl\_2](t\_2)) \+ \\
+    ->  "mutual exclusion may be violated" \- \\
+\} \\
+
+/**************** Program *********************/ \\
+
+\seperator \\
+
+/***********************************************/ \\
+/**************  Threads ****************/ \\
+
+\%thread \= main \{ \+ \\                     \=
+        $gl_1$ blockLockGlobal(aLock) $gl_1$        \` // lock(aLock) \\
+        $gl_1$ succLockGlobal(aLock) $gl_2$         \`              \\
+        $gl_2$ skip() $gl_3$                        \`              \\
+        $gl_3$ unlockGlobal(aLock) $gl_4$           \` // unlock(aLock) \- \\
+\} \\
+
+\seperator \\
+/**********************************************/ \\
+/************** Claims        ****************/ \\
+verifyProperty() \\
+
+\end{tabbing}
+\end{alltt}
+} }
+\end{center}
+\caption{\label{Fi:TmutexTVM}TVM file for mutual exclusion
+example.}
+\end{figure}

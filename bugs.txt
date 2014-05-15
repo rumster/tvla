@@ -1,0 +1,37 @@
+Missing features:
+-----------------
+* Add a feature to saturate user-given constraints
+* remove spurious edges from the shortest error trace and order
+  the nodes.
+* Enable printing out statistics for focus/coerce.
+* draw the structures inside the nodes of the transition relation
+* -join ind seems to be crashing.
+
+Bugs:
+-----
+* -tr:dot/-tr:tvs don't work with -join part/ind
+* documentation: defining formulae / update formula
+  "the formula's free variables should match the variable given in the parentheses
+   (with the exception of precondition free variables explained later)."
+
+Done:
+-----
+* Add isomorphism checks for -join conc
+* -join rel seems to be awfully slow - fixed with better hashing
+* reporting abs unary predicates seems to be wrong (0) - fixed
+* shortest abstracrt error trace
+  Check the bug in pruneForAbstractErrorTrace()
+* Figure out how to treat constraint breaches that do not stop the analysis.
+  Should the users be warned about soundsness issues in such a case?
+  Fix: the printouts indicate that these constraints lead to possible performance
+  issues.
+* Differencing doesn't handle name clashing between the variables that are
+  the arguments of the predicates being updated and the bound variables from
+  precondition formulae.
+  Fixed by checking for name clashes in actions.
+* dump constraints information to log.
+  Solution: I added the tvla.coerce.debug option to tvla.properties
+  I refactored the code for printing constraints dependencies into a different
+  method in AdvancedCoerceOld and calling it from AdvancedCoerce.init thereby
+  solving a null pointer exception bug, which results from executing this
+  code prior to building the connected components graph for the constraints.

@@ -1,0 +1,16 @@
+\section{Introduction}
+
+$\tvmc$ is a tool for analysis and verification of concurrent
+systems. In contrast to existing verification tools (e.g.
+\cite{lncs962*453}) $\tvmc$ is geared towards verification of
+concurrent software with dynamic allocation of objects and
+threads. $\tvmc$ provides a powerful abstraction mechanism by
+using $3$-valued logic to represent multiple program
+configurations. $\tvmc$ is an extension of the TVLA framework
+\cite{kn:TalSAS00}. Theoretical background for $\tvmc$ can be
+found in \cite{Yahav01}.
+
+\input{mutex_java}
+
+In this paper, we will show how to perform verification of the
+simple Java program given in \figref{MutexJava}.

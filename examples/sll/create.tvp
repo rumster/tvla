@@ -1,0 +1,26 @@
+///////
+// Sets
+
+%s PVar {x, f}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Transition system for a function that creates new list of elements and
+// appends them to the list pointed by x.
+
+L1 uninterpreted()    L2   // for (i=0; i<size; i++) {
+L1 uninterpreted()    exit
+L2 Malloc_L(f)        L3   //   f = malloc(sizeof(struct node));
+L3 Set_Next_Null_L(f) L4   //   f->n = NULL;
+L4 Set_Next_L(f, x)   L5   //   f->n = x;
+L5 Copy_Var_L(x, f)   L1   //   x = f;
+                           // }
+exit Assert_ListInvariants(x) error
+exit Assert_No_Leak(x)        error

@@ -1,0 +1,54 @@
+\section{Property Verification}
+
+\subsection{Safety Properties}
+
+Verification of safety properties is performed by exploring the
+state-space, identifying configurations that may violate the
+property requirements.
+
+\figref{Explore} shows a depth-first search algorithm for
+exploring a state-space. For each configuration $C$ such that $C$
+is not already a \emph{memeber} of the \emph{state-space}, we
+explore every configuration $C'$ that can be produced by applying
+some action to the current configuration $C$. Note that the
+$verify$ step checks if the current configuration $C$ satisfies
+the property requirements.
+
+\input{explore}
+
+The $verify$ step actually executes all \emph{global actions}
+defined by the user. The \emph{global actions} can be used issue
+messages or to halt analysis when a property is violated.
+
+\subsection{LTL Properties}
+
+$\tvmc$ supports verification of general LTL properties by using
+Buchi automata to represent the (negation of the) property to be
+verified.
+
+$\tvmc$ takes as input a \texttt{BUC} file that models the Buchi
+automaton for the negation of the property to be verified.
+Currently, $\tvmc$ does not support automatic construction of the
+Buchi automaton from an LTL formula. The Buchi automaton should be
+supplied by the user using the \texttt{BUC} file.
+
+A \texttt{BUC} file consists of two parts - the first section of
+the file defines the instrumentation predicates to be used as the
+vocabulary of the automaton, the second section defines automaton
+states and transitions (and the initial state). The sections are
+separated by a special separator (\%\%).
+
+Vocabulary instrumentation predicates are nullary predicates
+defined in the same manner as in the TVM file.
+
+Automaton is described using transition as seen in
+\figref{bucFile}.
+
+\input{bucfile}
+
+Accepting states of the Buchi automaton are written as $(s)$, an
+accepting state should always appear inside parentheses. The
+initial state of the automaton should be defined in the first line
+of automaton description using $\rightarrow$. Other transitions
+are defined by triples of state-label-state, where the label
+corresponds to one of the vocabulary predicates.

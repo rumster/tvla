@@ -1,0 +1,37 @@
+///////
+// Sets
+
+%s colors {c1, c2, c3, c4}
+%s PVar {x, y, yn}
+%s BVar {}
+
+#include "predicates.tvp"
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+/////////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that sets the color 1 to all cells of a list.
+//
+// y = x;
+// while (y != NULL) {
+//   y->color = 1;
+//   y = y->n;
+// }
+
+L1  Set_Null_L(y)      L2   // y = NULL;
+L2  Copy_Var_L(y, x)   L3
+L3  Is_Null_Var(y)     preexit
+L3  Is_Not_Null_Var(y) L4
+L4  Set_Color(y,c1)    L5
+L5  Get_Next_L(yn,y)   L6
+L6  Set_Null_L(y)      L7
+L7  Copy_Var_L(y,yn)   L8
+L8  Set_Null_L(yn)     L3
+preexit Set_Null_L(y) exit
+exit Assert_ListInvariants(x) error
+exit Assert_No_Leak(x)        error
+exit Assert_Color(x,c1) error

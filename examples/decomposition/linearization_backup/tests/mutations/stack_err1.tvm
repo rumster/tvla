@@ -1,0 +1,208 @@
+/************************************************************************ 
+ * stack.tvm
+ * Treiber's non-blocking stack
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+//%s FieldsAndParameters {Top,Top_seq,x_i,this,n,n_seq,top,top_seq,next}
+
+%s StackFields {Top,Top_seq}
+
+%s LocalFields {x_i,top,top_seq,next} //this field not needed when stack object not represented
+
+%s PushLocals {x_i,top}
+
+%s PopLocals {top,top_seq,next}
+
+%s NextFields {n,n_seq}
+
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+#if(0 < GNUM)
+%s StaticThreadNames {g1}
+#endif
+#if(1 < GNUM)
+%s StaticThreadNames {g1,g2}
+#endif
+#if(2 < GNUM)
+%s StaticThreadNames {g1,g2,g3}
+#endif
+#if(3 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4}
+#endif
+
+//// Consumer Producer
+#if(0 < KNUM)
+%s StaticThreadNames {c1,p1}
+#endif
+#if(1 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2}
+#endif
+#if(2 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3}
+#endif
+#if(3 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3,c4,p4}
+#endif
+//////////////////////////////////////////////////////////////
+
+
+
+
+/**************** Predicates **************/
+
+#include "stack_pred.tvm"
+
+
+%%
+/********************* Actions *******************/
+
+#include "stack_stat_err.tvm"
+
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+%thread nop {
+ln_1 skip() ln_1
+}
+
+/***************** CFG for thread one *********************************/
+
+#define PRD(TN) \
+/* Push() */ \
+/* concurrent */ \
+atomic { \
+li_1_##TN assignNew(x_i,TN) li_2_##TN \                      
+li_2_##TN assignFromGlbField(top,Top,TN) li_3_##TN \
+li_3_##TN assignNext_Con(x_i,top,TN) li_4_##TN \
+} \
+li_4_##TN FailCAS(Top,top,x_i,TN) li_2_##TN \
+li_4_##TN SuccCASCond(Top,top,x_i,TN) li_4a_##TN  /*MUT*/ \
+atomic { /*MUT*/ \
+li_4a_##TN SuccCASAct(Top,top,x_i,TN) lis_1_##TN  /*commit point*/ /*MUT*/ \
+/* sequential */ \
+lis_1_##TN assignNew_Seq(x_i,TN) lis_2_##TN \
+lis_2_##TN assignNextFromField_Seq(x_i,Top_seq,TN) lis_3_##TN \
+lis_3_##TN assignField(Top_seq,x_i,TN) li_exit_##TN \
+/* li_corr verifyCorrelation() li_exit */ \
+li_exit_##TN Clear_Push(TN) l_dispatch_##TN   /*local action - added to atomic block*/ \
+} \
+
+#define CNS(TN) \
+/* Pop() */ \
+atomic { \
+ld_1_##TN assignFromGlbField(top,Top,TN) lds_1a_##TN           /*first commit point*/ \
+lds_1a_##TN assignFromGlbField(top_seq,Top_seq,TN) ld_2_##TN   /*"atomic action"*/ \
+ld_2_##TN isNull(top,TN) ld_4_##TN               /*local action - added to atomic block*/ \
+ld_2_##TN isNotNull(top,TN) ld_3b_##TN           /*local action - added to atomic block*/ \
+} \
+ld_3b_##TN assignFromNextField(next,top,TN) ld_3_##TN \
+atomic { \
+ld_3_##TN FailCAS(Top,top,next,TN) ld_1_##TN \
+ld_3_##TN SuccCAS(Top,top,next,TN) lds_1_##TN      /*second commit point*/ \
+/* sequential */ \
+lds_1_##TN assignFromGlbField(top_seq,Top_seq,TN) lds_2_##TN \
+lds_2_##TN isNull(top_seq,TN) ld_4_##TN \
+lds_2_##TN isNotNull(top_seq,TN) lds_3_##TN \
+lds_3_##TN assignNextToField_Seq(Top_seq,top_seq,TN) ld_4_##TN \
+/* ld_corr verifyCorrelation() ld_4 */ \
+ld_4_##TN verifySamePopRes(TN) ld_exit_##TN  /*lin test, local action added to block*/ \
+ld_exit_##TN Clear_Pop(TN) l_dispatch_##TN       /*local action - added to atomic block*/ \
+} \
+
+
+
+
+/**********************    Thread Creation **********************/
+
+//producer
+#define CREATE_P(TN) \
+%thread producer_##TN { \
+l_dispatch_##TN skip() li_1_##TN \
+ \
+PRD(TN) \
+ \
+} \
+
+//consumer
+#define CREATE_C(TN) \
+%thread consumer_##TN { \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+CNS(TN) \
+ \
+} \
+
+//general client
+#define CREATE_G(TN) \
+%thread general_##TN { \
+/*nondeterministic choice of transaction*/ \
+l_dispatch_##TN skip() li_1_##TN \
+l_dispatch_##TN skip() ld_1_##TN \
+ \
+PRD(TN) \
+ \
+CNS(TN) \
+ \
+} \
+
+//create producer types
+#if(0 < KNUM)
+CREATE_P(p1)
+#endif
+
+#if(1 < KNUM)
+CREATE_P(p2)
+#endif
+
+#if(2 < KNUM)
+CREATE_P(p3)
+#endif
+
+#if(3 < KNUM)
+CREATE_P(p4)
+#endif
+
+//create consumer types
+#if(0 < KNUM)
+CREATE_C(c1)
+#endif
+
+#if(1 < KNUM)
+CREATE_C(c2)
+#endif
+
+#if(2 < KNUM)
+CREATE_C(c3)
+#endif
+
+#if(3 < KNUM)
+CREATE_C(c4)
+#endif
+
+//create general types
+#if(0 < GNUM)
+CREATE_G(g1)
+#endif
+
+#if(1 < GNUM)
+CREATE_G(g2)
+#endif
+
+#if(2 < GNUM)
+CREATE_G(g3)
+#endif
+
+#if(3 < GNUM)
+CREATE_G(g4)
+#endif
+
+%%

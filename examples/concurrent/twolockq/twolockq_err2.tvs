@@ -1,0 +1,45 @@
+/*****
+* TwoLockQ_err2.tvs
+* Initial structure for Two-Lock-Queue implementation.
+* Note that the queue must be initialized with a head item (terminator).
+* 
+* Initial Queue shape
+*
+****************************************************************************
+****************************************************************************
+* ERROR !!!!
+* NOTE THAT tailLock and headLock POINT TO THE SAME OBJECT !!!!
+****************************************************************************
+****************************************************************************
+*
+* head  tail   tailLock   headLock 
+*   \    /          \     /   
+*    \  /            \   /   
+*     uh              tl     
+********************************************
+* Queue shape after a few insertions(not described in this file):
+* 
+* head        tail
+*  ||          ||
+*  ||          ||
+*  \/   next   \/
+*  uh ------> (u)  
+*****/
+
+//%t = { tprd(producer), tcns(consumer), tprd2(producer) }
+%t = { tprd(producer), tprd2(producer2) }
+%n = { uh, tl, hl }
+%p = { 
+    is_lock = { uh,tl } 
+    // ready = { tprd, tcns, tprd2 }
+    ready = { tprd, tprd2 }
+    p1 = { tprd }
+    global[head] = { uh }
+    global[tail] = { uh }
+    rg[tail] = { uh }
+    rg[head] = { uh }
+    global[tailLock] = { tl }
+    rg[tailLock] = { tl }
+    global[headLock] = { hl }
+    rg[headLock] = { hl }
+}

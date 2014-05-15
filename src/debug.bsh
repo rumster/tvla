@@ -1,0 +1,49 @@
+import tvla.*;
+import tvla.analysis.*;
+import tvla.formulae.*;
+import tvla.core.*;
+import tvla.predicates.*;
+import tvla.transitionSystem.*;
+import tvla.util.*;
+
+setAccessibility(true);
+show();
+engine = Engine.activeEngine;
+location = engine.getCurrentLocation();
+action = engine.getCurrentAction();
+progName = ProgramProperties.getProperty("tvla.programName", null);
+io = tvla.io.IOFacade.instance();
+
+dot2ps(file) {
+	if (file == null) {
+	  file = progName;
+	}
+	dtfile = file + ".dt";	
+	psfile = file + ".ps";
+	  
+	dot = ProgramProperties.getProperty("dot", "dot.exe");
+	exec(dot + " -Tps " + dtfile + " -o " + psfile);
+}
+
+gsview(file) {
+	if (file == null) {
+	  file = progName;
+	}
+	if (!file.endsWith(".ps")) {
+	  file = file + ".ps";
+	}
+	gsview = ProgramProperties.getProperty("gsview", "gsview32.exe");
+	Runtime.getRuntime().exec(gsview + " " + file);
+}
+
+printCollection(col) {
+  if (col != null && col.getClass().toString().contains("trove")) {
+    if (col instanceof Set) {
+      col = new HashSet(col);
+    } else {
+      col = new HashMap(col);
+    }
+  }
+  print(col);
+}
+

@@ -1,0 +1,20 @@
+\section{Initial Configurations}
+
+A new set of nodes denoted by \%t corresponds to the threads in
+the initial configuration. For example: \%t = \{ $s_t(main)$ \}
+defines a new thread instance of thread-type "main". The name of
+the instance is $``s_t''$. Unless explicitly stated by the
+$ready(v)$ predicate, the thread is assumed to be not ready for
+scheduling. The thread starts execution from its entry label. You
+may create a configuration in which a thread starts at a given
+label, by supplying the initial label as a second parameter -
+$s_t(main,gl_3)$.
+
+\figref{TmutexTVS} shows an initial configuration for the mutual
+exclusion example. This initial configuration consists of a
+summary node of threads, and a single lock. Note that the thread
+node \emph{s\_t} is given the value $1/2$ for the predicate
+\textbf{sm} to denote the fact that it is a summary node.
+
+
+\input{tmutex_tvs}

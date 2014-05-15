@@ -1,0 +1,74 @@
+///////
+// Sets
+
+%s PVar {x, y, p, yn, t} // Names of pointer variables.
+%s PSel {n}  // Names of pointer fields.
+%s HVar {x}  // Names of pointer variables used for taking heap snapshots.
+%s HLoc {L0} // Names of program labels where snapshots of the heap are taken.
+
+#include "predicates.tvp"
+%p change()  // Represents the boolean variable change.
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////////////
+// Transition system for a bubble sort algorithm with element swap.
+// This is erronous an implementation. 
+// The bug causes non-termination when there are list elements with equal data.
+
+                                     // L bubblSort(L x) {
+L0  Copy_Reach_L(x, L0)         L1   // [ Take a snapshot of the heap to later         ]
+                                     // [ verify that the output list is a permutation ]
+                                     // [ of the list pointed by x.                    ]
+L1  Is_Null_Var(x)              exit //   if (x == NULL) return;
+L1  Is_Not_Null_Var(x)          L2
+L2  Set_True(change)            L3   //   change = TRUE;
+L3  Is_True(change)             L4   //   while (change) {
+L3  Is_False(change)            L25
+L4  Set_Null_L(p)               L5   //     p = NULL;
+L5  Set_False(change)           L6   //     change = FALSE;
+L6  Copy_Var_L(y, x)            L7   //     y = x;
+L7  Get_Next_L(yn, y)           L8   //     yn = y->n;
+L8  Is_Not_Null_Var(yn)         L9   //     while (yn != NULL) {
+L8  Is_Null_Var(yn)             L3
+L9  Greater_Equal_Data_L(y, yn) L10  //       if (y->data > yn->data) {
+L9  Less_Equal_Data_L(y, yn)    L22
+L10 Get_Next_L(t, yn)           L11  //         t = yn->n;
+L11 Set_True(change)            L12  //         change = TRUE;
+L12 Set_Next_Null_L(y)          L13  //         y->n = NULL;
+L13 Set_Next_L(y, t)            L14  //         y->n = t;
+L14 Set_Next_Null_L(yn)         L15  //         yn->n = y;
+L15 Set_Next_L(yn, y)           L16
+L16 Is_Null_Var(p)              L17  //         if (p == NULL)
+L16 Is_Not_Null_Var(p)          L18
+L17 Copy_Var_L(x, yn)           L20  //           x = yn;
+                                     //         else {
+L18 Set_Next_Null_L(p)          L19  //           p->n = NULL;
+L19 Set_Next_L(p, yn)           L20  //           p->n = yn; }
+L20 Copy_Var_L(p, yn)           L21  //         p = yn;
+L21 Copy_Var_L(yn, t)           L8   //         yn = t;
+                                     //       } else {
+L22 Copy_Var_L(p, y)            L23  //         p = y;
+L23 Copy_Var_L(y, yn)           L24  //         y = yn;
+L24 Get_Next_L(yn, y)           L8   //         yn = y->n;
+                                     //       }
+                                     //     }
+                                     //   }
+L25 Set_Null_L(p)               L26  //   p = NULL;
+L26 Set_Null_L(y)               L27  //   y = NULL;
+L27 Set_Null_L(yn)              L28  //   yn = NULL;
+L28 Set_Null_L(t)               exit //   t = NULL;
+                                     //   return x;
+                                     // }
+exit Assert_Permutation_L(x, L0) exit2
+exit Assert_Sorted_L(x)          exit2
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display structures that arise only at the following program locations.
+L1, exit

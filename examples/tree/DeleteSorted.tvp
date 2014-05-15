@@ -1,0 +1,374 @@
+%s PVar {root, cur, prev, t, prev2, t2}
+%s TSel {left, right}
+%s Sets {free}
+
+#define VARSEL
+
+#include "pred_sort.tvp"
+#include "pred_set.tvp"
+%%
+#include "actions_sort.tvp"
+#include "actions_set.tvp"
+%%
+
+// cur = root;
+start Copy_Var_T(cur, root) n1
+
+// while (cur != NULL && cur->data != val) {
+   n1 Is_Not_Null_Var(cur) n2
+   n1 Is_Null_Var(cur) n7
+
+   // For now not interpreting non-equality (while not using DataIsNequal).
+   n2 uninterpreted() n7
+   n2 uninterpreted() n3
+
+   // prev = cur;
+   n3 Copy_Var_T(prev, cur) n4
+
+   // if (val < cur->data)
+      n4 uninterpreted() n5
+      n4 uninterpreted() n6
+
+      // cur = cur->left;
+      n5 Get_Sel_T(cur, cur, left) n1
+
+   // else cur = cur->right;
+      n6 Get_Sel_T(cur, cur, right) n1
+// }
+
+
+// Did we find the element to delete?
+// if (cur != NULL) {
+   n7 Is_Not_Null_Var(cur) n8
+   n7 Is_Null_Var(cur) n7_a
+   // Null out prev, as an optimizer could.
+   n7_a Set_Null_T(prev) notFound
+
+   // if (cur == root) {
+   n8 Is_Eq_Var(cur, root) n10
+   n8 Is_Not_Eq_Var(cur, root) n33
+
+      // if (root->left == NULL) {
+         n10 Get_Sel_T(t, root, left) n11
+         n11 Is_Null_Var(t) n12
+         n11 Is_Not_Null_Var(t) n13
+
+         //root = root->right;
+	 n12 Get_Sel_T(root, root, right) n12_a
+	 // Just to simplify viewing analysis results, unlink cur.
+	 // cur->right = NULL;
+	 n12_a Set_Sel_Null_T(cur, right) found
+
+      // } else if (root->right == NULL) {
+         n13 Get_Sel_T(t, root, right) n14
+         n14 Is_Null_Var(t) n15
+         n14 Is_Not_Null_Var(t) n16
+
+         // root = root->left;
+	 n15 Get_Sel_T(root, root, left) n15_a
+	 // Just to simplify viewing analysis results, unlink cur.
+	 // cur->left = NULL;
+	 n15_a Set_Sel_Null_T(cur, left) found
+
+      // } else {  // Find biggest element smaller than root.
+         // t = root->left;
+         n16 Get_Sel_T(t, root, left) n17
+
+	 // prev = t;
+	 n17 Copy_Var_T(prev, t) n18
+
+	 // while (t->right != NULL) {
+	    n18 Get_Sel_T(t2, t, right) n19
+	    n19 Is_Not_Null_Var(t2) n20
+	    n19 Is_Null_Var(t2) n22
+
+	    // prev = t;
+	    n20 Copy_Var_T(prev, t) n21
+	    // t = t->right;
+	    n21 Copy_Var_T(t, t2) n18
+	// }
+
+	// if (prev != t) {
+	   // Null out t2, as an optimizer could.
+	   n22 Set_Null_T(t2) n22_1
+	   n22_1 Is_Not_Eq_Var(prev, t) n23
+	   n22_1 Is_Eq_Var(prev, t) n22_a
+
+	   // prev->right = t->left;
+	   n23 Get_Sel_T(t2, t, left) n23_a
+	   // NB! Temp treeness violation not handled correctly so far!
+	   // Fix that problem and remove the line below!
+	   n23_a Set_Sel_Null_T(t, left) n24
+	   n24 Set_Sel_Null_T(prev, right) n25
+	   n25 Set_Sel_T(prev, right, t2) n25_a
+	   // Null out t2 and prev, as an optimizer could.
+	   n25_a Set_Null_T(t2) n25_b
+	   n25_b Set_Null_T(prev) n26
+
+	   // t->left = root->left;
+	   n26 Get_Sel_T(t2, root, left) n26_a
+	   // NB! Temp treeness violation not handled correctly so far!
+	   // Fix that problem and remove the line below!
+	   n26_a Set_Sel_Null_T(root, left) n27
+	   n27 Set_Sel_Null_T(t, left) n28
+	   n28 Set_Sel_T(t, left, t2) n28_a
+	   // Null out t2, as an optimizer could.
+	   n28_a Set_Null_T(t2) n29
+
+	// } else
+	   // Just to simplify viewing analysis results, unlink cur.
+	   // cur->left = NULL;
+	   n22_a Set_Sel_Null_T(cur, left) n22_b
+	   // Null out prev, as an optimizer could.
+	   n22_b Set_Null_T(prev) n29
+
+	// t->right = root->right;
+	n29 Get_Sel_T(t2, root, right) n29_a
+	// NB! Temp treeness violation not handled correctly so far!
+	// Fix that problem and remove the line below!
+	n29_a Set_Sel_Null_T(root, right) n30
+	n30 Set_Sel_Null_T(t, right) n31
+	n31 Set_Sel_T(t, right, t2) n31_a
+	// Null out t2, as an optimizer could.
+	n31_a Set_Null_T(t2) n32
+
+	// root = t;
+	n32 Copy_Var_T(root, t) n32_a
+	// Null out t, as an optimizer could.
+	n32_a Set_Null_T(t) found
+     // }
+
+   // } else {
+
+      // Is cur on the left of prev?
+      // t = prev->left;
+      n33 Get_Sel_T(t, prev, left) n34
+
+      // if (cur == t) {
+         n34 Is_Eq_Var(cur, t) n35
+	 n34 Is_Not_Eq_Var(cur, t) n63
+
+         // if (cur->left == NULL)
+	    n35 Get_Sel_T(t, cur, left) n36
+	    n36 Is_Null_Var(t) n37
+	    n36 Is_Not_Null_Var(t) n40
+
+	    // prev->left = cur->right;
+	    n37 Get_Sel_T(t2, cur, right) n37_a
+	    // NB! Temp treeness violation not handled correctly so far!
+	    // Fix that problem and remove the line below!
+	    n37_a Set_Sel_Null_T(cur, right) n38
+	    n38 Set_Sel_Null_T(prev, left) n39
+	    n39 Set_Sel_T(prev, left, t2) n39_a
+	    // Null out t2 and prev, as an optimizer could.
+	    n39_a Set_Null_T(t2) n39_b
+	    n39_b Set_Null_T(prev) found
+
+	 // else if (cur->right == NULL)
+	    n40 Get_Sel_T(t, cur, right) n41
+	    n41 Is_Null_Var(t) n42
+	    n41 Is_Not_Null_Var(t) n45
+
+	    // prev->left = cur->left;
+	    n42 Get_Sel_T(t2, cur, left) n42_a
+	    // NB! Temp treeness violation not handled correctly so far!
+	    // Fix that problem and remove the line below!
+	    n42_a Set_Sel_Null_T(cur, left) n43
+	    n43 Set_Sel_Null_T(prev, left) n44
+	    n44 Set_Sel_T(prev, left, t2) n44_a
+	    // Null out t2 and prev, as an optimizer could.
+	    n44_a Set_Null_T(t2) n44_b
+	    n44_b Set_Null_T(prev) found
+
+	 // else {  // Find biggest element smaller than cur.
+	    // t = cur->left;
+	    n45 Get_Sel_T(t, cur, left) n46
+
+	    // prev2 = t;
+	    n46 Copy_Var_T(prev2, t) n47
+
+	    // while (t->right != NULL) {
+	       n47 Get_Sel_T(t2, t, right) n48
+	       n48 Is_Not_Null_Var(t2) n49
+	       n48 Is_Null_Var(t2) n51
+
+	       // prev2 = t;
+	       n49 Copy_Var_T(prev2, t) n50
+	       // t = t->right;
+	       n50 Copy_Var_T(t, t2) n47
+	    // }
+
+	   // if (prev2 != t)
+	      // Null out t2, as an optimizer could.
+	      n51 Set_Null_T(t2) n51_1
+	      n51_1 Is_Not_Eq_Var(prev2, t) n52
+	      n51_1 Is_Eq_Var(prev2, t) n51_a
+
+	      // prev2->right = t->left;
+	      n52 Get_Sel_T(t2, t, left) n52_a
+	      // NB! Temp treeness violation not handled correctly so far!
+	      // Fix that problem and remove the line below!
+	      n52_a Set_Sel_Null_T(t, left) n53
+	      n53 Set_Sel_Null_T(prev2, right) n54
+	      n54 Set_Sel_T(prev2, right, t2) n54_a
+	      // Null out t2 and prev2, as an optimizer could.
+	      n54_a Set_Null_T(t2) n54_b
+	      n54_b Set_Null_T(prev2) n55
+
+	      // t->left = cur->left;
+	      n55 Get_Sel_T(t2, cur, left) n55_a
+	      // NB! Temp treeness violation not handled correctly so far!
+	      // Fix that problem and remove the line below!
+	      n55_a Set_Sel_Null_T(cur, left) n56
+	      n56 Set_Sel_Null_T(t, left) n57
+	      n57 Set_Sel_T(t, left, t2) n57_a
+	      // Null out t2, as an optimizer could.
+	      n57_a Set_Null_T(t2) n58
+
+	   // } else
+	      // NB! Temp tree order violation not handled correctly so far!
+	      // Fix that problem and remove the lines below!
+	      // Also to simplify viewing analysis results, unlink cur.
+	      // cur->left = NULL;
+	      n51_a Set_Sel_Null_T(cur, left) n51_b
+	      // Null out prev2, as an optimizer could.
+	      n51_b Set_Null_T(prev2) n58
+
+	   // t->right = cur->right;
+	   n58 Get_Sel_T(t2, cur, right) n58_a
+	   // NB! Temp treeness violation not handled correctly so far!
+	   // Fix that problem and remove the line below!
+	   n58_a Set_Sel_Null_T(cur, right) n59
+	   n59 Set_Sel_Null_T(t, right) n60
+	   n60 Set_Sel_T(t, right, t2) n60_a
+	   // Null out t2, as an optimizer could.
+	   n60_a Set_Null_T(t2) n61
+
+	   // prev->left = t;
+	   n61 Set_Sel_Null_T(prev, left) n62
+	   n62 Set_Sel_T(prev, left, t) n62_a
+	   // Null out t and prev, as an optimizer could.
+	   n62_a Set_Null_T(t) n62_b
+	   n62_b Set_Null_T(prev) found
+
+        // }
+
+      // } else {
+         // cur is on the right of prev.
+
+         // if (cur->left == NULL)
+	    n63 Get_Sel_T(t, cur, left) n64
+	    n64 Is_Null_Var(t) n65
+	    n64 Is_Not_Null_Var(t) n68
+
+	    // prev->right = cur->right;
+	    n65 Get_Sel_T(t2, cur, right) n65_a
+	    // NB! Temp treeness violation not handled correctly so far!
+	    // Fix that problem and remove the line below!
+	    n65_a Set_Sel_Null_T(cur, right) n66
+	    n66 Set_Sel_Null_T(prev, right) n67
+	    n67 Set_Sel_T(prev, right, t2) n67_a
+	    // Null out t2 and prev, as an optimizer could.
+	    n67_a Set_Null_T(t2) n67_b
+	    n67_b Set_Null_T(prev) found
+
+	 // else if (cur->right == NULL)
+	    n68 Get_Sel_T(t, cur, right) n69
+	    n69 Is_Null_Var(t) n70
+	    n69 Is_Not_Null_Var(t) n73
+
+	    // prev->right = cur->left;
+	    n70 Get_Sel_T(t2, cur, left) n70_a
+	    // NB! Temp treeness violation not handled correctly so far!
+	    // Fix that problem and remove the line below!
+	    n70_a Set_Sel_Null_T(cur, left) n71
+	    n71 Set_Sel_Null_T(prev, right) n72
+	    n72 Set_Sel_T(prev, right, t2) n72_a
+	    // Null out t2 and prev, as an optimizer could.
+	    n72_a Set_Null_T(t2) n72_b
+	    n72_b Set_Null_T(prev) found
+
+	 // else {  // Find biggest element smaller than cur.
+	    // t = cur->left;
+	    n73 Get_Sel_T(t, cur, left) n74
+
+	    // prev2 = t;
+	    n74 Copy_Var_T(prev2, t) n75
+
+	    // while (t->right != NULL) {
+	       n75 Get_Sel_T(t2, t, right) n76
+	       n76 Is_Not_Null_Var(t2) n77
+	       n76 Is_Null_Var(t2) n79
+
+	       // prev2 = t;
+	       n77 Copy_Var_T(prev2, t) n78
+	       // t = t->right;
+	       n78 Copy_Var_T(t, t2) n75
+	    // }
+
+	   // if (prev2 != t)
+	      // Null out t2, as an optimizer could.
+	      n79 Set_Null_T(t2) n79_1
+	      n79_1 Is_Not_Eq_Var(prev2, t) n80
+	      n79_1 Is_Eq_Var(prev2, t) n79_a
+
+	      // prev2->right = t->left;
+	      n80 Get_Sel_T(t2, t, left) n80_a
+	      // NB! Temp treeness violation not handled correctly so far!
+	      // Fix that problem and remove the line below!
+	      n80_a Set_Sel_Null_T(t, left) n81
+	      n81 Set_Sel_Null_T(prev2, right) n82
+	      n82 Set_Sel_T(prev2, right, t2) n82_a
+	      // Null out t2 and prev2, as an optimizer could.
+	      n82_a Set_Null_T(t2) n82_b
+	      n82_b Set_Null_T(prev2) n83
+
+	      // t->left = cur->left;
+	      n83 Get_Sel_T(t2, cur, left) n83_a
+	      // NB! Temp treeness violation not handled correctly so far!
+	      // Fix that problem and remove the line below!
+	      n83_a Set_Sel_Null_T(cur, left) n84
+	      n84 Set_Sel_Null_T(t, left) n85
+	      n85 Set_Sel_T(t, left, t2) n85_a
+	      // Null out t2, as an optimizer could.
+	      n85_a Set_Null_T(t2) n86
+
+	   // } else
+	      // NB! Temp tree order violation not handled correctly so far!
+	      // Fix that problem and remove the lines below!
+	      // Also to simplify viewing analysis results, unlink cur.
+	      // cur->left = NULL;
+	      n79_a Set_Sel_Null_T(cur, left) n79_b
+	      // Null out prev2, as an optimizer could.
+	      n79_b Set_Null_T(prev2) n86
+
+	   // t->right = cur->right;
+	   n86 Get_Sel_T(t2, cur, right) n86_a
+	   // NB! Temp treeness violation not handled correctly so far!
+	   // Fix that problem and remove the line below!
+	   n86_a Set_Sel_Null_T(cur, right) n87
+	   n87 Set_Sel_Null_T(t, right) n88
+	   n88 Set_Sel_T(t, right, t2) n88_a
+	   // Null out t2, as an optimizer could.
+	   n88_a Set_Null_T(t2) n89
+
+	   // prev->right = t;
+	   n89 Set_Sel_Null_T(prev, right) n90
+	   n90 Set_Sel_T(prev, right, t) n90_a
+	   // Null out t and prev, as an optimizer could.
+	   n90_a Set_Null_T(t) n90_b
+	   n90_b Set_Null_T(prev) found
+
+        // }
+      // }
+   // }
+// }
+
+found uninterpreted() test
+notFound uninterpreted() test
+
+// Now test the structures
+test Is_Sorted_Data_T(root) exit
+test Is_Not_Sorted_Data_T(root) error
+
+%% error, exit, found, notFound

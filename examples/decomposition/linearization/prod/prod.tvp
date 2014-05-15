@@ -1,0 +1,84 @@
+/************************************************************************
+ * pldi 
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s GlobalFields {c}
+
+%s LocalFields {x_c, x_p}
+%s BoolLocals {markBit}
+
+%s NextFields {n}
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+%pset Threads {t1,t2}
+//////////////////////////////////////////////////////////////
+
+%s locations { 
+ l_dispatch, ld_2, li_1, li_3, done
+} 
+
+%s Operations {consumer,producer}
+
+/**************** Predicates **************/
+
+#include "prod_pred.tvp"
+foreach (tn in Threads) {
+  %dname (tn(v) | 
+         |/{ r_by[fld,tn](v) : fld in LocalFields} |
+         |/{ r_by[fld](v) : fld in GlobalFields}) &
+         &/{&/{ !r_by[fld,other](v)  : fld in LocalFields } 
+	 & !other(v) : other in (Threads)-{ tn }} tn
+}
+
+%%
+/********************* Actions *******************/
+
+#include "prod_stat.tvp"
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+
+l_ready schedule(l_dispatch) l_dispatch 
+
+l_dispatch setChoice(producer) l_00  
+l_dispatch setChoice(consumer) l_00 
+
+//****** Code for one thread *****************************
+
+
+l_00 Clear() ll_dispatch
+
+ll_dispatch isChoice(producer) li_0                   
+ll_dispatch isChoice(consumer) ld_1                   
+
+
+/* Producer */
+l_ready schedule(li_1) li_1
+l_ready schedule(li_3) li_3
+
+li_0 assignNew(x_p) li_0p
+li_0p unschedule(li_1) l_ready
+li_1 isNull(c) li_2
+
+li_2 produce(c,x_p) li_2p	
+li_2p unschedule(li_3) l_ready
+
+li_3 setMarkBit(x_p) l_exit
+
+
+ld_1 isNotNull(c) ld_2
+
+ld_2 consume(x_c,c) l_exit
+
+l_exit unschedule(done) l_ready
+
+

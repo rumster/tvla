@@ -1,0 +1,11 @@
+// Structure containing some (unmarked) garbage and some (marked) non-garbage
+%n = {u0, u1}
+%p = {
+  sm = {u0:1/2, u1:1/2}
+  root = {u0:1/2}
+  left = {u0 -> u0:1/2, u1 -> u1:1/2, u1 -> u0:1/2}
+  right = {u0 -> u0:1/2, u1 -> u1:1/2, u1 -> u0:1/2}
+  r[root] = {u0}
+  set[marked] = {u0}
+  unique_selection = {u0:1/2, u1:1/2}
+}

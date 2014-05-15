@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<!-- 
+  =======================================================================
+    TVLA regression testing related utilities
+  ======================================================================= 
+-->
+<project name="TVLA regression testing related utilities" default="build" basedir=".">
+  <property name="src" value="src"/>
+  <property name="build" value="build"/>
+
+	
+<!--
+       ===================================================================
+         Sets up internal values
+       ===================================================================
+ -->
+	  <target name="init" description="-> sets up internal values">
+	    <!-- Create the build directory structure used by compile -->
+	    <mkdir dir="${build}"/>
+	    <property environment="env"/>
+	  </target>	
+
+	
+<!--
+       ===================================================================
+         Compiles the sources
+       ===================================================================
+-->
+
+  <target name="build" depends="init" description="-> compiles the source code to create the tree of classes">
+    <!-- Compile the java code from ${src} into ${classes} -->
+    <echo message="Compiling sources..."/>
+    <javac srcdir="${src}"
+           destdir="${build}"
+           source="1.4"
+           debug="${debug}"
+           deprecation="${deprecation}"
+           optimize="${optimize}"
+	       classpath="${env.ANT_HOME}/lib"/>
+
+    <!-- Copy the MetaData files to the compilation area and apply filters -->	   
+    <copy todir="${build}">
+      <fileset dir="${src}">
+        <include name="**/*.properties" />
+      </fileset>
+    </copy>
+	   
+  </target>
+      
+</project>

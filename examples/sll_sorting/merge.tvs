@@ -1,0 +1,18 @@
+// Two sorted lists pointed by x and y.
+%n = {tail1, head1, tail2, head2}
+%p = {
+       sm = {tail1:1/2, tail2:1/2}
+       x = {head1}
+       y = {head2}
+       r[n,x] = {tail1, head1}
+       r[n,y] = {tail2, head2}
+       inOrder[dle,n] = {tail1, head1, tail2, head2}
+       inROrder[dle,n] = {tail1:1/2, head1:1/2, tail2:1/2, head2:1/2}
+       dle = {head1->head1, head1->tail1, tail1->tail1:1/2, tail1->head1:1/2,
+              head2->head2, head2->tail2, tail2->tail2:1/2, tail2->head2:1/2,
+              tail1->head2:1/2, tail1->tail2:1/2, head1->head2:1/2, head1->tail2:1/2,
+              tail2->head1:1/2, tail2->tail1:1/2, head2->head1:1/2, head2->tail1:1/2}
+       n = {tail1->tail1:1/2, head1->tail1:1/2, tail2->tail2:1/2, head2->tail2:1/2}
+       t[n] = {head1->head1:1, head1->tail1:1, tail1->tail1:1/2,
+               head2->head2:1, head2->tail2:1, tail2->tail2:1/2}
+}

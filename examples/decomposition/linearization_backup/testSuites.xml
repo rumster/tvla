@@ -1,0 +1,770 @@
+<?xml version="1.0"?>
+
+<!-- 
+  =======================================================================
+    Equality under abstraction test suites.
+    This project does not contain any executable targets.
+    It is meant to be used by other build files that invoke the
+    test_suite_XXX targets with appropriate parameters.
+  ======================================================================= 
+-->
+<project name="Comparison under abstraction for linearizability test list">
+  <property name="concurrent_dir" value="tests/concurrent"/>
+  <property name="conc_spec_dir" value="tests/conc_spec"/>
+  <property name="mutations_dir" value="tests/mutations"/>
+  <property name="sequential_dir" value="tests/sequential"/>
+ 
+
+<!--
+  =======================================================================
+    Applies the specified target to all tests.
+    This target expects the parameter test_suite to be set to the name
+    of a target that performs the actual test (i.e., run_test)
+    The specified target in turn expects the parameters test_dir, test_tvp and 
+    test_tvs to be set to the appropriate values.
+  =======================================================================
+-->
+  <target name="test_suite_all" 
+          description=" --> applies the specified target to all regression tests">
+  
+      
+   <antcall target="test_suite_mutations">
+      <param name="test_suite" value="${test_suite}"/>
+   </antcall>
+
+<!--
+   <antcall target="test_suite_concurrent_prodcons">
+      <param name="test_suite" value="${test_suite}"/>
+   </antcall>
+
+   <antcall target="test_suite_concurrent_general">
+      <param name="test_suite" value="${test_suite}"/>
+   </antcall>
+
+
+   <antcall target="test_suite_conc_spec">
+     <param name="test_suite" value="${test_suite}"/>
+   </antcall>
+-->
+
+  </target>
+
+
+<!--
+  =======================================================================
+    Runs concurrent tests - using spec
+  =======================================================================
+-->
+  <target name="test_suite_conc_spec">
+
+    <antcall target="test_suite_conc_spec_prodcons_set">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+
+    <antcall target="test_suite_conc_spec_set">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+
+  </target>
+
+
+
+<!--
+  =======================================================================
+    Runs concurrent tests - General client
+  =======================================================================
+-->
+  <target name="test_suite_concurrent_general">
+
+    <antcall target="test_suite_concurrent_general_stack">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_general_nbq">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+     
+    <antcall target="test_suite_concurrent_general_nbq_tail">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_general_nbq_opt">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_general_tlq">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_general_set">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+  </target>
+
+
+<!--
+  =======================================================================
+    Runs concurrent tests - Producer / Consumer 
+  =======================================================================
+-->
+
+  <target name="test_suite_concurrent_prodcons">
+
+    <antcall target="test_suite_concurrent_prodcons_stack">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+     
+    <antcall target="test_suite_concurrent_prodcons_nbq">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_prodcons_nbq_opt">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_prodcons_nbq_tail">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_prodcons_tlq">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_prodcons_set">
+      <param name="test_suite" value="${test_suite}"/>
+    </antcall>
+
+  </target>
+
+<!--
+  =======================================================================
+  =======================================================================
+  =======================================================================
+  =======================================================================
+-->
+
+<!--
+  =======================================================================
+    Runs Mutation tests - 2 General clients
+  =======================================================================
+-->
+  <target name="test_suite_mutations" 
+          description=" --> applies the specified target to all mutations tests with 2 general clients">    
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="nbq_err1"/>
+         <param name="test_tvs" value="nbq-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+      
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="nbq_err2"/>
+         <param name="test_tvs" value="nbq-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="set_err1"/>
+         <param name="test_tvs" value="set-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="stack_err1"/>
+         <param name="test_tvs" value="stack-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="stack_err2"/>
+         <param name="test_tvs" value="stack-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="tlq_err1"/>
+         <param name="test_tvs" value="tlq-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      <antcall target="test_suite_mutations_run_test">
+         <param name="test_tvp" value="tlq_err2"/>
+         <param name="test_tvs" value="tlq-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+
+      
+  </target>
+
+
+
+
+
+<!--
+  =======================================================================
+    Runs concurrent set tests - General client
+  =======================================================================
+-->
+  <target name="test_suite_conc_spec_set" 
+          description=" --> applies the specified target to all concurrent tests with general clients">
+    
+
+      <antcall target="test_suite_conc_spec_run_test">
+         <param name="test_tvp" value="set"/>
+         <param name="test_tvs" value="set-general"/>
+         <param name="cpparg" value="GNUM(2)"/>
+      </antcall>  
+      
+  </target>
+
+
+  <target name="test_suite_conc_spec_prodcons_set" 
+          description=" --> applies the specified target to all concurrent tests with producers and consumers">
+    
+     <antcall target="test_suite_conc_spec_run_test">
+        <param name="test_tvp" value="set"/>
+        <param name="test_tvs" value="set-prodcons"/>
+        <param name="cpparg" value="KNUM(1)"/>
+     </antcall>
+
+<!--
+     <antcall target="test_suite_conc_spec_run_test">
+        <param name="test_tvp" value="set"/>
+        <param name="test_tvs" value="set-prodcons"/>
+        <param name="cpparg" value="KNUM(2)"/>
+     </antcall>
+-->
+
+  </target>
+
+<!--
+  =======================================================================
+  =======================================================================
+  =======================================================================
+  =======================================================================
+-->
+
+
+
+<!--
+  =======================================================================
+    Runs concurrent stack tests - General client
+  =======================================================================
+-->
+  <target name="test_suite_concurrent_general_stack" 
+          description=" --> applies the specified target to all concurrent tests with general clients">
+    
+
+    <antcall target="test_suite_concurrent_run_test">
+      <param name="test_tvp" value="stack"/>
+      <param name="test_tvs" value="stack-general"/>
+      <param name="cpparg" value="GNUM(1)"/>
+    </antcall>
+
+
+    <antcall target="test_suite_concurrent_run_test">
+      <param name="test_tvp" value="stack"/>
+      <param name="test_tvs" value="stack-general"/>
+      <param name="cpparg" value="GNUM(2)"/>
+    </antcall>
+
+    <antcall target="test_suite_concurrent_run_test">
+      <param name="test_tvp" value="stack"/>
+      <param name="test_tvs" value="stack-general"/>
+      <param name="cpparg" value="GNUM(3)"/>
+    </antcall>
+    
+  <!--
+
+    <antcall target="test_suite_concurrent_run_test">
+      <param name="test_tvp" value="stack"/>
+      <param name="test_tvs" value="stack-general"/>
+      <param name="cpparg" value="GNUM(4)"/>
+    </antcall>
+    
+  -->
+ 
+  </target>
+
+
+
+<!--
+  =======================================================================
+    Runs concurrent stack tests - Producer / Consumer 
+  =======================================================================
+-->
+
+  <target name="test_suite_concurrent_prodcons_stack" 
+          description=" --> applies the specified target to all concurrent tests with producers and consumers">
+    
+     <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="stack"/>
+        <param name="test_tvs" value="stack-prodcons"/>
+        <param name="cpparg" value="KNUM(1)"/>
+     </antcall>
+
+  
+     <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="stack"/>
+        <param name="test_tvs" value="stack-prodcons"/>
+        <param name="cpparg" value="KNUM(2)"/>
+     </antcall>
+
+<!--
+     <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="stack"/>
+        <param name="test_tvs" value="stack-prodcons"/>
+       <param name="cpparg" value="KNUM(3)"/>
+     </antcall>
+
+     <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="stack"/>
+        <param name="test_tvs" value="stack-prodcons"/>
+        <param name="cpparg" value="KNUM(4)"/>
+     </antcall>
+-->
+   </target>
+ 
+  <!--
+    =======================================================================
+      Runs concurrent nbq tests - General client
+    =======================================================================
+  -->
+    <target name="test_suite_concurrent_general_nbq" 
+            description=" --> applies the specified target to all concurrent tests with general clients">
+      
+  
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(1)"/>
+      </antcall>
+  
+
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(2)"/>
+      </antcall>
+
+<!--
+  
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(3)"/>
+      </antcall>
+
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(4)"/>
+      </antcall>
+
+-->
+   
+    </target>
+  
+  
+
+  
+
+  
+  <!--
+    =======================================================================
+      Runs concurrent nbq tests - Producer / Consumer 
+    =======================================================================
+  -->
+  
+    <target name="test_suite_concurrent_prodcons_nbq" 
+            description=" --> applies the specified target to all concurrent tests with producers and consumers">
+      
+       <antcall target="test_suite_concurrent_run_test">
+          <param name="test_tvp" value="nbq"/>
+          <param name="test_tvs" value="nbq-prodcons"/>
+          <param name="cpparg" value="KNUM(1)"/>
+       </antcall>
+  
+<!--  
+       <antcall target="test_suite_concurrent_run_test">
+          <param name="test_tvp" value="nbq"/>
+          <param name="test_tvs" value="nbq-prodcons"/>
+          <param name="cpparg" value="KNUM(2)"/>
+       </antcall>
+  
+       <antcall target="test_suite_concurrent_run_test">
+          <param name="test_tvp" value="nbq"/>
+          <param name="test_tvs" value="nbq-prodcons"/>
+         <param name="cpparg" value="KNUM(3)"/>
+       </antcall>
+  
+       <antcall target="test_suite_concurrent_run_test">
+          <param name="test_tvp" value="nbq"/>
+          <param name="test_tvs" value="nbq-prodcons"/>
+          <param name="cpparg" value="KNUM(4)"/>
+       </antcall>
+
+-->
+
+   </target>
+   
+   
+    
+   
+   
+ <!--
+   =======================================================================
+     Runs concurrent nbq_opt tests - General client
+   =======================================================================
+ -->
+   <target name="test_suite_concurrent_general_nbq_opt" 
+           description=" --> applies the specified target to all concurrent tests with general clients">
+     
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="nbq_opt"/>
+       <param name="test_tvs" value="nbq_opt-general"/>
+       <param name="cpparg" value="GNUM(1)"/>
+     </antcall>
+ 
+
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="nbq_opt"/>
+       <param name="test_tvs" value="nbq_opt-general"/>
+       <param name="cpparg" value="GNUM(2)"/>
+     </antcall>
+ 
+
+<!--
+
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="nbq_opt"/>
+       <param name="test_tvs" value="nbq_opt-general"/>
+       <param name="cpparg" value="GNUM(3)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="nbq_opt"/>
+       <param name="test_tvs" value="nbq_opt-general"/>
+       <param name="cpparg" value="GNUM(4)"/>
+     </antcall>
+
+-->
+
+   </target>
+ 
+
+ 
+ <!--
+   =======================================================================
+     Runs concurrent nbq_opt tests - Producer / Consumer 
+   =======================================================================
+ -->
+ 
+   <target name="test_suite_concurrent_prodcons_nbq_opt" 
+           description=" --> applies the specified target to all concurrent tests with producers and consumers">
+     
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="nbq_opt"/>
+         <param name="test_tvs" value="nbq_opt-prodcons"/>
+         <param name="cpparg" value="KNUM(1)"/>
+      </antcall>
+ 
+  
+<!--
+
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="nbq_opt"/>
+         <param name="test_tvs" value="nbq_opt-prodcons"/>
+         <param name="cpparg" value="KNUM(2)"/>
+      </antcall>
+
+
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="nbq_opt"/>
+         <param name="test_tvs" value="nbq_opt-prodcons"/>
+        <param name="cpparg" value="KNUM(3)"/>
+      </antcall>
+ 
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="nbq_opt"/>
+         <param name="test_tvs" value="nbq_opt-prodcons"/>
+         <param name="cpparg" value="KNUM(4)"/>
+      </antcall>
+-->
+
+   </target>
+ 
+
+
+<!--
+    =======================================================================
+      Runs concurrent _nbq_tail tests - General client
+    =======================================================================
+-->
+    <target name="test_suite_concurrent_general_nbq_tail" 
+            description=" --> applies the specified target to all concurrent tests with general clients">
+      
+  
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq_tail"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(1)"/>
+      </antcall>
+  
+
+      <antcall target="test_suite_concurrent_run_test">
+        <param name="test_tvp" value="nbq_tail"/>
+        <param name="test_tvs" value="nbq-general"/>
+        <param name="cpparg" value="GNUM(2)"/>
+      </antcall>
+    </target> 
+   
+  
+    <!--
+      =======================================================================
+        Runs concurrent nbq_opt tests - Producer / Consumer 
+      =======================================================================
+    -->
+    
+      <target name="test_suite_concurrent_prodcons_nbq_tail" 
+              description=" --> applies the specified target to all concurrent tests with producers and consumers">
+        
+         <antcall target="test_suite_concurrent_run_test">
+            <param name="test_tvp" value="nbq_tail"/>
+            <param name="test_tvs" value="nbq-prodcons"/>
+            <param name="cpparg" value="KNUM(1)"/>
+         </antcall>
+     </target>
+
+
+
+
+ <!--
+   =======================================================================
+     Runs concurrent tlq tests - General client
+   =======================================================================
+ -->
+   <target name="test_suite_concurrent_general_tlq" 
+           description=" --> applies the specified target to all concurrent tests with general clients">
+     
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="tlq"/>
+       <param name="test_tvs" value="tlq-general"/>
+       <param name="cpparg" value="GNUM(1)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="tlq"/>
+       <param name="test_tvs" value="tlq-general"/>
+       <param name="cpparg" value="GNUM(2)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="tlq"/>
+       <param name="test_tvs" value="tlq-general"/>
+       <param name="cpparg" value="GNUM(3)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="tlq"/>
+       <param name="test_tvs" value="tlq-general"/>
+       <param name="cpparg" value="GNUM(4)"/>
+     </antcall>
+
+   </target>
+ 
+ 
+ 
+
+ 
+ 
+ <!--
+   =======================================================================
+     Runs concurrent tlq tests - Producer / Consumer 
+   =======================================================================
+ -->
+ 
+   <target name="test_suite_concurrent_prodcons_tlq" 
+           description=" --> applies the specified target to all concurrent tests with producers and consumers">
+     
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="tlq"/>
+         <param name="test_tvs" value="tlq-prodcons"/>
+         <param name="cpparg" value="KNUM(1)"/>
+      </antcall>
+ 
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="tlq"/>
+         <param name="test_tvs" value="tlq-prodcons"/>
+         <param name="cpparg" value="KNUM(2)"/>
+      </antcall>
+ 
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="tlq"/>
+         <param name="test_tvs" value="tlq-prodcons"/>
+        <param name="cpparg" value="KNUM(3)"/>
+      </antcall>
+ 
+ <!--
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="tlq"/>
+         <param name="test_tvs" value="tlq-prodcons"/>
+         <param name="cpparg" value="KNUM(4)"/>
+      </antcall>
+ -->
+ 
+   </target>
+
+
+
+
+ <!--
+   =======================================================================
+     Runs concurrent set tests - General client
+   =======================================================================
+ -->
+   <target name="test_suite_concurrent_general_set" 
+           description=" --> applies the specified target to all concurrent tests with general clients">
+     
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="set"/>
+       <param name="test_tvs" value="set-general"/>
+       <param name="cpparg" value="GNUM(1)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="set"/>
+       <param name="test_tvs" value="set-general"/>
+       <param name="cpparg" value="GNUM(2)"/>
+     </antcall>
+ 
+<!--
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="set"/>
+       <param name="test_tvs" value="set-general"/>
+       <param name="cpparg" value="GNUM(3)"/>
+     </antcall>
+ 
+     <antcall target="test_suite_concurrent_run_test">
+       <param name="test_tvp" value="set"/>
+       <param name="test_tvs" value="set-general"/>
+       <param name="cpparg" value="GNUM(4)"/>
+     </antcall>
+ -->
+  
+   </target>
+ 
+ 
+ 
+ <!--
+   =======================================================================
+     Runs concurrent set tests - Producer / Consumer 
+   =======================================================================
+ -->
+ 
+   <target name="test_suite_concurrent_prodcons_set" 
+           description=" --> applies the specified target to all concurrent tests with producers and consumers">
+     
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="set"/>
+         <param name="test_tvs" value="set-prodcons"/>
+         <param name="cpparg" value="KNUM(1)"/>
+      </antcall>
+ 
+ <!--  
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="set"/>
+         <param name="test_tvs" value="set-prodcons"/>
+         <param name="cpparg" value="KNUM(2)"/>
+      </antcall>
+ 
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="set"/>
+         <param name="test_tvs" value="set-prodcons"/>
+        <param name="cpparg" value="KNUM(3)"/>
+      </antcall>
+ 
+      <antcall target="test_suite_concurrent_run_test">
+         <param name="test_tvp" value="set"/>
+         <param name="test_tvs" value="set-prodcons"/>
+         <param name="cpparg" value="KNUM(4)"/>
+      </antcall>
+ -->
+   </target>
+
+
+
+
+
+
+<!--
+  =======================================================================
+  =======================================================================
+    Runs all concurrent examples 	
+    Assume that param "cpparg" is defined (and optionally noprint too)
+  =======================================================================
+  =======================================================================
+-->
+
+   <target name="test_suite_concurrent_run_test" 
+           description=" --> applies the specified target to all concurrent tests ">
+     
+    <antcall target="${apply_target}">
+        <param name="test_dir" value="${concurrent_dir}"/>
+        <param name="test_suite" value="${test_suite}"/>
+        <param name="props" value="tvmc.properties"/>
+    </antcall>
+  
+   </target>
+
+
+
+<!--
+  =======================================================================
+  =======================================================================
+    Runs all conc_spec examples 	
+    Assume that param "cpparg" is defined (and optionally noprint too)
+  =======================================================================
+  =======================================================================
+-->
+
+   <target name="test_suite_conc_spec_run_test" 
+           description=" --> applies the specified target to all concurrent versus spec tests">
+     
+    <antcall target="${apply_target}">
+        <param name="test_dir" value="${conc_spec_dir}"/>
+        <param name="test_suite" value="${test_suite}"/>
+        <param name="props" value="tvmc.properties"/>
+    </antcall>
+  
+   </target>
+
+
+<!--
+  =======================================================================
+  =======================================================================
+    Runs all mutations examples 	
+    Assume that param "cpparg" is defined (and optionally noprint too)
+  =======================================================================
+  =======================================================================
+-->
+
+   <target name="test_suite_mutations_run_test" 
+           description=" --> applies the specified target to all mutation tests">
+     
+    <antcall target="${apply_target}">
+        <param name="test_dir" value="${mutations_dir}"/>
+        <param name="test_suite" value="${test_suite}"/>
+        <param name="props" value="tvmc.properties"/>
+    </antcall>
+  
+   </target>
+</project>
+
+

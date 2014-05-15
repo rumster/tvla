@@ -1,0 +1,154 @@
+/************************************************************************
+ * pldi 
+ ***********************************************************************/
+
+
+/*********************** Sets ******************************/
+
+%s GlobalFields {Head,Tail}
+
+%s LocalFields {x_i,pred,curr,next,res,res_seq}
+
+//%s LocalBooleans {res,res_seq}
+
+%s NextFields {n}
+
+%s BoolLocals {}
+%s BoolFields {dummy}
+
+%s Components { R, G } 
+
+%s locations { l_dispatch, l_00, l_0, l_1, l_2, l_3, li_3, ld_3} 
+
+%s Operations {insert,delete,find}
+
+/**************** Predicates **************/
+
+#include "dcas_pred.tvp"
+
+// Reachable states
+%dname (tid[R](v) | save[rt[Head]](v) | // save[rt[Tail]](v) |
+      |/{ save[r_by[fld,R]](v) : fld in LocalFields} |
+	  |/{ save[r_by[fld]](v) : fld in GlobalFields}
+	  ) & ( 
+      &/{ !unary(v) & !save[unary](v) & !deltaPlus[unary](v) & !deltaMinus[unary](v) : unary in UnaryG} &
+      &/{ !unary(v) & !deltaPlus[unary](v) & !deltaMinus[unary](v) : unary in Unary } &
+      &/{ !binary(v1,v2) & !deltaPlus[binary](v,w) & !deltaMinus[binary](v,w)
+      					 & !deltaPlusI[binary](v) & !deltaMinusI[binary](v)
+                         & !deltaPlusO[binary](v) & !deltaMinusO[binary](v) : binary in Binary } &
+      !tid[G](v)
+      ) R
+	  
+// Global Transition Relation	  
+%dname (tid[G](v) | 
+      |/{ deltaPlus[unary](v) | deltaMinus[unary](v) : unary in Unary+UnaryG} |
+      |/{ deltaPlusI[binary](v) | deltaMinusI[binary](v) | 
+          deltaPlusO[binary](v) | deltaMinusO[binary](v) : binary in Binary-{eq,dle} } |
+      rt[Head](v) | // rt[Tail](v) |
+      |/{ r_by[fld,G](v) : fld in LocalFields} |
+      |/{ r_by[fld](v) : fld in GlobalFields}
+      | save[rt[Head]](v) | // save[rt[Tail]](v) |
+      |/{ save[r_by[fld,G]](v) : fld in LocalFields} |
+      |/{ save[r_by[fld]](v) : fld in GlobalFields}	  
+	  ) & (
+      &/{ !save[unary](v) : unary in UnaryR} &
+      !tid[R](v)
+	  ) G
+
+%%
+/********************* Actions *******************/
+
+#include "dcas_stat.tvp"
+
+%action skip() { %t "" } 
+%%
+
+fixpoint RtoG() ready
+
+fixpoint GtoR() fixpoint
+tmp interference() fixpoint
+fixpoint skip() tmp
+
+ready schedule(l_dispatch) l_dispatch 
+
+l_dispatch setChoice(insert) l_0          /*local action */            
+l_dispatch setChoice(delete) l_0          /*local action  /DEBUG COMMENT  */    
+l_dispatch setChoice(find) l_0          /*local action  /DEBUG COMMENT  */    
+
+//****** Code for one thread *****************************
+
+/* locate     */                                            
+/* concurrent */                                            
+ready schedule(l_00) l_00 
+ready schedule(l_0) l_0 
+ready schedule(l_1) l_1 
+ready schedule(l_2) l_2 
+ready schedule(l_3) l_3 
+
+l_0 Clear() l_0p
+l_0p unschedule(l_00) fixpoint
+
+l_00 assignNew(x_i) l_1                    /*x_i expected to be null /local action */ 
+l_1 assignFromGlbField(pred,Head) l_1p     /*pred expected to be null */          
+l_1p unschedule(l_2) fixpoint
+l_2 assignFromNextField(curr, pred) l_2p     /*pred expected to be null */          
+l_2p unschedule(l_3) fixpoint
+
+l_3 isDataGreaterEq(curr,x_i) ll_dispatch  /*local action */              
+l_3 isDataLess(curr,x_i) l_4              /*local action */              
+l_4 assignNull(pred) l_5                 /*atomic with assignRef / local action   */    
+l_5 assignRef(pred,curr) l_6             /*local action  */             
+l_6 assignNull(curr) l_7                 /*atomic with assignFromNextField / local action  */   
+l_7 assignFromNextField(curr, pred) l_8     /*pred expected to be null */          
+
+l_8 isNull(curr) l_9
+l_8 isNotNull(curr) l_8p
+l_8p unschedule(l_3) fixpoint
+
+l_9 assignNull(pred) l_9p
+l_9p unschedule(l_1) fixpoint
+
+/*final actions - common to all operations, including linearization point */
+                                            
+/*choice of transaction according to concurrent choice */               
+ll_dispatch isChoice(insert) li_1                   
+ll_dispatch isChoice(delete) ld_1                   
+ll_dispatch isChoice(find) lf_1                 
+					    
+
+l_exit ClearOp() l_dispatch   /*local action  */     
+
+/*in all operations: res expectd to be null*/
+
+/* find */
+lf_1 isDataEq(curr,x_i) lf_2 
+lf_1 isDataNotEq(curr,x_i) lf_3
+
+lf_2 assignRef(res,curr) l_exit
+lf_3 assignNull(res) l_exit
+
+/*insert */
+li_1 isDataEq(curr,x_i) li_5                               
+li_1 isDataNotEq(curr,x_i) li_2                            
+li_2 updateNext(x_i,curr) li_3            
+li_3 SuccCAS_Next(pred, curr, x_i) li_4                    
+li_3 FailCAS_Next(pred, curr, x_i) li_3p
+li_3p unschedule(l_0) fixpoint
+                
+li_4 assignRef(res,x_i) li_4a                   
+li_4a removeDnode(x_i) l_exit                   
+li_5 assignNull(res) l_exit		         
+
+/*delete*/
+ready schedule(ld_3) ld_3 
+ 
+ld_1 isDataNotEq(curr,x_i) ld_5                   
+ld_1 isDataEq(curr,x_i) ld_2                  
+ld_2 assignFromNextField(next, curr) ld_2p
+ld_2p unschedule(ld_3) fixpoint    
+ld_3 SuccDCAS_Next(pred, curr, curr, next, next) ld_4         /*Vafeiadis lp */                        
+ld_3 FailDCAS_Next(pred, curr, curr, next, next) ld_3p
+ld_3p unschedule(l_0) fixpoint                        
+ld_4 assignRef(res, curr) l_exit                   
+ld_5 assignNull(res) l_exit          
+

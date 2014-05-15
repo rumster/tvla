@@ -1,0 +1,262 @@
+/************************************************************************
+ * stack.tvm
+ * Treiber's non-blocking stack
+ ***********************************************************************/
+
+%s locations {
+#if(0 < GNUM)
+                li_1_p1, li_2_p1, li_3_p1, li_1_p4, lis_1_p1, lis_2_p1, lis_3_p1, li_exit_p1, l_dispatch_p1,
+                ld_1_c1, ld_2_c1, ld_3_c1, ld_3b_c1, lds_1_c1, lds_2_c1, lds_3_c1, ld_4_c1, ld_exit_c1,
+                li_1_g1, li_2_g1, li_3_g1, li_4_g1, lis_1_g1, lis_2_g1, lis_3_g1, li_exit_g1, l_dispatch_g1,
+                ld_1_g1, lds_1a_g1, ld_2_g1, ld_3_g1, ld_3b_g1, lds_1_g1, lds_2_g1, lds_3_g1, ld_4_g1, ld_exit_g1,
+                li_1_g1, li_1_g1, l_dispatch_g1
+#endif
+#if(1 < GNUM)
+               ,li_1_p2, li_2_p2, li_3_p2, li_1_p4, lis_1_p2, lis_2_p2, lis_3_p2, li_exit_p2, l_dispatch_p2,
+                ld_1_c2, ld_2_c2, ld_3_c2, ld_3b_c2, lds_1_c2, lds_2_c2, lds_3_c2, ld_4_c2, ld_exit_c2,
+                li_1_g2, li_2_g2, li_3_g2, li_4_g2, lis_1_g2, lis_2_g2, lis_3_g2, li_exit_g2, l_dispatch_g2,
+                ld_1_g2, lds_1a_g2, ld_2_g2, ld_3_g2, ld_3b_g2, lds_1_g2, lds_2_g2, lds_3_g2, ld_4_g2, ld_exit_g2,
+                li_1_g2, li_1_g2, l_dispatch_g2
+#endif
+#if(2 < GNUM)
+               ,li_1_p3, li_2_p3, li_3_p3, li_1_p4, lis_1_p3, lis_2_p3, lis_3_p3, li_exit_p3, l_dispatch_p3,
+                ld_1_c3, ld_2_c3, ld_3_c3, ld_3b_c3, lds_1_c3, lds_2_c3, lds_3_c3, ld_4_c3, ld_exit_c3,
+                li_1_g3, li_2_g3, li_3_g3, li_4_g3, lis_1_g3, lis_2_g3, lis_3_g3, li_exit_g3, l_dispatch_g3,
+                ld_1_g3, lds_1a_g3, ld_2_g3, ld_3_g3, ld_3b_g3, lds_1_g3, lds_2_g3, lds_3_g3, ld_4_g3, ld_exit_g3,
+                li_1_g3, li_1_g3, l_dispatch_g3
+#endif
+#if(3 < GNUM)
+               ,li_1_p4, li_2_p4, li_3_p4, li_1_p4, lis_1_p4, lis_2_p4, lis_3_p4, li_exit_p4, l_dispatch_p4,
+                ld_1_c4, ld_2_c4, ld_3_c4, ld_3b_c4, lds_1_c4, lds_2_c4, lds_3_c4, ld_4_c4, ld_exit_c4,
+                li_1_g4, li_2_g4, li_3_g4, li_4_g4, lis_1_g4, lis_2_g4, lis_3_g4, li_exit_g4, l_dispatch_g4,
+                ld_1_g4, lds_1a_g4, ld_2_g4, ld_3_g4, ld_3b_g4, lds_1_g4, lds_2_g4, lds_3_g4, ld_4_g4, ld_exit_g4,
+                li_1_g4, li_1_g4, l_dispatch_g4
+#endif
+}
+
+/*********************** Sets ******************************/
+
+//%s FieldsAndParameters {Top,Top_seq,x_i,this,n,n_seq,top,top_seq,next}
+
+// generally, every variable in the concurrent implementation has a corresponding
+// sequential variables, unless it doesn't appear in the sequenatial version.
+%s StackFields {Top,Top_seq}
+
+%s LocalFields {x_i,next,top,top_seq} //this field not needed when stack object not represented
+%s LocalFieldsAbs {x_i,next} //this field not needed when stack object not represented
+%s LocalFieldsNonAbs {top,top_seq}
+
+// local variables for the push procedure
+%s PushLocals {x_i,top}
+
+// local variables for the pop procedure
+%s PopLocals {top,top_seq,next}
+
+%s NextFields {n,n_seq}
+
+
+//////////////////////// Names of threads ////////////////////
+//// General client
+#if(0 < GNUM)
+%s StaticThreadNames {g1}
+#endif
+#if(1 < GNUM)
+%s StaticThreadNames {g1,g2}
+#endif
+#if(2 < GNUM)
+%s StaticThreadNames {g1,g2,g3}
+#endif
+#if(3 < GNUM)
+%s StaticThreadNames {g1,g2,g3,g4}
+#endif
+
+//// Consumer Producer
+#if(0 < KNUM)
+%s StaticThreadNames {c1,p1}
+#endif
+#if(1 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2}
+#endif
+#if(2 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3}
+#endif
+#if(3 < KNUM)
+%s StaticThreadNames {c1,p1,c2,p2,c3,p3,c4,p4}
+#endif
+//////////////////////////////////////////////////////////////
+
+/**************** Predicates **************/
+
+#include "stack_pred.tvp"
+
+%%
+/********************* Actions *******************/
+
+#include "stack_stat.tvp"
+
+%action schedule(loc) {
+  %t "schedule " + loc
+  %f { tr_scheduled(tr) & at[loc](tr) }
+  %p tr_scheduled(tr) & at[loc](tr)
+}
+
+%action unschedule() {
+  %t "unschedule"
+  {
+    tr_scheduled(tr) = (isthread(tr) ? 1/2 : 0)
+  }
+}
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/************** Producer Threads ****************/
+
+// %thread nop {
+// ln_1 skip() ln_1
+// }
+
+//init verifyProperty() pre_schedule
+pre_schedule unschedule() l_ready
+
+/***************** CFG for thread one *********************************/
+
+#define PRD(TN) \
+/* Push() */ \
+/* concurrent */ \
+l_ready schedule(li_1_##TN) li_1_##TN \
+l_ready schedule(li_4_##TN) li_4_##TN \
+/*l_ready schedule(l_dispatch_##TN) l_dispatch_##TN */\
+/* atomic { */\
+li_1_##TN assignNew(li_1_##TN, li_2_##TN, x_i,TN) li_2_##TN \
+li_2_##TN assignFromGlbField(li_2_##TN, li_3_##TN, top,Top,TN) li_3_##TN \
+li_3_##TN assignNext_Con(li_3_##TN, li_4_##TN, x_i,top,TN) pre_schedule \
+/* } */\
+/* atomic { */\
+li_4_##TN FailCAS(li_4_##TN, li_2_##TN, Top,top,x_i,TN) pre_schedule \
+li_4_##TN SuccCAS(li_4_##TN, lis_1_##TN, Top,top,x_i,TN) lis_1_##TN  /*commit point*/ \
+/* sequential */ \
+lis_1_##TN assignNew_Seq(lis_1_##TN, lis_2_##TN, x_i,TN) lis_2_##TN \
+lis_2_##TN assignNextFromField_Seq(lis_2_##TN, lis_3_##TN, x_i,Top_seq,TN) lis_3_##TN \
+lis_3_##TN assignField(lis_3_##TN, li_exit_##TN, Top_seq,x_i,TN) li_exit_##TN \
+/* li_corr verifyCorrelation() li_exit */ \
+li_exit_##TN Clear_Push(li_exit_##TN, l_dispatch_##TN, TN) pre_schedule   /*local action - added to atomic block*/ \
+/* } */\
+
+#define CNS(TN) \
+/* Pop() */ \
+l_ready schedule(ld_1_##TN) ld_1_##TN \
+l_ready schedule(ld_3b_##TN) ld_3b_##TN \
+l_ready schedule(ld_3_##TN) ld_3_##TN \
+/*l_ready schedule(l_dispatch_##TN) l_dispatch_##TN */\
+/*atomic { */\
+ld_1_##TN assignFromGlbField(ld_1_##TN, lds_1a_##TN, top,Top,TN) lds_1a_##TN           /*first commit point*/ \
+lds_1a_##TN assignFromGlbField(lds_1a_##TN, ld_2_##TN, top_seq,Top_seq,TN) ld_2_##TN   /*"atomic action"*/ \
+ld_2_##TN isNull(ld_2_##TN, ld_4_##TN, top,TN) pre_schedule       /*local action - added to atomic block*/ \
+ld_2_##TN isNotNull(ld_2_##TN, ld_3b_##TN, top,TN) pre_schedule   /*local action - added to atomic block*/ \
+/*} */\
+ld_3b_##TN assignFromNextField(ld_3b_##TN, ld_3_##TN, next,top,TN) pre_schedule \
+/*atomic { */\
+ld_3_##TN FailCAS(ld_3_##TN, ld_1_##TN, Top,top,next,TN) pre_schedule \
+ld_3_##TN SuccCAS(ld_3_##TN, lds_1_##TN, Top,top,next,TN) lds_1_##TN      /*second commit point*/ \
+/* sequential */ \
+lds_1_##TN assignFromGlbField(lds_1_##TN, lds_2_##TN, top_seq,Top_seq,TN) lds_2_##TN \
+lds_2_##TN isNull(lds_2_##TN, ld_4_##TN, top_seq,TN) ld_4_##TN \
+lds_2_##TN isNotNull(lds_2_##TN, lds_3_##TN, top_seq,TN) lds_3_##TN \
+lds_3_##TN assignNextToField_Seq(lds_3_##TN, ld_4_##TN, Top_seq,top_seq,TN) ld_4_##TN \
+/* ld_corr verifyCorrelation() ld_4 */ \
+ld_4_##TN verifySamePopRes(ld_4_##TN, ld_exit_##TN, TN) ld_exit_##TN   /*lin test, local action added to block*/ \
+ld_exit_##TN Clear_Pop(ld_exit_##TN, l_dispatch_##TN, TN) pre_schedule /*local action - added to atomic block*/ \
+/*} */\
+
+
+
+
+/**********************    Thread Creation **********************/
+
+//producer
+#define CREATE_P(TN) \
+/*%thread producer_##TN { */\
+l_dispatch_##TN skip(l_dispatch_##TN, li_1_##TN) li_1_##TN \
+ \
+PRD(TN) \
+ \
+/*}*/ \
+
+//consumer
+#define CREATE_C(TN) \
+/*%thread consumer_##TN { */\
+l_dispatch_##TN skip(l_dispatch_##TN, ld_1_##TN) ld_1_##TN \
+ \
+CNS(TN) \
+ \
+/*}*/ \
+
+//general client
+#define CREATE_G(TN) \
+/*%thread general_##TN { */\
+/*nondeterministic choice of transaction*/ \
+l_ready schedule(l_dispatch_##TN) l_dispatch_##TN \
+l_dispatch_##TN skip(l_dispatch_##TN, li_1_##TN) li_1_##TN \
+l_dispatch_##TN skip(l_dispatch_##TN, ld_1_##TN) ld_1_##TN \
+ \
+PRD(TN) \
+ \
+CNS(TN) \
+ \
+/*}*/ \
+
+//create producer types
+#if(0 < KNUM)
+CREATE_P(p1)
+#endif
+
+#if(1 < KNUM)
+CREATE_P(p2)
+#endif
+
+#if(2 < KNUM)
+CREATE_P(p3)
+#endif
+
+#if(3 < KNUM)
+CREATE_P(p4)
+#endif
+
+//create consumer types
+#if(0 < KNUM)
+CREATE_C(c1)
+#endif
+
+#if(1 < KNUM)
+CREATE_C(c2)
+#endif
+
+#if(2 < KNUM)
+CREATE_C(c3)
+#endif
+
+#if(3 < KNUM)
+CREATE_C(c4)
+#endif
+
+//create general types
+#if(0 < GNUM)
+CREATE_G(g1)
+#endif
+
+#if(1 < GNUM)
+CREATE_G(g2)
+#endif
+
+#if(2 < GNUM)
+CREATE_G(g3)
+#endif
+
+#if(3 < GNUM)
+CREATE_G(g4)
+#endif
+
+//%%

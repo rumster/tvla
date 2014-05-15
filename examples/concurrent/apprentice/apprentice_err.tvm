@@ -1,0 +1,68 @@
+/***
+* apprentice_err.tvm
+* solution for Moore's apprentice challenge
+* errornous version in which Jobs are not synchronizing
+***/
+
+#define REACH
+
+/*********************** Sets ******************************/
+%s FieldsAndParameters { counter, prevCounter, temp, container, job, objRef }
+%s Globals { aLock } 
+
+/**************** Predicates **************/
+#include "apprentice_pred.tvm"
+
+%%
+/********************* Actions *******************/
+#include "apprentice_stat.tvm"
+
+
+%action verifyProperty() { 
+    %p  !property_occured() 
+    %message (!(A(c,v_1,v_2) rv[prevCounter](c,v_1) & rv[counter](c,v_2) -> (successor(v_1,v_2) | v_1 == v_2))) -> "violation"
+}
+
+/**************** Program *********************/
+
+%%
+
+/***********************************************/
+/**************  Threads ****************/
+%thread main {
+    gl_1 newContainer(container) gl_2
+    atomic {
+    gl_2 assignNull(job) gl_3
+    gl_3 newJob(job) gl_4
+    }
+    gl_4 assignField(job,objRef,container) gl_5
+    gl_5 start(job) gl_2
+    //gl_5 start(job) gl_exit
+    //gl_exit skip() gl_exit
+}
+
+
+%thread job {
+    //jl_1 blockLock(objRef) jl_1                 // lock(objRef)
+    //jl_1 succLock(objRef) jl_2
+    jl_1 skip() jl_2
+    atomic {
+    jl_2 assignNull(temp) jl_3
+    jl_3 getSuccessor(temp,objRef,counter) jl_4
+    }
+    atomic {
+    jl_4 assignFieldNull(objRef,prevCounter) jl_5
+    jl_5 assignFieldFromField(objRef,prevCounter,counter) jl_6
+    jl_6 assignFieldNull(objRef,counter) jl_7
+    jl_7 assignField(objRef,counter,temp) jl_8
+    }
+    jl_8 assignNull(temp) jl_2
+    
+    //jl_9 unlock(objRef) jl_1                    // unlock(objRef)
+    
+}
+
+%%
+/***********************************************/
+/**************  Claims        ****************/
+verifyProperty()

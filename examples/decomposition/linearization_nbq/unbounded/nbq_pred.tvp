@@ -1,0 +1,112 @@
+/***********************************************************
+* nbq_pred.tvm
+***********************************************************/
+
+// Make sure there are alwasya plenty of threads...
+// %r A(v1,v2,v3) !(isthread(v1) & isthread(v2) & isthread(v3) & v1!=v2 & v1!=v3 & v2 != v3) ==> 0
+// Hack for many threads
+%p alien(v) nonabs
+%r A(v) !alien(v) ==> 0
+
+
+%p tr_scheduled(v) unique
+foreach (loc in locations) {
+  %p at[loc](thread)
+  %r at[loc](v) ==> isthread(v)
+  %r !isthread(v) ==> !at[loc](v)
+}
+
+foreach (tname in Threads) {
+  %p tname(v) unique
+}
+
+foreach (tn1 in Threads) {
+	foreach (tn2 in Threads-{tn1}) {
+  		%r tn1(v) ==> !tn2(v)
+  	}
+}
+
+%p t_(v)
+
+/**********************************************/
+/*************** Core Predicates **************/
+//pointer field fld of object o_1 points to object o_2.
+foreach (fld in NextFields) {
+    %p rv[fld](o_1, o_2) function acyclic
+	%r isthread(v) ==> !rv[fld](v, w)
+	%r isthread(w) ==> !rv[fld](v, w)
+	%r E(w) rv[fld](v, w) ==> !isthread(v)
+	%r E(v) rv[fld](v, w) ==> !isthread(w)
+}
+
+//referenced-by predicate for global variables (fields of queue ds)
+foreach (fld in QFields) {
+    %p r_by[fld](o) unique pointer
+	%r isthread(v) ==> !r_by[fld](v)
+	%r r_by[fld](v) ==> !isthread(v)
+}
+
+//referenced-by predicate for thread-local variables
+foreach (nm in Threads) {
+    foreach (fld in LocalFields) {
+        %p r_by[fld,nm](o) unique pointer
+		%r isthread(v) ==> !r_by[fld,nm](v)
+		%r r_by[fld,nm](v) ==> !isthread(v)
+    }
+}
+
+foreach (fld in LocalFields) {
+    %p r_by[fld,t_](o) 
+	%r isthread(v) ==> !r_by[fld,t_](v)
+	%r r_by[fld,t_](v) ==> !isthread(v)
+}
+
+//node v has different successors in the two heaps
+%p dnext(v)
+
+//node v appears only in the concurrent heap or only in the sequential heap.
+%p dnode(v)
+
+/*********************************************************/
+/*************** Instrumentation Predicates **************/
+
+%i rest(v) = !isthread(v) & !dnext(v) & !dnode(v)
+
+%i tc[n](v1,v2) = rv[n]*(v1,v2) reflexive transitive
+%r !tc[n](v_1, v_2) ==> !rv[n](v_1, v_2)
+%r !tc[n](v_1, v_2) ==> v_1 != v_2
+%r E(v_1) (tc[n](v_1, v_2) & tc[n](v_1, v_3) & !tc[n](v_2, v_3)) ==> tc[n](v_3, v_2)
+
+foreach (nm in Threads+{t_}) {
+      %i tNext[n,nm](v) = E(o_1) r_by[t,nm](o_1) & rv[n](o_1,v)      
+      %r r_by[t,nm](v) & tNext[n,nm](w) ==> rv[n](v,w)
+      //%r A(v) !r_by[t,nm](v) ==> !tNext[n,nm](w)
+	  %r tNext[n,nm](v) ==> !isthread(v)
+  	  %r isthread(v) ==> !tNext[n,nm](v)
+}
+
+%i r_out[n](v) = E(w) rv[n](v,w)
+%r !r_out[n](v) ==> !rv[n](v,w) 
+%r r_out[n](v1) & A(v) v==v2 | !rv[n](v1,v) ==> rv[n](v1,v2)
+
+/*
+%i r_in[n](v) = E(w) rv[n](w, v) nonabs
+%r !r_in[n](v) ==> !rv[n](w, v) 
+%r r_in[n](v1) & A(v) v==v2 | !rv[n](v, v1) ==> rv[n](v2,v1)
+*/
+
+%i is[n](v) = E(v_1,v_2) v_1 != v_2 & rv[n](v_1,v) & rv[n](v_2,v) nonabs
+%r !is[n](v) & rv[n](v_1, v) & v_1 != v_2 ==> !rv[n](v_2, v)
+
+foreach (var in {x_i}) {
+    %p is[var](v) nonabs 
+	foreach (tn1 in Threads+{t_}) {
+	  foreach (tn2 in (Threads+{t_}) - {tn1}) {
+		%r !is[var](v) & r_by[var, tn1](v) ==> !r_by[var, tn2](v)
+	  }
+	}
+}
+
+/*********************************************************/
+/*************** Consistency Rules **************/
+

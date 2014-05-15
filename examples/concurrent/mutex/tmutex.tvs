@@ -1,0 +1,11 @@
+#define UNBOUND_THREADS
+%t = { s_t(main) }
+%n = { u }
+%p = {
+    #ifdef UNBOUND_THREADS
+    sm = { s_t: 1/2  }
+    #endif
+    ready = { s_t }
+    is_lock = { u } 
+    rvalue[myLock] = { s_t -> u }
+}

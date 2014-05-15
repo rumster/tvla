@@ -1,0 +1,17 @@
+%n = {head, middle, tail, producers}
+%p = {
+  isThread = {producers}
+  at[pl_1] = {producer1, producer2}
+  sm = {producers:1/2, tail:1/2}
+  ready = {producers}
+  n = {head->middle:1/2, middle->middle:1/2, middle->tail:1/2}
+  global[S_Top] = {head}
+  global[S_tail] = {tail}
+
+  // instrumentation
+  r[S_Top,n] = {head, middle, tail}
+  r[S_tail,n] = {tail}
+//  t[n] = {head->head, head->middle, head->tail, middle->middle:1/2, middle->tail, tail->tail}
+  r_in[n] = {middle, tail}
+  r_out[n] = {head, middle}
+}

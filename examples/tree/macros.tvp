@@ -1,0 +1,3 @@
+
+#define CondAssign(cond,pred,result) pred = ((cond) ? \
+                                           (result) : (pred))

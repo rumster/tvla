@@ -1,0 +1,88 @@
+/***
+* intStack.tvm
+*
+*
+***/
+
+/*********************** Property Condition ******************************/
+
+#define PROPERTY_COND (E(tai,tad) at[li_end](tai) & at[ld_end](tad)) & (E(x) is_lock(x) &  \
+                        !rg[top](x) & !r_by[x_d](x))
+#define PROPERTY_FOCUS { E(y) runnable(tr) & rvalue[x_i](tr,y) }
+#define PROPERTY_MESSAGE "item may be lost"
+
+/*********************** Macros ******************************/
+//#define RECORD_RW
+#define RBY
+#define REACH
+#include "../con_macro.tvm"
+
+
+/*********************** Sets ******************************/
+
+%s FieldsAndParameters { x_i,x_d, newTop, next }
+%s Globals { top } 
+
+/**************** Predicates **************/
+
+#include "int_pred.tvm"
+#include "../con_pred.tvm"
+#include "../shape_pred.tvm"
+
+%%
+/********************* Actions *******************/
+
+#include "../con_stat.tvm"
+#include "../shape_stat.tvm"
+
+%action verifyProperty() { 
+    %f  PROPERTY_FOCUS
+    %p  !property_occured() 
+    %message PROPERTY_COND -> PROPERTY_MESSAGE
+}
+
+
+/**************** Program *********************/
+
+%%
+
+
+/***********************************************/
+/************** Pusher Threads ****************/
+%thread pusher {
+//starti skip() li_1                               // while (...)
+//starti skip() li_end                             // 
+li_1 assignNew(x_i) li_2                        // x_i = new Item()
+li_2 isGlobalNull(top) li_3                     // if (top == null)
+li_3 assignGlobal(top,x_i) li_7                 //    top  = x_i
+li_2 isGlobalNotNull(top) li_4                  // else
+li_4 updateNextFromGlobal(x_i,top) li_5         //    x_i.next = top
+atomic {
+    li_5 killGlobal(top) li_6                       //    top = null; top = x_i
+    li_6 assignGlobal(top,x_i) li_7                 //
+}
+li_7 assignNull(x_i) li_end                       // exit scope, x_i becomes null
+}
+
+/***********************************************/
+/************** Popper Threads ****************/
+%thread popper {
+//startd skip() ld_1                               // while (....)
+//startd skip() ld_end                             //
+ld_1 isGlobalNotNull(top) ld_2                  // if (top != null)
+ld_1 isGlobalNull(top) ld_end                   // otherwise goto ld_end
+ld_2 selectGlobalNext(newTop,top) ld_3          // newTop = top.next
+ld_3 assignFromGlobal(x_d,top) ld_4             // x_d = top
+ld_4 isNotNull(newTop) ld_5                     // if (newTop != null) {
+atomic {
+    ld_5 killGlobal(top) ld_6                       //    top = null ;
+    ld_6 assignGlobal(top,newTop) ld_8              //    top = newTop }
+}
+ld_4 isNull(newTop) ld_7                        // else {
+ld_7 assignNullToGlobal(top) ld_8               //    top = null } (ld_8)
+ld_8 assignNextFieldNull(x_d) ld_9              // x_d = null
+ld_9 assignNull(newTop) ld_end                   // newTop = null
+}
+
+%%
+verifyProperty()
