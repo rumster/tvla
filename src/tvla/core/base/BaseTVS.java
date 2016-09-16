@@ -147,10 +147,12 @@ public abstract class BaseTVS extends HighLevelTVS implements
 	 */
 	public BaseTVS(TVS other) {
 		this();
-		BaseTVS otherBase = (BaseTVS) other;
-		// Copy the predicate values
 
+		BaseTVS otherBase = (BaseTVS) other;
+
+		// Copy the predicate values
 		U = otherBase.U.copy();
+
 		this.vocabulary = otherBase.vocabulary;
 
 		for (Predicate predicate : otherBase.predicates.keySet()) {
@@ -555,6 +557,7 @@ public abstract class BaseTVS extends HighLevelTVS implements
 	public final Node mergeNodes(Collection<Node> toMerge) {
 		clearCanonic();
 		Node result = MergeNodes.getInstance().mergeNodes(this, toMerge);
+
 		return result;
 	}
 
@@ -684,6 +687,8 @@ public abstract class BaseTVS extends HighLevelTVS implements
 	 * @author: igor Return increments between the original snapshot and the
 	 *          current structure.
 	 */
+	public NodeValueMap LastIncrements = null;
+
 	public NodeValueMap getIncrementalUpdates() {
 		if (!EnableIncrements)
 			return null;
@@ -692,6 +697,8 @@ public abstract class BaseTVS extends HighLevelTVS implements
 			return null;
 
 		NodeValueMap increments = calcIncrements(originalStructure);
+		LastIncrements = increments;
+
 		if (increments == null)
 			return null;
 
@@ -1017,6 +1024,8 @@ public abstract class BaseTVS extends HighLevelTVS implements
 			increments.fastPut(pn.predicate, new NodeValue(pn.tuple, val,
 					pn.added));
 		}
+
+		increments.nodesMap = origMapping;
 
 		return increments;
 	}

@@ -23,6 +23,8 @@ import tvla.core.StoresCanonicMaps;
 import tvla.core.TVS;
 import tvla.core.TVSSet;
 import tvla.core.base.BaseBlur;
+import tvla.core.base.BaseHighLevelTVS;
+import tvla.core.base.BaseTVS;
 import tvla.core.base.PredicateEvaluator;
 import tvla.logic.Kleene;
 import tvla.predicates.Predicate;
@@ -35,7 +37,7 @@ import tvla.util.Timer;
 public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet {
 	/** Maps sets of canonic names to structures.
 	 */
-	protected Map<Set<Canonic>,HighLevelTVS> universeToStructure = new HashMap<Set<Canonic>,HighLevelTVS>();
+	protected Map<Set<Canonic>, HighLevelTVS> universeToStructure = new HashMap<Set<Canonic>,HighLevelTVS>();
 
 	protected static int foundInCache = 0;
 
@@ -47,7 +49,7 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
 	 * @return The difference between the updated set
 	 * and the old set or null if there is no difference.
 	 */
-	
+
 	public static int countNewStructures = 0;
 	public static int countMergedStructures = 0;
 
@@ -91,9 +93,10 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
     
     		// ADDED
     		Set<Canonic> canonicNames = getCanonicSetForBlurred(newStructure);
-    		
-            HighLevelTVS singleStructure = universeToStructure.get(canonicNames);
-    		if (singleStructure == null) {
+
+				HighLevelTVS singleStructure = universeToStructure.get(canonicNames);
+
+				if (singleStructure == null) {
     			countNewStructures++;
     			addStructure(newStructure, canonicNames);
     			return (HighLevelTVS) newStructure;
@@ -107,9 +110,12 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
     
     			HighLevelTVS singleStructureOrig = singleStructure;
     			singleStructure = singleStructure.copy(); // Instead of copying in copy
-    			
-    			// Callng the following method causes the the canonic maps of both structure
-    			// to be constructed, which has to be done beore calling 'mergeStructures'.
+
+					BaseTVS baseTo = (BaseTVS)singleStructure;
+					BaseTVS baseFrom = (BaseTVS)newStructure;
+
+    			// Calling the following method causes the the canonic maps of both structure
+    			// to be constructed, which has to be done before calling 'mergeStructures'.
     			boolean conditionHolds = mergeCondition(singleStructure, newStructure);
     			assert conditionHolds;
     			boolean change = mergeStructures(singleStructure, newStructure);
@@ -120,13 +126,13 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
     			} else {
     				singleStructure = singleStructureOrig;
     			}
-    			
+
     			addStructure(singleStructure, canonicNames);
     			return change ? singleStructure : null;
     		}
         } finally {
-            timer.stop();
-        }
+				timer.stop();
+			}
 	}
 
 	protected void addStructure(HighLevelTVS structure, Set<Canonic> canonicNames) {
@@ -237,7 +243,7 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
 		return canonicNames;
 	}
 	
-	protected static Set<Canonic> getCanonicSetForBlurred(TVS structure) {
+	public static Set<Canonic> getCanonicSetForBlurred(TVS structure) {
 		if (!(structure instanceof StoresCanonicMaps)) {
 			return makeCanonicSet(structure);
 		}
@@ -249,24 +255,29 @@ public final class GenericHashPartialJoinTVSSet extends GenericPartialJoinTVSSet
 		
 		Set<Canonic> canonicNames = new HashSet<Canonic>(structure.nodes().size());
 		
-        Canonic nullaryCanonic = new Canonic(structure.getVocabulary().nullaryRel().size());
-        for (Predicate predicate : structure.getVocabulary().nullaryRel()) {
+		Canonic nullaryCanonic = new Canonic(structure.getVocabulary().nullaryRel().size());
+
+		for (Predicate predicate : structure.getVocabulary().nullaryRel()) {
 			Kleene value = structure.eval(predicate);
 			nullaryCanonic.add(value);
 		}
+
 		canonicNames.add(nullaryCanonic);
 		canonicNames.addAll(invCanonicMap.keySet());
 		return canonicNames;
 	}
 	
 	protected static Set<Canonic> makeCanonicSet(TVS structure) {		
-        Canonic nullaryCanonic = new Canonic(structure.getVocabulary().nullaryRel().size());
-        for (Predicate predicate : structure.getVocabulary().nullaryRel()) {
+		Canonic nullaryCanonic = new Canonic(structure.getVocabulary().nullaryRel().size());
+
+		for (Predicate predicate : structure.getVocabulary().nullaryRel()) {
 			Kleene value = structure.eval(predicate);
 			nullaryCanonic.add(value);
 		}
-        Set<Canonic> canonicNames = GenericBlur.defaultGenericBlur.makeCanonicSet(structure);
+
+		Set<Canonic> canonicNames = GenericBlur.defaultGenericBlur.makeCanonicSet(structure);
 		canonicNames.add(nullaryCanonic);
+
 		return canonicNames;
 	}
 

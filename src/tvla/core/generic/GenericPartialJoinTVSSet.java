@@ -65,7 +65,7 @@ public class GenericPartialJoinTVSSet extends GenericSingleTVSSet {
 	public boolean mergeWith(HighLevelTVS newStructure, Collection<Pair<HighLevelTVS, HighLevelTVS>> mergedWith) {
         assert shareCount == 0;
 
-        AnalysisStatus.getActiveStatus().startTimer(AnalysisStatus.BLUR_TIME);
+    AnalysisStatus.getActiveStatus().startTimer(AnalysisStatus.BLUR_TIME);
 		newStructure.blur();
 		AnalysisStatus.getActiveStatus().stopTimer(AnalysisStatus.BLUR_TIME);
 
@@ -110,15 +110,16 @@ public class GenericPartialJoinTVSSet extends GenericSingleTVSSet {
 			}
 		}
 		
-        for (Predicate predicate : unaryNonRel) {
-            change = mergeStructures(singleStructure, newStructure, predicate) || change;
-        }           
-        for (Predicate predicate : binary) {
-            change = mergeStructures(singleStructure, newStructure, predicate) || change;
-        }
+    for (Predicate predicate : unaryNonRel) {
+        change = mergeStructures(singleStructure, newStructure, predicate) || change;
+    }
+    for (Predicate predicate : binary) {
+        change = mergeStructures(singleStructure, newStructure, predicate) || change;
+    }
         
-        recomputeStructureGroup(singleStructure, newStructure);
-		return change;
+    recomputeStructureGroup(singleStructure, newStructure);
+
+    return change;
 	}
 
     protected boolean mergeStructures(TVS singleStructure, TVS newStructure, Predicate predicate) {

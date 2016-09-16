@@ -2,30 +2,29 @@ package tvla.analysis;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.prefs.PreferenceChangeEvent;
 
-import tvla.core.Constraints;
-import tvla.core.HighLevelTVS;
-import tvla.core.TVS;
-import tvla.core.TVSFactory;
+import junit.framework.Assert;
+import org.omg.CORBA.Environment;
+import tvla.core.generic.GenericHashPartialJoinTVSSet;
+import tvla.termination.TerminationVerifier;
+import tvla.termination.RTNode;
+import tvla.core.*;
 import tvla.core.generic.BoundedStructEmbeddingTest;
-import tvla.core.meet.Meet;
 import tvla.logic.Kleene;
 import tvla.predicates.Predicate;
 import tvla.predicates.Vocabulary;
+import tvla.termination.TerminationAnalysisInput;
 import tvla.transitionSystem.Action;
 import tvla.transitionSystem.AnalysisGraph;
 import tvla.transitionSystem.Location;
-import tvla.util.HashMapFactory;
-import tvla.util.Logger;
-import tvla.util.Pair;
-import tvla.util.ProgramProperties;
-import tvla.util.StringUtils;
+import tvla.util.*;
+import tvla.util.Timer;
+import tvla.util.graph.Graph;
+import tvla.util.graph.GraphFactory;
+import tvla.util.graph.GraphUtils;
 
 /**
  * This class represents a engine that applies a fixed-point iterative algorithm
@@ -43,6 +42,7 @@ public class IntraProcEngine extends Engine {
 	protected boolean maintainTransitionRelation = false;
 	protected boolean postHocTransitionRelation = false;
 	protected boolean dynamicTransitionRelation = false;
+	protected boolean checkTermination = false;
 
 	/**
 	 * Constructs and initializes an intra-procedural engine.
@@ -51,98 +51,97 @@ public class IntraProcEngine extends Engine {
 		super();
 	}
 
-	class StructureInGraph extends Pair<Location, HighLevelTVS> implements
-			Comparable<Pair<Location, HighLevelTVS>> {
-		public StructureInGraph(Location l, HighLevelTVS s) {
-			super(l, s);
-		}
-
-		public int compareTo(Pair<Location, HighLevelTVS> o) {
-			StructureInGraph other = (StructureInGraph) o;
-			int i = second.compareTo(other.second);
-			if (i != 0)
-				return i;
-			i = first.compareTo(other.first);
-			if (i != 0)
-				return i;
-			return second.hashCode() - other.second.hashCode();
-		}
-	};
-
 	public void evaluate(Collection<HighLevelTVS> initial) {
-		// List<Pair<HighLevelTVS, HighLevelTVS>> mergeMap = new
-		// ArrayList<Pair<HighLevelTVS, HighLevelTVS>>(2); // used to construct
-		// the transition relation
-
 		this.cfg = AnalysisGraph.activeGraph;
 		init();
 		status.numberOfStructures = initial.size();
+
+		Graph transitionGraph = GraphFactory.newGraph();
+		List<RTNode> entryNodes = new ArrayList();
+		Map<Pair<Location, Set<Canonic>>, RTNode> nodes = new HashMap<>();
+		Map<Node, List<Node>> embeddingFunction = HashMapFactory.make();
+		Map<HighLevelTVS, Map<Node, Node>> nodesTransition = new HashMap<>();
+		int nestingDepth = 1;
 
 		// Joining the input structures and putting them in the entry location.
 		Location entryLocation = cfg.getEntryLocation();
 		cfg.storeStructures(entryLocation, initial);
 
-		// if (maintainTransitionRelation) {
-		// Iterator<HighLevelTVS> structItr = entryLocation.allStructures();
-		// while (structItr.hasNext()) {
-		// TVS tvs = structItr.next();
-		// ((IntraProcTransitionRelation)
-		// transitionRelation).addAbstractState(entryLocation,tvs);
-		// }
-		// }
-
 		SortedSet<Location> workSet = new TreeSet<Location>();
 		workSet.add(cfg.getEntryLocation());
 		OUTER: while (!workSet.isEmpty()) {
 			++numberOfIterations;
-			maxWorkSetSize = maxWorkSetSize < workSet.size() ? workSet.size()
-					: maxWorkSetSize;
+			maxWorkSetSize = maxWorkSetSize < workSet.size() ? workSet.size() : maxWorkSetSize;
 			averageWorkSetSize += workSet.size();
 
 			Iterator<Location> first = workSet.iterator();
 			currentLocation = first.next();
+			Location currentLocationLoc = (Location)currentLocation;
+
 			first.remove();
 			if (!AnalysisStatus.terse)
 				System.err.print("\r" + currentLocation.label() + "    ");
 
-			Collection<HighLevelTVS> unprocessed = ((Location) currentLocation)
-					.removeUnprocessed();
-			for (int actionIt = 0; actionIt < ((Location) currentLocation)
-					.getActions().size(); actionIt++) {
-				currentAction = ((Location) currentLocation)
-						.getAction(actionIt);
-				String target = ((Location) currentLocation)
-						.getTarget(actionIt);
+			Collection<HighLevelTVS> unprocessed = currentLocationLoc.removeUnprocessed();
+
+			for (int actionIt = 0; actionIt < currentLocationLoc.getActions().size(); actionIt++) {
+
+				currentAction = currentLocationLoc.getAction(actionIt);
+				String target = currentLocationLoc.getTarget(actionIt);
+
 				Location nextLocation = cfg.getLocationByLabel(target);
 
-				for (Iterator<HighLevelTVS> structureIt = unprocessed
-						.iterator(); structureIt.hasNext();) {
+				for (Iterator<HighLevelTVS> structureIt = unprocessed.iterator(); structureIt.hasNext();) {
+
 					HighLevelTVS structure = structureIt.next();
 
-					if (actionIt == ((Location) currentLocation).getActions()
-							.size() - 1)
+					RTNode curr = null;
+					if (checkTermination) {
+						Set<Canonic> canonic = GenericHashPartialJoinTVSSet.getCanonicSetForBlurred(structure);
+						Pair<Location, Set<Canonic>> currKey = new Pair<Location, Set<Canonic>>(currentLocationLoc, canonic);
+
+						curr = nodes.getOrDefault(currKey, null);
+						if (curr == null) {
+							curr = new RTNode(currentLocationLoc, structure);
+							nodes.putIfAbsent(currKey, curr);
+							transitionGraph.addNode(curr);
+							if (currentLocationLoc == cfg.getEntryLocation())
+								entryNodes.add(curr);
+
+							nestingDepth = Math.max(curr.LoopIndex, nestingDepth);
+						}
+					}
+
+					if (actionIt == ((Location) currentLocation).getActions().size() - 1) {
 						structureIt.remove();
-					Map<HighLevelTVS, Set<String>> messages = HashMapFactory
-							.make(0);
-					Collection<HighLevelTVS> results = apply(currentAction,
-							structure, currentLocation.label(), messages);
+					}
+
+					Map<HighLevelTVS, Set<String>> messages = HashMapFactory.make(0);
+					nodesTransition.clear();
+					Collection<HighLevelTVS> results = apply(currentAction, structure, currentLocation.label(), messages, nodesTransition);
+
 					// Replay the last action to show the user details of the
 					// failure.
-					if (Engine.coerceAfterUpdateFailed
-							|| (!messages.isEmpty() && hasPostMessages(messages))) {
+					if (Engine.coerceAfterUpdateFailed || (!messages.isEmpty() && hasPostMessages(messages))) {
 						boolean debug = AnalysisStatus.debug;
 						AnalysisStatus.debug = true;
-						apply(currentAction, structure,
-								currentLocation.label(), messages);
+						apply(currentAction, structure, currentLocation.label(), messages, null);
 						AnalysisStatus.debug = debug;
 					}
-					status.numberOfMessages += ((Location) currentLocation)
-							.addMessages(messages);
 
-					// if (!maintainTransitionRelation) {
+					status.numberOfMessages += ((Location) currentLocation).addMessages(messages);
+
 					for (HighLevelTVS result : results) {
+						HighLevelTVS resultOrig = null, resultCopy = null;
+
+						if (checkTermination) {
+							resultOrig = result;
+							resultCopy = result.copy();
+						}
+
 						status.startTimer(AnalysisStatus.JOIN_TIME);
-						boolean needJoin = (nextLocation.join(result) != null);
+						HighLevelTVS structureInTarget = nextLocation.join(result);
+						boolean needJoin = structureInTarget != null;
 						status.stopTimer(AnalysisStatus.JOIN_TIME);
 
 						if (needJoin) {
@@ -152,45 +151,66 @@ public class IntraProcEngine extends Engine {
 							if (status.shouldFinishAnalysis())
 								break OUTER;
 						}
+
+						if (checkTermination) {
+							embeddingFunction.clear();
+							if (structureInTarget != null) {
+								result = structureInTarget;
+								boolean b = BoundedStructEmbeddingTest.isEmbedded(resultCopy, structureInTarget, embeddingFunction);
+								assert b;
+							} else {
+								for (HighLevelTVS s : nextLocation.structures) {
+									if (BoundedStructEmbeddingTest.isEmbedded(resultCopy, s, embeddingFunction)) {
+										result = s;
+										break;
+									}
+								}
+							}
+
+							Set<Canonic> canonic = GenericHashPartialJoinTVSSet.getCanonicSetForBlurred(result);
+							Pair<Location, Set<Canonic>> nextKey = new Pair<Location, Set<Canonic>>(nextLocation, canonic);
+							RTNode next = nodes.getOrDefault(nextKey, null);
+							if (next == null) {
+								next = new RTNode(nextLocation, result);
+								nodes.putIfAbsent(nextKey, next);
+								transitionGraph.addNode(next);
+								if (currentLocationLoc == cfg.getEntryLocation())
+									entryNodes.add(next);
+
+								nestingDepth = Math.max(next.LoopIndex, nestingDepth);
+							}
+
+							Map<Node, Node> nodesMap = nodesTransition.getOrDefault(resultOrig, null);
+							Map<Node, List<Node>> regionTransition = new HashMap<>();
+
+							if (nodesMap != null) {
+								for (Map.Entry<Node, Node> entry : nodesMap.entrySet()) {
+									regionTransition.putIfAbsent(entry.getValue(), new ArrayList<Node>());
+									regionTransition.get(entry.getValue()).addAll(embeddingFunction.get(entry.getKey()));
+								}
+							} else {
+								assert embeddingFunction.size() > 0;
+								regionTransition = new HashMap<>(embeddingFunction);
+							}
+
+							// skip allocations
+							//regionTransition.keySet().retainAll(tvs.nodes());
+
+							//if (filter != null)
+							//regionTransition.keySet().retainAll(filter);
+
+							if (transitionGraph.containsEdge(curr, next)) {
+								Map<Node, List<Node>> regionTransition2 = (Map<Node, List<Node>>)transitionGraph.getEdge(curr, next).getLabel();
+
+								assert regionTransition.equals(regionTransition2);
+								Assert.assertTrue(regionTransition.equals(regionTransition2));
+							}
+							else {
+								transitionGraph.addEdge(curr, next, regionTransition);
+								next.UpdateSubData(regionTransition);
+							}
+						}
 					}
-					// }
-					// else { // transition relation stuff
-					// if (!messages.isEmpty())
-					// ((IntraProcTransitionRelation) transitionRelation).
-					// addMessage(currentLocation, structure, currentAction,
-					// messages);
-					//
-					// for (HighLevelTVS result : results) {
-					// mergeMap.clear();
-					// status.startTimer(AnalysisStatus.JOIN_TIME);
-					// boolean changedState =
-					// nextLocation.join(result,mergeMap);
-					// status.stopTimer(AnalysisStatus.JOIN_TIME);
-					//
-					// updateTransitionRelation(
-					// (Location) currentLocation,
-					// currentAction,
-					// nextLocation,
-					// structure,
-					// result,
-					// mergeMap,
-					// changedState);
-					//
-					// if (changedState) {
-					// // Noam: The if is commented out in order to be
-					// compatible with the version
-					// // that does not create a transition relation
-					// // if (resultInserted)
-					// ++status.numberOfStructures;
-					//
-					// workSet.add(nextLocation);
-					//
-					// updateStatus();
-					// if (status.shouldFinishAnalysis())
-					// break OUTER;
-					// }
-					// }
-					// }
 
 					if (status.shouldFinishAnalysis())
 						break OUTER;
@@ -200,28 +220,42 @@ public class IntraProcEngine extends Engine {
 			}
 		}
 
-		if (ProgramProperties.getBooleanProperty(
-				"tvla.engine.checkMessagesAtFixpoint", false))
+		if (ProgramProperties.getBooleanProperty("tvla.engine.checkMessagesAtFixpoint", false))
 			evaluateMessagesAtFixpoint();
+
 		status.stopTimer(AnalysisStatus.TOTAL_ANALYSIS_TIME);
 
 		if (maintainTransitionRelation) {
 			postHocTransitionRelation();
 		}
 
+		if (checkTermination) {
+			// Old version
+			//TerminationAnalysisInput terminationAnalysisInput = ProduceTerminationAnalysisData();
+			//TerminationVerifier.defaultInstance.Analyze(terminationAnalysisInput);
+
+			// TODO Delete
+			//System.out.println("The Graphs are " + areLike(terminationAnalysisInput.RegionTransitionGraph, transitionGraph));
+
+			String dotOutDir = ProgramProperties.getProperty("tvla.td.dot", null);
+			TerminationAnalysisInput terminationAnalysisInput = new TerminationAnalysisInput(transitionGraph, entryNodes, nestingDepth, dotOutDir);
+			TerminationVerifier.defaultInstance.Analyze(terminationAnalysisInput);
+		}
+
 		printAnalysisInfo();
+
 		String stablePredStr = ProgramProperties.getProperty(
-				"tvla.stableSuffixAnalysis", "");
+						"tvla.stableSuffixAnalysis", "");
 		if (!stablePredStr.equals("")) {
 			Predicate marker = Vocabulary.getPredicateByName(stablePredStr);
 			if (marker == null)
 				throw new Error(
-						"Predicate "
-								+ stablePredStr
-								+ " specified in property tvla.stableSuffixAnalysis was not specified!");
+								"Predicate "
+												+ stablePredStr
+												+ " specified in property tvla.stableSuffixAnalysis was not specified!");
 			cfg.constructIncoming();
 			Collection<Location> markedLocations = cfg.findLatestLocations(
-					marker, Kleene.trueKleene);
+							marker, Kleene.trueKleene);
 			try {
 				FileWriter fw = new FileWriter("stable_suffix.txt");
 				for (Location loc : markedLocations)
@@ -233,12 +267,18 @@ public class IntraProcEngine extends Engine {
 		}
 	}
 
+	private boolean areLike(Graph a, Graph b) {
+		boolean result = a.getNumberOfNodes() == b.getNumberOfNodes() && a.getNumberOfEdges() == b.getNumberOfEdges();
+
+		return result;
+	}
+
 	protected void postHocTransitionRelation() {
 		// First, create all transition relation nodes.
 		for (Location loc : cfg.getLocations()) {
 			for (TVS tvs : loc.structures) {
 				((IntraProcTransitionRelation) transitionRelation)
-						.addAbstractState(loc, tvs);
+								.addAbstractState(loc, tvs);
 			}
 		}
 
@@ -246,22 +286,22 @@ public class IntraProcEngine extends Engine {
 		for (Location currentLocation : cfg.getLocations()) {
 			for (HighLevelTVS tvs : currentLocation.structures) {
 				for (int actionIt = 0; actionIt < ((Location) currentLocation)
-						.getActions().size(); actionIt++) {
+								.getActions().size(); actionIt++) {
 					currentAction = ((Location) currentLocation)
-							.getAction(actionIt);
+									.getAction(actionIt);
 					String target = ((Location) currentLocation)
-							.getTarget(actionIt);
+									.getTarget(actionIt);
 					Location nextLocation = cfg.getLocationByLabel(target);
 
 					Map<HighLevelTVS, Set<String>> messages = HashMapFactory
-							.make(0);
+									.make(0);
 					Collection<HighLevelTVS> results = apply(currentAction,
-							tvs, currentLocation.label(), messages);
+									tvs, currentLocation.label(), messages, null);
 
 					if (!messages.isEmpty())
 						((IntraProcTransitionRelation) transitionRelation)
-								.addMessage(currentLocation, tvs,
-										currentAction, messages);
+										.addMessage(currentLocation, tvs,
+														currentAction, messages);
 
 					for (HighLevelTVS resultTVS : results) {
 						// Now, find all structures stored in 'nextLocation'
@@ -273,13 +313,12 @@ public class IntraProcEngine extends Engine {
 							// does not take advantage of the fact that both
 							// structures are bounded.
 							if (// Meet.isEmbedded(resultTVS, tvsInTarget)
-							BoundedStructEmbeddingTest.isEmbedded(resultTVS,
-									tvsInTarget)) {
+											BoundedStructEmbeddingTest.isEmbedded(resultTVS, tvsInTarget, null)) {
 								++numEmbeddings;
 								((IntraProcTransitionRelation) transitionRelation)
-										.addAbstractTransition(currentLocation,
-												tvs, nextLocation, tvsInTarget,
-												currentAction);
+												.addAbstractTransition(currentLocation,
+																tvs, nextLocation, tvsInTarget,
+																currentAction);
 							}
 						}
 						assert numEmbeddings > 0;
@@ -287,6 +326,138 @@ public class IntraProcEngine extends Engine {
 				}
 			}
 		}
+	}
+
+	protected TerminationAnalysisInput ProduceTerminationAnalysisData() {
+
+		Graph transitionGraph = GraphFactory.newGraph();
+		List<RTNode> entryNodes = new ArrayList();
+		Map<Pair<TVS, Location>, RTNode> nodes = new HashMap<>();
+		Map<Node, List<Node>> embeddingFunction = HashMapFactory.make();
+		Map<HighLevelTVS, Map<Node, Node>> nodesTransition = new HashMap<>();
+		Map<HighLevelTVS, Set<String>> messages = HashMapFactory.make(0);
+
+		int nestingDepth = 1;
+
+		// First, create all transition relation nodes.
+		for (Location loc : cfg.getLocations()) {
+
+			// TODO more generic
+			int loopIndex = Character.isDigit(loc.label().charAt(1)) ? Integer.parseInt(loc.label().substring(1, 2)) : 1;
+
+			for (TVS tvs : loc.structures) {
+
+				Pair<TVS, Location> pair = new Pair<TVS, Location>(tvs, loc);
+				RTNode node = new RTNode(pair);
+				nodes.put(pair, node);
+
+				if (loc == cfg.getEntryLocation())
+					entryNodes.add(node);
+
+				node.LoopIndex = loopIndex;
+				transitionGraph.addNode(node);
+
+				nestingDepth = Math.max(nestingDepth, loopIndex);
+			}
+		}
+
+		// Second, create all transition relation edges.
+		for (Location currentLocation : cfg.getLocations()) {
+      int i = 0;
+			for (HighLevelTVS tvs : currentLocation.structures) {
+        i++;
+				RTNode curr = nodes.get(new Pair<TVS, Location>(tvs, currentLocation));
+
+				// interprocedural
+				List<Node> filter = null;//FilterNodes(tvs);
+
+				for (int actionIt = 0; actionIt < currentLocation.getActions().size(); actionIt++) {
+
+					currentAction = currentLocation.getAction(actionIt);
+					String target = currentLocation.getTarget(actionIt);
+					Location nextLocation = cfg.getLocationByLabel(target);
+
+					nodesTransition.clear();
+					messages.clear();
+
+					Collection<HighLevelTVS> results = apply(currentAction, tvs, currentLocation.label(), messages, nodesTransition);
+
+					for (HighLevelTVS resultTVS : results) {
+						int numEmbeddings = 0;
+
+						for (HighLevelTVS tvsInTarget : nextLocation.structures) {
+							if (BoundedStructEmbeddingTest.isEmbedded(resultTVS, tvsInTarget, embeddingFunction)) {
+
+								RTNode next = nodes.get(new Pair<TVS, Location>(tvsInTarget, nextLocation));
+
+								Map<Node, Node> nodesMap = nodesTransition.getOrDefault(resultTVS, null);
+								Map<Node, List<Node>> regionTransition = new HashMap<>();
+
+								if (nodesMap != null) {
+									for (Map.Entry<Node, Node> entry : nodesMap.entrySet()) {
+										regionTransition.putIfAbsent(entry.getValue(), new ArrayList<Node>());
+
+										//HashSet<Node> hashSet = new HashSet<>(embeddingFunction.get(entry.getKey()));
+										//hashSet.addAll(regionTransition.get(entry.getValue()));
+
+										//regionTransition.get(entry.getValue()).clear();
+										//regionTransition.get(entry.getValue()).addAll(hashSet);
+										regionTransition.get(entry.getValue()).addAll(embeddingFunction.get(entry.getKey()));
+									}
+								} else {
+									assert embeddingFunction.size()  > 0;
+									regionTransition = new HashMap<>(embeddingFunction);
+								}
+
+								// skip allocations
+								regionTransition.keySet().retainAll(tvs.nodes());
+
+								if (filter != null)
+									regionTransition.keySet().retainAll(filter);
+
+								if (transitionGraph.containsEdge(curr, next)) {
+									Map<Node, List<Node>> regionTransition2 = (Map<Node, List<Node>>)transitionGraph.getEdge(curr, next).getLabel();
+									Assert.assertTrue(regionTransition.equals(regionTransition2));
+								}
+								else {
+									transitionGraph.addEdge(curr, next, regionTransition);
+									next.UpdateSubData(regionTransition);
+								}
+								++numEmbeddings;
+								break;
+							}
+
+							assert numEmbeddings > 0;
+						}
+					}
+				}
+			}
+		}
+
+		TerminationAnalysisInput result = new TerminationAnalysisInput(transitionGraph, entryNodes, nestingDepth, ProgramProperties.getProperty("tvla.td.dot", null));
+
+		return result;
+	}
+
+	private List<Node> FilterNodes(HighLevelTVS tvs) {
+
+		for (Predicate predicate : tvs.getVocabulary().unary()) {
+
+			if (predicate.name().equals("List")) {
+				List<Node> result = new ArrayList<>();
+
+				for (Node node : tvs.nodes()) {
+
+					if (tvs.eval(predicate, node) != Kleene.falseKleene) {
+						result.add(node);
+					}
+				}
+
+				return result;
+			}
+		}
+
+		return null;
 	}
 
 	public void evaluateMessagesAtFixpoint() {
@@ -305,7 +476,7 @@ public class IntraProcEngine extends Engine {
 				for (HighLevelTVS structure : loc.structures) {
 					Map<HighLevelTVS, Set<String>> messages = HashMapFactory
 							.make(0);
-					apply(currentAction, structure, loc.label(), messages);
+					apply(currentAction, structure, loc.label(), messages, null);
 					// Replay the last action to show the user details of the
 					// failure.
 					status.numberOfMessages += loc.addMessages(messages);
@@ -422,6 +593,9 @@ public class IntraProcEngine extends Engine {
 
 		maintainTransitionRelation = ProgramProperties.getBooleanProperty(
 				"tvla.tr.enabled", false);
+
+		checkTermination = ProgramProperties.getBooleanProperty(
+						"tvla.td.enabled", false);
 
 		if (maintainTransitionRelation) {
 			postHocTransitionRelation = ProgramProperties.getBooleanProperty(

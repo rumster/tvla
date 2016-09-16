@@ -2,6 +2,8 @@
 
 SET PROG=%1
 
+set TVLA_HOME=%~dp0\..\
+
 REM This allows for an unlimited number of command-line arguments
 SET ARGS=
 :SETUP_ARGS
@@ -11,7 +13,7 @@ SHIFT
 GOTO SETUP_ARGS
 :DONE_ARGS
 
-java -Dtvla.home="%TVLA_HOME%" -mx800m -jar %TVLA_HOME%\lib\tvla.jar %ARGS%
+java -Dtvla.home=%TVLA_HOME% -mx800m -jar %TVLA_HOME%\classes\artifacts\tvla3_jar\tvla3.jar %ARGS%
 
 IF EXIST %PROG%.dt GOTO CREATE_POSTSCRIPT
 GOTO CHECK_TR

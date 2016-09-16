@@ -56,12 +56,14 @@ import tvla.language.TVS.TVSParser;
 import tvla.predicates.DynamicVocabulary;
 import tvla.predicates.Predicate;
 import tvla.predicates.Vocabulary;
+import tvla.termination.GraphSCC;
 import tvla.transitionSystem.Action;
 import tvla.transitionSystem.AnalysisGraph;
 import tvla.util.Logger;
 import tvla.util.ProgramProperties;
 import tvla.util.PropertiesEx;
 import tvla.util.StringUtils;
+import tvla.util.graph.Graph;
 
 /** This class represents a command-line interface for TVLA users.
  * @author Tal Lev-Ami
@@ -89,10 +91,15 @@ public class Runner {
 
 	/** Main entry point of TVLA.
 	 * @author Tal Lev-Ami 
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public static void main(String args[]) throws Exception {
+
 		try {
+
+			//GraphSCC.TestSCC();
+			//GraphSCC.TestSCC2();
+
 			loadProgramProperties(args);
 			parseArgs(args);
 			initProgramProperties(args);
@@ -219,12 +226,15 @@ public class Runner {
 					// Dump graph and statistics after every refinement iteration.
 				    if (ProgramProperties.getBooleanProperty("tvla.log.implementationSpecificStatistics", false))
 					    TVSFactory.printStatistics();
-					if (AnalysisGraph.activeGraph != null)
-						AnalysisGraph.activeGraph.dump(); // this has no effect for multithreaded engines
-					// Clear the static load timer after load time gets reported once.
-					if (Engine.activeEngine.getTransitionRelation() != null)
-						Engine.activeEngine.getTransitionRelation().dump();
-					AnalysisStatus.loadTimer = new tvla.util.Timer();
+
+  					if (AnalysisGraph.activeGraph != null)
+							AnalysisGraph.activeGraph.dump(); // this has no effect for multithreaded engines
+
+						// Clear the static load timer after load time gets reported once.
+						//if (Engine.activeEngine.getTransitionRelation() != null)
+							//Engine.activeEngine.getTransitionRelation().dump();
+
+						AnalysisStatus.loadTimer = new tvla.util.Timer();
                     String shell = ProgramProperties.getProperty("tvla.beanshell", null);
                     if (shell != null) {
                         Class.forName(shell).getMethod("main", String[].class).invoke(null, new Object[] {new String[0]});
@@ -338,6 +348,8 @@ public class Runner {
 		System.err.println(" -tr:tvs <file name>     Creates a transition relation output in tvs-like format.");
 		System.err.println(" -dot <file name>        Creates a DOT formatted output.");
 		System.err.println(" -tr:dot <file name>     Creates a transition relation output in dot format.");
+		System.err.println(" -td     					       Enabled termination analysis.");
+		System.err.println(" -td.dot  <dir name>     Enabled termination analysis, and saves the debug info to <dir name>.");
 		System.err.println(" -D<macro name>[(value)] Defines a C preprocessor macro.");
 		System.err.println(" -terse                  Turns off on-line information printouts.");
 		System.err.println(" -nowarnings             Causes all warnings to be ignored.");
@@ -505,6 +517,19 @@ public class Runner {
 				ProgramProperties.setBooleanProperty("tvla.tr.enabled", true);
 				ProgramProperties.setBooleanProperty("tvla.tr.dot.enabled", true);
 				ProgramProperties.setBooleanProperty("tvla.dot.enabled", true);
+			}
+			else if (args[i].equals("-td")) {
+				ProgramProperties.setBooleanProperty("tvla.td.enabled", true);
+			}
+			else if (args[i].equals("-td.dot")) {
+				i++;
+				if (i >= args.length) {
+					System.err.println("Missing argument after -td:dot!");
+					usage();
+				}
+
+				ProgramProperties.setBooleanProperty("tvla.td.enabled", true);
+				ProgramProperties.setProperty("tvla.td.dot", args[i]);
 			}
 			else if (args[i].equals("-terse")) {
 				ProgramProperties.setProperty("tvla.terse", "true");

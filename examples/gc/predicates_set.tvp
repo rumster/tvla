@@ -1,8 +1,0 @@
-// There is a unary predicate for every set.
-foreach (s in Sets) {
-	%p set[s](v) 
-}
-
-// The following predicate is used for selecting an arbitrary
-// element in a set.
-%p unique_selection(v) unique  { 1 }

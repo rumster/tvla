@@ -281,4 +281,7 @@ public final class EmptyTVS extends HighLevelTVS implements ImmutableTVS {
    */
   private EmptyTVS() {
   }
+
+  public void SetID(String newID) {
+  }
 }

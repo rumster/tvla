@@ -187,12 +187,12 @@ public class DecompositionIntraProcEngine extends IntraProcEngine {
                        for (HighLevelTVS structure : structures) {
     
                     	   Map<HighLevelTVS, Set<String>> messages = HashMapFactory.make(0);
-                           Collection<HighLevelTVS> results = apply(currentAction, structure, currentLocation.label(), messages);
+                           Collection<HighLevelTVS> results = apply(currentAction, structure, currentLocation.label(), messages, null);
                            if (Engine.coerceAfterUpdateFailed || !messages.isEmpty()) {
                                boolean debug = AnalysisStatus.debug;
                                AnalysisStatus.debug = true;
                                apply(currentAction, structure,
-                                       currentLocation.label(), messages);
+                                       currentLocation.label(), messages, null);
                                AnalysisStatus.debug = debug;
                            }
                            status.numberOfMessages += getProcessedLocation().addMessages(messages);
@@ -293,7 +293,7 @@ public class DecompositionIntraProcEngine extends IntraProcEngine {
      	   currentComponent = name;
             for (HighLevelTVS structure : structures) {
                 Map<HighLevelTVS, Set<String>> messages = HashMapFactory.make(0);
-                apply(currentAction, structure, currentLocation.label(), messages);
+                apply(currentAction, structure, currentLocation.label(), messages, null);
             }
         }
         AnalysisStatus.debug = debug;

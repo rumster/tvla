@@ -225,23 +225,19 @@ public class MultithreadEngine extends Engine {
 					// insereted into "enabledActions"
 					List<Action> enabledActions = new ArrayList<Action>(globalActions);
 
-					for (Iterator<Node> i = TVMCMacros.allThreadNodes(structure);
-						i.hasNext();
-						) {
+					for (Iterator<Node> i = TVMCMacros.allThreadNodes(structure); i.hasNext();) {
+
 						Node n = i.next();
-						if (structure.eval(Vocabulary.ready, n)
-							== Kleene.trueKleene) {
+						if (structure.eval(Vocabulary.ready, n) == Kleene.trueKleene) {
 							// n is a ready thread, add its actions
 							// iterate over location predicates	   
 							for (LocationPredicate lp :	Vocabulary.locationPredicates) {
-								if (structure.eval(lp, n)
-									== Kleene.trueKleene) {
-									enabledActions.addAll(
-										lp.getLocation().getActions());
-								} // endif
-							} // end for
-						} // end if ready
-					} // end for all threads
+								if (structure.eval(lp, n) == Kleene.trueKleene) {
+									enabledActions.addAll(lp.getLocation().getActions());
+								}
+							}
+						}
+					}
 
 					// for each enabled action
 					for (int actionIt = 0;
@@ -263,12 +259,12 @@ public class MultithreadEngine extends Engine {
 						}
 
 						Collection<HighLevelTVS> results =
-							apply(action, structure, label, messages);
+							apply(action, structure, label, messages, null);
 						// Replay the last action to show the user details of the failure.
 						if (Engine.coerceAfterUpdateFailed) {
 							boolean debug = AnalysisStatus.debug;
 							AnalysisStatus.debug = true;
-							apply(action, structure, label, messages);
+							apply(action, structure, label, messages, null);
 							AnalysisStatus.debug = debug;
 						}
 						//System.out.println("<" + currentLocation + "," + currentAction + ">: " + results.size());

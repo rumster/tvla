@@ -17,6 +17,8 @@ import tvla.util.HashMapFactory;
 import tvla.util.HashSetFactory;
 
 final public class NodeValueMap {
+	  public Map<Node, Node> nodesMap;
+
 	  protected Map<Predicate, Collection<NodeValue>> map;
 	  protected Collection<Collection<Node>> inequalities;
 	  protected DynamicVocabulary deltaPredicates = DynamicVocabulary.empty();

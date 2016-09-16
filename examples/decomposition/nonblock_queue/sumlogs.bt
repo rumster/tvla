@@ -1,4 +1,0 @@
-grep "Total analysis time" *.log > sumlogs.txt
-grep "Max memory" *.log >> sumlogs.txt
-grep "Total number of structures" *.log >> sumlogs.txt
-grep "Total number of messages" *.log >> sumlogs.txt

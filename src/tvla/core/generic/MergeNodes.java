@@ -58,6 +58,7 @@ public final class MergeNodes {
 		// This predicate needs to be updated after all other unary predicates 
 		// are updated to make sure that summary is set to 1/2.
 		structure.update(Vocabulary.sm, answerNode, Kleene.unknownKleene);
+
 		return answerNode;
 	}
 
