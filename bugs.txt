@@ -7,6 +7,7 @@ Missing features:
 * draw the structures inside the nodes of the transition relation
 * -join ind seems to be crashing.
 
+
 Bugs:
 -----
 * -tr:dot/-tr:tvs don't work with -join part/ind
