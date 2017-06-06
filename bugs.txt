@@ -10,13 +10,13 @@ Missing features:
 
 Bugs:
 -----
-* -tr:dot/-tr:tvs don't work with -join part/ind
 * documentation: defining formulae / update formula
   "the formula's free variables should match the variable given in the parentheses
    (with the exception of precondition free variables explained later)."
 
 Done:
 -----
+* -tr:dot/-tr:tvs don't work with -join part/ind
 * Add isomorphism checks for -join conc
 * -join rel seems to be awfully slow - fixed with better hashing
 * reporting abs unary predicates seems to be wrong (0) - fixed
