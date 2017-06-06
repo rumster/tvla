@@ -547,7 +547,6 @@ public abstract class Engine {
     // ///////////////////////////////////////////////////
 
     public PrintableProgramLocation getProcessedLocation() {
-        assert (currentLocation != null);
         return this.currentLocation;
     }
 
