@@ -1,5 +1,4 @@
 package tvla.termination;
-import java.util.*;
 
 /**
  * Created by BorisD on 09/14/2015.

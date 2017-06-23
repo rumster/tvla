@@ -202,11 +202,12 @@
 		<echo message="Compiling TVLA sources..."/>
 		<javac srcdir="${src}"
 	           destdir="${build}"
-	           source="1.5"
-			   target="1.5"
+	           source="1.8"
+			   target="1.8"
 	           debug="${debug}"
 	           deprecation="${deprecation}"
 	           optimize="${optimize}"
+			   includeantruntime="false"
 	       classpath="${lib}/cprep.jar;${lib}/java_cup.jar;${lib}/trove-2.1.0.jar"/>
 
 		<!-- Copy the MetaData files to the compilation area and apply filters -->
@@ -249,7 +250,7 @@
          Builds tvla.jar
        ===================================================================
   -->
-	<target name="build" depends="jar, buildtests" description="-> compiles and creates tvla.jar">
+	<target name="build" depends="jar" description="-> compiles and creates tvla.jar">
 	</target>
 
 	<!--

@@ -27,9 +27,7 @@ L2  SetAdd(pending, root)             L3  //     pending.add(root);
 L3  SetClear(marked)                  L4  //     marked.clear();
 L4  SetNotIsEmpty(pending)            L5  //     while (!pending.isEmpty()) {
 L4  SetIsEmpty(pending)               L19
-L5  SetSelectAndRemove(pending, x)    I1  //       x = pending.selectAndRemove();
-
-I1  IncCounter_Validate(x, p_c2)      L6
+L5  SetSelectAndRemove(pending, x)    L6  //       x = pending.selectAndRemove();
 
 L6  SetAdd(marked, x)                 L7  //       marked.add(x);
 L7  AssignFieldSelect(t, x, left)     L8  //       t = x.left;
@@ -58,8 +56,6 @@ L19 SetNotEqualReachset(marked, root) error
 L19 SetEqualReachset(marked, root)    exit
                                           //   }
                                           // }
-
-exit ValidateCountersGC(root, x, p_c1) error //  Validate once more
 
 %%
 

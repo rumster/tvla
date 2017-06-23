@@ -17,9 +17,9 @@ import tvla.analysis.multithreading.MultithreadEngine;
 import tvla.analysis.multithreading.buchi.BuchiAutomaton;
 import tvla.analysis.multithreading.buchi.MultithreadEngineBuchi;
 import tvla.core.Constraints;
+import tvla.core.HighLevelTVS;
 import tvla.core.Node;
 import tvla.core.TVSFactory;
-import tvla.core.HighLevelTVS;
 import tvla.core.base.BaseBlur;
 import tvla.core.base.BaseTVSCache;
 import tvla.core.base.PredicateUpdater;
@@ -56,14 +56,12 @@ import tvla.language.TVS.TVSParser;
 import tvla.predicates.DynamicVocabulary;
 import tvla.predicates.Predicate;
 import tvla.predicates.Vocabulary;
-import tvla.termination.GraphSCC;
 import tvla.transitionSystem.Action;
 import tvla.transitionSystem.AnalysisGraph;
 import tvla.util.Logger;
 import tvla.util.ProgramProperties;
 import tvla.util.PropertiesEx;
 import tvla.util.StringUtils;
-import tvla.util.graph.Graph;
 
 /** This class represents a command-line interface for TVLA users.
  * @author Tal Lev-Ami
