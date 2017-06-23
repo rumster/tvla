@@ -1,0 +1,23 @@
+// An acyclic singly-linked list with two or more elements pointed by program x.
+%n = {head, body, last}
+%p = {
+     sm = {body:1/2}
+     n = {head->body:1/2, body->body:1/2, body->last:1/2}
+     x = {head}
+     t[n] = {head->head, head->body,  head->last, body->body:1/2, body->last:1/2, last->last}
+     r[n,x] = {head, body, last}
+     is_last = {last}
+}
+
+// An acyclic singly-linked list with a single element pointed by x.
+%n = {head}
+%p = {
+       x = {head}
+       t[n] = {head->head}
+       r[n,x] = {head}
+}
+
+// An empty list (x points to NULL).
+%n = {}
+%p = {
+}

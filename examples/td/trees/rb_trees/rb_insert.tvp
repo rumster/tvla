@@ -1,0 +1,300 @@
+%s PVar {root, cur, prev, el, t, node, uncle, nodep, nodepp, a, b, c}
+%s TSel {left, right}
+%s Sets {free}
+
+#define VARSEL
+
+#include "pred_sort.tvp"
+#include "pred_set.tvp"
+
+%p isRed(v)
+
+%%
+#include "actions_tree.tvp"
+#include "actions_sort.tvp"
+#include "actions_set.tvp"
+
+%%
+
+// cur = root;
+start Copy_Var_T(cur, root) n1
+
+   // while (cur != NULL && cur->data != el->data) {
+   n1 Is_Not_Null_Var(cur) n2
+   n1 Is_Null_Var(cur) n7
+
+   // For now not interpreting non-equality (while not using DataIsNequal).
+   n2 uninterpreted() n7
+   n2 uninterpreted() n3
+
+   // prev = cur;
+   n3 Copy_Var_T(prev, cur) n4
+
+   // if (el->data < cur->data)
+      n4 Less_Data_T(el, cur) n5
+      n4 Greater_Equal_Data_T(el, cur) n6
+
+      // cur = cur->left;
+      n5 Get_Sel_T(cur, cur, left) n1
+
+   // else cur = cur->right;
+      n6 Get_Sel_T(cur, cur, right) n1
+   // }
+
+
+// Don't insert duplicates
+// if (cur == NULL) {
+   n7 Is_Null_Var(cur) n8
+   n7 Is_Not_Null_Var(cur) found
+   // Null out cur and prev, as an optimizer could.
+   //n7_a Set_Null_T(cur) n7_b
+   //n7_b Set_Null_T(prev) found
+
+   // if (cur == root)
+   n8 Is_Eq_Var(cur, root) n9
+   n8 Is_Not_Eq_Var(cur, root) n10
+   // root = el;
+   n9 Copy_Var_T(root, el) notFound
+
+   // if (el->data < prev->data)
+      n10 Less_Data_T(el, prev) n11
+      n10 Greater_Equal_Data_T(el, prev) n13
+
+      // prev->left = el;
+      n11 Set_Sel_Null_T(prev, left) n12
+      n12 Set_Sel_T(prev, left, el) n12_a
+      // Null out el and prev, as an optimizer could.
+      n12_a Set_Null_T(el) n12_b
+      n12_b Set_Null_T(prev) notFound
+
+   // else prev->right = el;
+      n13 Set_Sel_Null_T(prev, right) n14
+      n14 Set_Sel_T(prev, right, el) n14_a
+      // Null out el and prev, as an optimizer could.
+      n14_a Set_Null_T(el) n14_b
+      n14_b Set_Null_T(prev) notFound
+// }
+
+notFound Copy_Var_T(node, el)     found2
+
+found    Copy_Var_T(node, cur)    found2
+found2   Get_Parent(nodep, node)  found3
+found3   Set_True2(nodep, isRed)  f1_1
+
+// Fix tree
+f1_1   Is_Eq_Var(node, root)                 test
+f1_1   Is_Not_Eq_Var(node, root)             f1_2
+
+f1_2   Set_True2(node, isRed)                f1_3
+f1_3   Get_Parent(nodep, node)               f1_4     //  nodep = node->parent;
+                                                      //
+f1_4   Is_True2(nodep, isRed)                f1_6     //  while (nodep.color == RED) {
+f1_4   Is_False2(nodep, isRed)               test     //
+f1_6     Get_Parent(nodepp, nodep)           f1_8     //    nodepp = nodep->parent;
+f1_8     Get_Sel_T(a, nodepp, left)          f1_10    //    a = nodepp->left;
+f1_10    Is_Eq_Var(a, nodep)                 f1_12    //    if (nodep == nodepp->left) {
+f1_10    Is_Not_Eq_Var(a, nodep)             f1_82    //
+f1_12      Get_Sel_T(uncle, nodepp, right)   f1_14    //      uncle = node->parent->parent->right;
+                                                      //
+f1_14      Is_Null_Var(uncle)                f1_26    //
+f1_14      Is_Not_Null_Var(uncle)            f1_16    //
+f1_16      Is_True2(uncle, isRed)            f1_18    //      if (uncle != nil && uncle.color == RED) {
+f1_16      Is_False2(uncle, isRed)           f1_26    //
+f1_18        Set_False2(nodep, isRed)        f1_20    //         nodep.color = BLACK;
+f1_20        Set_False2(uncle, isRed)        f1_22    //         uncle.color = BLACK;
+f1_22        Set_True2(nodepp, isRed)        f1_24    //         nodepp.color = RED;
+f1_24        Copy_Var_T(node, nodepp)        f1_3     //         node = nodepp;
+                                                      //         continue;
+                                                      //      }
+f1_26      Get_Sel_T(a, nodep, right)        f1_28    //      a = nodep->right;
+f1_28      Is_Eq_Var(node, a)                f1_30    //      if (node == nodep->right) {
+f1_28      Is_Not_Eq_Var(node, a)            f1_66    //
+f1_30      Copy_Var_T(node, nodep)           f1_32    //         node = nodep;
+f1_32      Get_Parent(nodep, node)           f1_34    //         nodep = nodepp;
+f1_34      Get_Parent(nodepp, nodep)         l1_36    //         nodepp = nodepp->parent;
+                                                      //
+                                                      //         // Rotate left (node)
+l1_36      Is_Null_Var(nodep)                l1_62    //         if (nodep != null) {
+l1_36      Is_Not_Null_Var(nodep)            l1_38    //
+l1_38        Get_Sel_T(a, node, right)       l1_40    //           a = node->right;
+l1_40        Get_Sel_T(b, nodep, left)       l1_42    //           b = nodep->left;
+l1_42        Get_Sel_T(c, a,     left)       l1_44    //           c = node->right->left;
+                                                      //
+l1_44        Set_Sel_Null_T(a, left)         l1_46    //           node->right->left = null;
+l1_46        Set_Sel_Null_T(node, right)     l1_48    //           node->right       = null;
+
+l1_48        Is_Eq_Var(node, b)              l1_50    //           if (node == nodep->left) {
+l1_48        Is_Not_Eq_Var(node, b)          l1_54    //
+l1_50          Set_Sel_Null_T(nodep, left)   l1_52    //             nodep->left = null;
+l1_52          Set_Sel_T(nodep, left, a)     l1_58    //             nodep->left = node->right;
+                                                      //           }
+                                                      //           else {
+l1_54          Set_Sel_Null_T(nodep, right)  l1_56    //             nodep->right = null;
+l1_56          Set_Sel_T(nodep, right, a)    l1_58    //           nodep->right = node->right;
+                                                      //           }
+l1_58        Set_Sel_Null_T(nodep, left)     l1_58_0
+l1_58_0      Set_Sel_T(nodep, left, node)    l1_60    //           node->parent->left = node;
+l1_60        Set_Sel_Null_T(node, right)     l1_60_0  //
+l1_60_0      Set_Sel_T(node, right, c)       f1_66    //           node->right        = node->right->left;
+                                                      //         }
+                                                      //         else  { // Rotate the root
+l1_62        Get_Sel_T(a, root, right)       l1_64    //           a = root->right;
+l1_64        Get_Sel_T(b, a, left)           l1_66    //           b = root->right->left;
+l1_66        Set_Sel_Null_T(a, left)         l1_68    //           root->right->left = null;
+l1_68        Set_Sel_Null_T(root, right)     l1_70    //           root->right       = null;
+l1_70        Set_Sel_T(a, left, root)        l1_72    //           root->right->left = root;
+l1_72        Set_Sel_T(root, right, b)       l1_74    //           root->right       = root->right->left;
+l1_74        Copy_Var_T(root, a)             f1_66    //           root              = root->right;
+                                                      //         }
+                                                      //       } // Finish rotate left
+f1_66      Get_Parent(nodep, node)           f1_68    //       nodep = node->parent;
+f1_68      Get_Parent(nodepp, nodep)         f1_70    //       nodepp = nodep->parent;
+f1_70      Set_False2(nodep, isRed)          f1_72    //       node->parent.color = BLACK;
+f1_72      Set_True2(nodepp, isRed)          f1_74    //       node->parent->parent.color = RED;
+                                                      //
+f1_74      Copy_Var_T(t, node)               f1_75    //       t = node; // Save the node
+f1_75      Set_Null_T(node)                  f1_76    //
+f1_76      Copy_Var_T(node, nodepp)          f1_77    //
+f1_77      Set_Null_T(nodep)                 f1_78    //       nodep = null;
+f1_78      Get_Parent(nodep, node)           r1_36    //
+                                                      //       // Rotate right (node->parent->parent)
+r1_36      Is_Null_Var(nodep)                r1_62    //       if (nodep != null) {
+r1_36      Is_Not_Null_Var(nodep)            r1_38    //
+r1_38        Get_Sel_T(a, node,  left)       r1_39    //         a = node->left;
+r1_39        Set_Null_T(b)                   r1_40    //
+r1_40        Get_Sel_T(b, nodep, left)       r1_42    //         b = nodep->left;
+r1_42        Get_Sel_T(c, a,     right)      r1_44    //         c = node->left->right;
+
+r1_44        Set_Sel_Null_T(a, right)        r1_46    //         node->right->left = null;
+r1_46        Set_Sel_Null_T(node, left)      r1_48    //         node->right       = null;
+
+r1_48        Is_Eq_Var(node, b)              r1_50    //         if (node == nodep->left) {
+r1_48        Is_Not_Eq_Var(node, b)          r1_54    //
+r1_50          Set_Sel_Null_T(nodep, left)   r1_52    //           nodep->left = null;
+r1_52          Set_Sel_T(nodep, left, a)     r1_58    //           nodep->left = node->right;
+                                                      //         }
+                                                      //        else {
+r1_54          Set_Sel_Null_T(nodep, right)  r1_56    //           nodep->right = null;
+r1_56          Set_Sel_T(nodep, right, a)    r1_58    //           nodep->right = node->right;
+                                                      //         }
+
+r1_58        Set_Sel_Null_T(nodep, right)    r1_58_0  //         node->parent->right = node;
+r1_58_0      Set_Sel_T(nodep, right, node)   r1_60    //
+r1_60        Set_Sel_Null_T(node, left)      r1_60_0  //
+r1_60_0      Set_Sel_T(node, left, c)        f1_80    //         node->left          = node->left->right;
+                                                      //
+                                                      //       }
+                                                      //       else  { // Rotate root
+r1_62        Get_Sel_T(a, root, left)        r1_64    //         a = root->left;
+r1_64        Get_Sel_T(b, a, right)          r1_66    //         b = root->left->right;
+r1_66        Set_Sel_Null_T(a, right)        r1_68    //         root->left->right = null;
+r1_68        Set_Sel_Null_T(root, left)      r1_70    //         root->left        = null;
+r1_70        Set_Sel_T(a, right, root)       r1_72    //         root->left->right = root;
+r1_72        Set_Sel_T(root, left, b)        r1_74    //         root->left        = root->right->left;
+r1_74        Copy_Var_T(root, a)             f1_80    //         root = a;
+                                                      //       }
+                                                      //
+f1_80      Copy_Var_T(node, t)               f1_3
+
+f1_82      Get_Sel_T(uncle, nodepp, left)    f1_84    //      uncle = node->parent->parent->left;
+f1_84      Is_Not_Null_Var(uncle)            f1_86    //
+f1_84      Is_Null_Var(uncle)                f1_96    //
+f1_86      Is_True2(uncle, isRed)            f1_88    //      if (uncle != nil && uncle.color == RED) {
+f1_86      Is_False2(uncle, isRed)           f1_96    //
+f1_88        Set_False2(nodep, isRed)        f1_90    //         nodep.color = BLACK;
+f1_90        Set_False2(uncle, isRed)        f1_92    //         uncle.color = BLACK;
+f1_92        Set_True2(nodepp, isRed)        f1_94    //         nodepp.color = RED;
+f1_92        Copy_Var_T(node, nodepp)        f1_3     //         node = nodepp;
+                                                      //         continue;
+                                                      //      }
+f1_96      Get_Sel_T(a, nodep, left)         f1_98    //      a = nodep->left;
+f1_98      Is_Eq_Var(node, a)                f1_100   //      if (node == nodep->left) {
+f1_98      Is_Not_Eq_Var(node, a)            f1_106   //
+f1_100     Copy_Var_T(node, nodep)           f1_102   //         node = nodep;
+f1_102     Get_Parent(nodep, node)           f1_104   //         nodep = nodepp;
+f1_104     Get_Parent(nodepp, nodep)         a1_36    //         nodepp = nodepp->parent;
+                                                      //
+                                                      //       // Rotate right (node)
+a1_36      Is_Null_Var(nodep)                a1_62    //       if (nodep != null) {
+a1_36      Is_Not_Null_Var(nodep)            a1_38    //
+a1_38        Get_Sel_T(a, node,  left)       a1_40    //         a = node->right;
+a1_40        Get_Sel_T(b, nodep, left)       a1_42    //         b = nodep->left;
+a1_42        Get_Sel_T(c, a,     right)      a1_44    //         c = node->left->right;
+
+a1_44        Set_Sel_Null_T(a, right)        a1_46    //         node->right->left = null;
+a1_46        Set_Sel_Null_T(node, left)      a1_48    //         node->right       = null;
+
+a1_48        Is_Eq_Var(node, b)              a1_50    //         if (node == nodep->left) {
+a1_48        Is_Not_Eq_Var(node, b)          a1_54    //
+a1_50          Set_Sel_Null_T(nodep, left)   a1_52    //           nodep->left = null;
+a1_52          Set_Sel_T(nodep, left, a)     a1_58    //           nodep->left = node->right;
+                                                      //         }
+                                                      //        else {
+a1_54          Set_Sel_Null_T(nodep, right)  a1_56    //           nodep->right = null;
+a1_56          Set_Sel_T(nodep, right, a)    a1_58    //           nodep->right = node->right;
+                                                      //         }
+
+a1_58        Set_Sel_Null_T(nodep, right)    a1_58_0  //         node->parent->right = null;
+a1_58_0      Set_Sel_T(nodep, right, node)   a1_60    //         node->parent->right = node;
+a1_60        Set_Sel_Null_T(node, left)      a1_60_0  //         node->left          = null;
+a1_60_0      Set_Sel_T(node, left, c)        f1_106   //         node->left          = node->left->right;
+                                                      //
+                                                      //       }
+                                                      //       else  { // Rotate root
+a1_62        Get_Sel_T(a, root, left)        a1_64    //         a = root->left;
+a1_64        Get_Sel_T(b, a, right)          a1_66    //         b = root->left->right;
+a1_66        Set_Sel_Null_T(a, right)        a1_68    //         root->left->right = null;
+a1_68        Set_Sel_Null_T(root, left)      a1_70    //         root->left       = null;
+a1_70        Set_Sel_T(a, right, root)       a1_72    //         root->left->right = root;
+a1_72        Set_Sel_T(root, left, b)        f1_106   //         root->left       = root->right->left;
+                                                      //       }
+                                                      //
+f1_106      Get_Parent(nodep, node)          f1_108   //       nodep = nodepp;
+f1_108      Get_Parent(nodepp, nodep)        f1_110   //       nodepp = nodepp->parent;
+f1_110      Set_False2(nodep, isRed)         f1_112   //       node->parent.color = BLACK;
+f1_112      Set_True2(nodepp, isRed)         f1_114   //       node->parent->parent.color = RED;
+                                                      //
+f1_114      Copy_Var_T(t, node)              f1_116   //       t = node; // Save the node
+f1_116      Copy_Var_T(node, nodepp)         f1_118   //
+f1_118      Get_Parent(nodep, node)          b1_36    //
+                                                      //       // Rotate left (node->parent->parent)
+b1_36      Is_Null_Var(nodep)                b1_62    //         if (nodep != null) {
+b1_36      Is_Not_Null_Var(nodep)            b1_38    //
+b1_38        Get_Sel_T(a, node, right)       b1_40    //           a = node->right;
+b1_40        Get_Sel_T(b, nodep, left)       b1_42    //           b = nodep->left;
+b1_42        Get_Sel_T(c, a,     left)       b1_44    //           c = node->right->left;
+                                                      //
+b1_44        Set_Sel_Null_T(a, left)         b1_46    //           node->right->left = null;
+b1_46        Set_Sel_Null_T(node, right)     b1_48    //           node->right       = null;
+
+b1_48        Is_Eq_Var(node, b)              b1_50    //           if (node == nodep->left) {
+b1_48        Is_Not_Eq_Var(node, b)          b1_54    //
+b1_50          Set_Sel_Null_T(nodep, left)   b1_52    //             nodep->left = null;
+b1_52          Set_Sel_T(nodep, left, a)     b1_58    //             nodep->left = node->right;
+                                                      //           }
+                                                      //           else {
+b1_54          Set_Sel_Null_T(nodep, right)  b1_56    //             nodep->right = null;
+b1_56          Set_Sel_T(nodep, right, a)    b1_58    //             nodep->right = node->right;
+                                                      //           }
+b1_58        Set_Sel_Null_T(nodep, left)     b1_58_0  //           node->parent->left = node;
+b1_58_0      Set_Sel_T(nodep, left, node)    b1_60    //           node->parent->left = node;
+b1_60        Set_Sel_Null_T(node, right)     b1_60_0  //           node->right        = node->right->left;
+b1_60_0      Set_Sel_T(node, right, c)       f1_114   //           node->right        = node->right->left;
+                                                      //         }
+                                                      //         else  { // Rotate the root
+b1_62        Get_Sel_T(a, root, right)       b1_64    //           a = root->right;
+b1_64        Get_Sel_T(b, a, left)           b1_66    //           b = root->right->left;
+b1_66        Set_Sel_Null_T(a, left)         b1_68    //           root->right->left = null;
+b1_68        Set_Sel_Null_T(root, right)     b1_70    //           root->right       = null;
+b1_70        Set_Sel_T(a, left, root)        b1_72    //           root->right->left = root;
+b1_72        Set_Sel_T(root, right, b)       b1_74    //           root->right       = root->right->left;
+b1_74        Copy_Var_T(root, a)             f1_114   //           root              = root->right;
+                                                      //         }
+                                                      //       } // Finish rotate left
+f1_114      Copy_Var_T(node, t)              f1_3
+
+// Now test the structures
+test Is_Sorted_Data_T(root) exit
+test Is_Not_Sorted_Data_T(root) error
+
+%% error, exit, test

@@ -1,0 +1,42 @@
+echo "" > output/output
+echo "------Shallow programs manipulating acyclic lists-----------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_acyclic
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Deeply nested programs manipulating acyclic lists-----" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_nested
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Shallow programs manipulating cyclic lists------------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_cyclic
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Recursive programs manipulating acyclic lists---------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_interprocedural
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Programs manipulating binary trees--------------------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_trees
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Programs manipulating graphs--------------------------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_graphs
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Concurrent programs-----------------------------------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_concurrent
+
+cat output/output

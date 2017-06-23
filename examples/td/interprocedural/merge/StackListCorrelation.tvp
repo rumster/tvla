@@ -1,0 +1,212 @@
+/**************************************************/
+/* The correlation between the Stack and the List */
+/*                                                */
+/* These predicates captures realtions between    */
+/* invisible instances of variables with the heap */
+/* and properties of invisible variables.         */  
+/**************************************************/
+
+
+/**************************************************/
+/*     The representation of locals as pointers   */
+/*            from the stack to the list          */
+/**************************************************/
+
+foreach (lcl in Locals) {
+    // Does the local / parameter / temporary invisible 
+    // variable x stored in activation record v_1 
+    // point to heap element v_2 ? 
+    %p stored[lcl](v1,v2) function
+}
+
+
+/**************************************************/
+/* Stack - List corelation, group I:  is in  file */
+/* List_pred.tvp since these are properties of    */
+/* visible variables.                             */
+/**************************************************/
+
+/**************************************************/
+/* Stack - List corelation, group II:             */
+/* properties of heap elements dereived from the  */
+/* invisible local variables values.              */
+/**************************************************/
+
+// is v pointed to by an invisible instance of x?   
+// (Inst. pred. $\widehat{x}$ in the paper.) 
+foreach (lcl in Locals) {
+    %i rs_SL[topS,lcl](vl) = E(vs_1) Stack(vs_1) & stored[lcl](vs_1,vl)
+}
+
+// is the list element v reachable by n-componenets 
+// from an invisible instance of x ? - not implemented.
+// (Inst. pred. $r_{n,\widehat{x}}$ in the paper.) 
+// See predicate used for multiple procedures for 
+// a partial substitute. 
+
+foreach (lcl in Locals) {
+    // Is the list element v pointed to by  more than 
+    // one invisible instance of x?
+    // (Inst. pred. $sh_{\widehat{x}}$ in the paper.)  
+    %i is_SL[lcl](vl) = E(vs_1, vs_2) ( vs_1 != vs_2 & stored[lcl](vs_1, vl) & stored[lcl](vs_2, vl)) 
+}
+
+
+/**************************************************/
+/* Stack - List corelation, group III:            */
+/* generic properties of single activation record */
+/**************************************************/
+
+foreach (local in Locals) {
+    // Does the invisible instance of x stored in the
+    // activation record v point to a list element ?
+    // (Inst. pred. $nn_{\widehat{x}}$ in the paper.) 
+    %i notNull[local](s) = E(v_1) stored[local](s,v_1)  
+}
+
+
+// Are the invisible instances of x and y stored 
+// in the activation record v aliased? - not implemented.
+// (Inst. pred. $nn_{\widehat{x}}$ in the paper.) 
+
+
+
+/**************************************************/
+/* Stack - List corelation, group IV:             */
+/* generic properties of single activation record */
+/**************************************************/
+
+// Is the instance of x stored in the activation 
+// record v aliased with the instance of y stored 
+// in v's previous activation record? - not implemented.
+// (Inst. pred. $al_{x,pr[y]}$ in the paper.
+
+foreach (local in Locals_sq) {
+    // Is the instance of x stored in the activation 
+    // record v aliased with x->n for the instance of x stored 
+    // in v's previous activation record? 
+    // (a limited version of Inst. pred. $al_{x,pr[y]->n}$ in the paper) .
+    %i sq[local](s) = 
+        (E(s_1,l_1, l_2) pr(s,s_1) & n(l_1,l_2) &
+        stored[local](s,l_2) & stored[local](s_1,l_1) &
+        !pr(s, s) & !n(l_1,l_1))
+}
+
+foreach (local in Locals_rsq) {
+    // Is x->n for the instance of x stored in the activation 
+    // record v aliased with the instance of x stored 
+    // in v's previous activation record? 
+    // (a limited version of Inst. pred. $al_{x->n,pr[y]}$ in the paper) .
+    %i rsq[local](s) = 
+        (E(s_1,l_1,l_2) pr(s,s_1) & n(l_1,l_2)  &
+        stored[local](s,l_1) & stored[local](s_1,l_2) &
+        !pr(s,s) & !n(l_1,l_1))
+}
+
+// NEW !!
+
+foreach (local in Locals) {
+    // Is x for the instance of x stored in the activation 
+    // record v aliased with the instance of x stored 
+    // in v's SUCCESOR activation record? 
+    // (a limited version of Inst. pred. $al_{x->n,pr[y]}$ in the paper) .
+    %i als[local](s) = 
+        (E(s_1,l_1) pr(s_1,s) & !pr(s,s) & stored[local](s,l_1) & stored[local](s_1,l_1))
+
+    %i pto_alone[local](s) = 
+	E(l) stored[local](s,l) & !(E(s_1) pr+(s,s_1) & stored[local](s_1,l))
+}
+
+
+
+
+
+/**************************************************/
+/*  Used to support multiple recursive functions  */
+/*  were there is no relation between the         */
+/*  not described in the paper.                   */
+/**************************************************/
+
+
+foreach (proc in ProcNames) {
+    foreach(lcl in Locals) {        
+        // Does the local / parameter x of the most recent invocation
+        // of procedure proc point to v?        
+        %i pto_top_SL[proc,lcl](vl) = E(vs_1) top[proc](vs_1) & stored[lcl](vs_1,vl)  unique 
+    }
+}
+
+
+/* reachability through the heap */
+foreach (proc in ProcNames) {
+    foreach (lcl in Locals) {
+        // Is v reachable via n-components from the 
+        // local / parameter x of the most recent invocation
+        // of proc? 
+        %i rl_top_SL[proc,lcl](vl) = (E(vs_1,vl_1) top[proc](vs_1) & stored[lcl](vs_1,vl_1) & n*(vl_1,vl))
+    }
+}
+
+
+/**************************************************/
+/* For Technical - Implementation reasons:        */
+/* caller points to the caller of the current     */
+/* function caller when a return is executed.     */
+/* There is no need for similar rl_SL from topS   */
+/* since there it is kept by the reachable from   */
+/* the current procedure caller predicate.        */
+/**************************************************/
+
+foreach(lcl in Locals) {                    
+    // Is v pointed to by the variable x
+    // of the caller of the current function caller?
+    %i  pto_SL[callerS,lcl](vl) = 
+            E(vs_1) callerS(vs_1) & stored[lcl](vs_1,vl)  unique 
+}
+
+foreach (lcl in Locals) {
+    // Is v reachable by n-componenets from the variable x
+    // of the caller of the current function caller?
+    %i rl_SL[callerS,lcl](vl) = 
+        (E(vs_1,vl_1) callerS(vs_1) & stored[lcl](vs_1,vl_1) & n*(vl_1,vl))
+}
+
+
+
+/**************************************************/
+/* Improving the precision of the analysis by     */
+/* using the special properties of the local      */
+/* variables.                                     */ 
+/**************************************************/
+
+
+foreach(proc in ProcNames) {
+    foreach (lcl in Locals) {
+        // If vs is the activation record of the most
+        // recent call to func, and vl is pointed to by
+        // this call x variable then the instance of x
+        // of this activation record point to vl.  
+        %r top[proc](vs) & pto_top_SL[proc,lcl](vl) ==> stored[lcl](vs,vl)
+    }
+}
+
+
+
+foreach(sp in StackPointers) {
+    foreach (lcl in Locals_sq) {
+    // If sq[x] holds at vs_1 and the instance of x stroed there
+    // points to vl_1, then if vl_1 is not shared , the instance of x
+    // stored in vs_1's previous a.r. - vs_2 points to the 
+    // n-predecessor of vl_1 
+    %r (E (vs_1,vl_1) sq[lcl](vs_1) & pr(vs_1,vs_2) & stored[lcl](vs_1,vl_1) & 
+                  n(vl_2,vl_1) & !is_L(vl_1))==> stored[lcl](vs_2,vl_2)
+
+    // If sq[x] holds at vs_1 and the instance of x stroed there
+    // points to vl_1, and the instance of x stored in vs_1's 
+    // previous a.r. - vs_2 points to vl_2 , then vl_2 must be
+    // the n-predecessor of vl_1.  
+    %r (E (vs_1,vs_2) sq[lcl](vs_1) & pr(vs_1,vs_2) & stored[lcl](vs_1,vl_1) & 
+                  stored[lcl](vs_2,vl_2)) ==> n(vl_2,vl_1)
+
+    }
+}

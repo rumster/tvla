@@ -1,0 +1,33 @@
+///////
+// Sets
+
+%s PVar {x, y, t}
+
+#include "predicates.tvp"
+%p isTraversed(v)
+
+%%
+#include "actions.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that searches a list for an element
+// with a specified value.
+
+L1_1 Is_Not_Null_Var(x)  L1_2
+L1_1 Is_Null_Var(x)      L1_exit
+
+L1_2 Get_Next_L(y, x)    L1_3
+
+L1_3 Is_Not_Eq_Var(y, x) L1_4_5    // while (y != x) {
+L1_3 Is_Eq_Var(y, x)     L1_exit
+
+L1_4_5 Set_True2(y, isTraversed) L1_4
+
+L1_4 Copy_Var_L(t, y)    L1_5     
+L1_5 Get_Next_L(y, t)    L1_3     //   y = y->n;
+                                  // }
+
+%%
+L1_exit

@@ -1,0 +1,62 @@
+////////////////////////////////////////////////////////////////////////
+// Actions that model a Java-liked Set ADT with the operations specified
+// by the interface java.util.Set.
+
+%action SetClear(s) {
+  %t s + ".clear()"
+  {
+    set[s](v) = 0
+  }
+}
+
+%action SetAssignUniverse(s) {
+  %t s + ".assignUniverse()"
+  {
+    set[s](v) = 1
+  }
+}
+
+%action SetAdd(s, pvar) {
+  %t s + ".add(" + pvar + ")"
+  %f { pvar(v) }
+  %message !(E(v) pvar(v)) ->
+           "" + pvar + " is possibly NULL when attempting to insert into set " + s
+  {
+    set[s](v) = set[s](v) | pvar(v)
+  }
+}
+
+%action SetSelectAndRemove(s, pvar) {
+  %t pvar + "=" + s + ".selectAndRemove()"
+  %f { set[s](selected) & unique_selection(selected) }
+  %p set[s](selected) & unique_selection(selected) 
+  {
+    pvar(v) = (v == selected)
+    set[s](v) = set[s](v) & (v != selected)
+    unique_selection(v) = 1/2 
+  }
+}
+
+%action SetIsEmpty(s) {
+  %t s + ".isEmpty()"
+  %f { E(v) set[s](v) } 
+  %p !E(v) set[s](v)
+}
+
+%action SetNotIsEmpty(s) {
+  %t "!" + s + ".isEmpty()"
+  %f { E(v) set[s](v) } 
+  %p E(v) set[s](v)
+}
+
+%action SetContains(s, pvar) {
+  %t s + ".contains(" + pvar + ")"
+  %f { E(v) set[s](v) & pvar(v) } 
+  %p E(v) set[s](v) & pvar(v)
+}
+
+%action SetNotContains(s, pvar) {
+  %t "!" + s + ".contains(" + pvar + ")"
+  %f { E(v) set[s](v) & pvar(v) } 
+  %p !E(v) set[s](v) & pvar(v)
+}

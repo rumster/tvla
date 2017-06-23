@@ -1,0 +1,23 @@
+// Tree with root "root" and new element pointed to by el.
+%n = {u, l, r, u1}
+%p = {
+	root = {u}
+	el = {u1}
+	varSel[root,left] = {l}
+	varSel[root,right] = {r}
+	left = {u->l}
+	right = {u->r}
+	down = {u->r, u->l}
+	downStar = {u->u, l->l, r->r, u1->u1, u->r, u->l }
+    
+  r[root] = {u, r, l}
+  r[el] = {u1}
+
+	inOrder[dle,left] = {u, r, l, u1}
+	inOrder[dle,right] = {u, r, l, u1}
+	inOrder[dle] = {u, r, l, u1}
+
+	dle            = {u->u, r->r, l->l, l->u, u->r, u1->u1, u1->r, u->u1, l->u1}
+	cmp[dle,right] = {u->u, r->r, l->l, l->u, u->r, u1->u1, u1->r, u->u1, l->u1}
+	cmp[dle,left]  = {u->u, r->r, l->l, l->u, r->u, u1->u1, r->u1, u1->u, u1->l}
+}

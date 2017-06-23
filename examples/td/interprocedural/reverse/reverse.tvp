@@ -1,0 +1,38 @@
+
+%s ProcNames { reverse } 
+%s Prog_Globals { hd , tl } 
+#include "reverse_def.tvp"
+
+%s Locals Locals_reverse  
+%s Locals_sq Locals_sq_reverse  
+%s Locals_rsq Locals_rsq_reverse  
+%s Locals_none Locals_none_reverse  
+%s Temps Temps_reverse  
+%s CallSites CallSites_reverse  + {meta_main}
+%s Params Params_reverse  
+%s Trans Trans_reverse  
+%s Globals Prog_Globals + Params + Temps + Trans  
+
+%s LOCALS_TEMP Temps
+%s LOCALS_CUR  Locals
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+meta_main Copy_Variable_L(reverse$1,hd) reverse
+
+#include "reverse_cfg.tvp"
+
+
+EXIT end_of_prog() END

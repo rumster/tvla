@@ -1,0 +1,89 @@
+///////
+// Sets
+
+%s PVar {x, y, p, yn, t, w, t2} // Names of pointer variables.
+%s PSel {n}  // Names of pointer fields.
+%s HVar {x}  // Names of pointer variables used for taking heap snapshots.
+%s HLoc {L0} // Names of program labels where snapshots of the heap are taken.
+
+#include "predicates_sort.tvp"
+%p change()  // Represents the boolean variable change.
+%p isSorted(v)
+
+%%
+
+#include "actions_sort.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that performs bubble sort on a list
+// by swapping list elements.
+
+                                           // L bubblSort(L x) {
+L1_0  Copy_Reach_L(x, L0)      L1_1        // [ Take a snapshot of the heap to later         ]
+                                           // [ verify that the output list is a permutation ]
+                                           // [ of the list pointed by x.                    ]
+L1_1  Is_Null_Var(x)           L1_exit     //   if (x == NULL) return;
+L1_1  Is_Not_Null_Var(x)       L1_2
+L1_2  Set_True(change)         L1_3        //   change = TRUE;
+L1_3  Is_True(change)          L2_a      //   while (change) {
+L1_3  Is_False(change)         L1_25       
+
+L2_a  Is_Null_Var(w)           L1_4
+L2_a  Is_Not_Null_Var(w)       L2_b
+L2_b  Set_True2(w, isSorted)   L2_c       //     isSorted(w) = true;
+L2_c  Copy_Var_L(t2, w)        L2_d
+L2_d  Get_Next_L(w, t2)        L2_a
+
+L1_4  Set_Null_L(p)            L1_5        //     p = NULL;
+L1_5  Set_False(change)        L1_6        //     change = FALSE;
+L1_6  Copy_Var_L(y, x)         L1_7        //     y = x;
+L1_7  Get_Next_L(yn, y)        L2_8       //     yn = y->n;
+
+    L2_8  Is_Not_Null_Var(yn)      L2_9    //     while (yn != NULL) {
+    L2_8  Is_Null_Var(yn)          L1_3    
+   
+
+    L2_9  Greater_Data_L(y, yn)    L2_10   //       if (y->data > yn->data) {
+    L2_9  Less_Equal_Data_L(y, yn) L2_22   
+    L2_10 Get_Next_L(t, yn)        L2_11   //         t = yn->n;
+    L2_11 Set_True(change)         L2_12   //         change = TRUE;
+    L2_12 Set_Next_Null_L(y)       L2_13   //         y->n = NULL;
+    L2_13 Set_Next_L(y, t)         L2_14   //         y->n = t;
+    L2_14 Set_Next_Null_L(yn)      L2_15   //         yn->n = NULL;
+    L2_15 Set_Next_L(yn, y)        L2_16a  //         yn->n = y;
+     
+     // Set w to point to sorted part of the list
+    L2_16a Copy_Var_L(w, y)        L2_16   //         w = y;    
+
+    L2_16 Is_Null_Var(p)           L2_17   //         if (p == NULL)
+    L2_16 Is_Not_Null_Var(p)       L2_18   
+    L2_17 Copy_Var_L(x, yn)        L2_20   //           x = yn;
+                                           //         else {
+    L2_18 Set_Next_Null_L(p)       L2_19   //           p->n = NULL;
+    L2_19 Set_Next_L(p, yn)        L2_20   //           p->n = yn; }
+    L2_20 Copy_Var_L(p, yn)        L2_21   //         p = yn;
+    L2_21 Copy_Var_L(yn, t)        L2_8    //         yn = t;
+                                           //         } else {
+    L2_22 Copy_Var_L(p, y)         L2_23   //           p = y;
+    L2_23 Copy_Var_L(y, yn)        L2_24   //           y = yn;
+    L2_24 Get_Next_L(yn, y)        L2_8    //           yn = y->n;
+                                           //         }
+                                           //       }
+                                           //     }
+L1_25 Set_Null_L(p)            L1_26       //     p = NULL;
+L1_26 Set_Null_L(y)            L1_27       //     y = NULL;
+L1_27 Set_Null_L(yn)           L1_28       //     yn = NULL;
+L1_28 Set_Null_L(t)            L1_exit      //     t = NULL;
+                                           //   return x;
+                                           // }
+
+L1_exit Assert_Permutation_L(x, L0) L1_exit2
+L1_exit Assert_Sorted_L(x)          L1_exit2
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display structures that arise only at the following program locations.
+L1_exit

@@ -1,0 +1,22 @@
+///////
+// Sets
+
+%s PVar {x, y}
+
+#include "predicates_lists.tvp"
+
+%%
+
+#include "actions_lists.tvp"
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that searches a list for an element
+// with a specified value.
+
+L1_1 Copy_Var_L(y, x)   L1_2   // y = x;
+L1_2 Is_Not_Null_Var(y) L1_3   // while (y != NULL && y->data != d) {
+L1_2 Is_Null_Var(y)     exit
+L1_3 Get_Next_L(y, y)   L1_2   //   y = y->n;
+                           // }

@@ -546,7 +546,7 @@ public class MultithreadEngineBuchi extends MultithreadEngine {
 	}
 	/***
 	 * detectCycle
-	 * @param aSearchStak - a given search stack
+	 * @param aSearchStack - a given search stack
 	 * @param origin - structure from which cycle-detection begins
 	 * @return true if a cycle is found, false otherwise
 	 */

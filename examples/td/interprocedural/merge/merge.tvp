@@ -1,0 +1,39 @@
+
+%s ProcNames { merge } 
+%s Prog_Globals { hd2 , hd1 } 
+#include "merge_def.tvp"
+
+%s Locals Locals_merge  
+%s Locals_sq Locals_sq_merge  
+%s Locals_rsq Locals_rsq_merge  
+%s Locals_none Locals_none_merge  
+%s Temps Temps_merge  
+%s CallSites CallSites_merge   + { meta_main}   
+%s Params Params_merge  
+%s Trans Trans_merge  
+%s Globals Prog_Globals + Params + Temps + Trans  
+
+%s LOCALS_TEMP Temps
+%s LOCALS_CUR  Locals
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+m1_0 Copy_Variable_L(merge$1,hd1) m1_1
+m1_1 Copy_Variable_L(merge$2,hd2) merge
+
+#include "merge_cfg.tvp"
+
+EXIT end_of_prog() END

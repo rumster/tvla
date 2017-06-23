@@ -20,7 +20,10 @@ import tvla.util.Pair;
 public abstract class TVSSet implements Iterable<HighLevelTVS> {
     protected int shareCount = 0;
 	protected boolean cachingMode = false;
-    
+
+    // TODO bd
+    public HighLevelTVS LastStructureMerge;
+
 	public void share() {
         shareCount++;
     }

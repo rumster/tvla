@@ -1,0 +1,134 @@
+  // Deutsch-Schorr-Waite (DFS using pointer reversal)
+//#include "tree.h"
+%s TSel{ left, right }
+%s PVar{ x, t, y, root }
+
+#include "pred_tree.tvp"
+#include "pred_dfs.tvp"
+
+%%
+#include "actions_tree.tvp"
+#include "actions_dfs.tvp"
+%%
+
+//
+// Validating heap accesses to DSW algorithm
+// Modification are at lines I1-I5
+// Validate x and y variables, should be no more than 3 accesses for each heap cell through each var
+// Should not fail
+//
+
+// root = x
+I1 Copy_Var_T(root, x) L1_0
+
+//if (x == NULL) return;
+L1_0	Is_Null_Var(x)		L1_exit
+L1_0	Is_Not_Null_Var(x)	L1_1
+
+//	Tree *y = NULL, *t = NULL;
+L1_1	  Set_Null_T(y)		L1_2
+L1_2	  Set_Null_T(t)		L1_3
+L1_3	  SetNotMarkedAll()	L1_4
+L1_4	  SetNotDoneAll()		L1_5
+L1_5	  SetNotDoneRightAll()	L1_6
+
+        //x->marked = 1;
+L1_6	  SetMarked(x)		L1_7
+        // while (1) 
+        //if (!x->done) // x is not done
+L1_7	  IsNotDone(x)		L1_8
+L1_7	  IsDone(x)			L1_9
+
+        //if ( ! x->done_right)  //right sub-tree of x is not done
+L1_8    IsNotDoneRight(x)		L1_10	
+L1_8    IsDoneRight(x)			L1_11
+
+        //y = x->right;
+L1_10   Get_Sel_T(y, x, right)	L1_12
+
+        //if (y == NULL)
+L1_12   Is_Null_Var(y)			L1_13
+L1_12   Is_Not_Null_Var(y)		L1_14
+        //x->done_right = 1;
+L1_13	  SetDoneRight(x)				L1_7
+
+        //else if (!y->marked) //y is not marked
+
+L1_14   IsNotMarked(y)			L1_16
+L1_14   IsMarked(y)				L1_17
+
+            //x->right = t; 
+L1_16       Set_Sel_Null_T(x, right)	L1_16_1
+L1_16_1     Set_Sel_T(x, right, t)		L1_18
+            //t = x; 
+L1_18       Copy_Var_T(t, x)			L1_19
+            //x = y;
+L1_19       Copy_Var_T(x, y)			L1_20
+           // x->marked = 1;
+L1_20       SetMarked(x)				L1_7
+
+        //else 
+        // { x->done_right = 1; //set: right sub-tree of x is done 
+L1_17				SetDoneRight(x)				L1_7
+      
+    //else	
+      // {	y = x->left;
+L1_11			Get_Sel_T(y, x, left)			L1_21
+
+      //if (y == NULL)
+L1_21			Is_Null_Var(y)			L1_22
+L1_21			Is_Not_Null_Var(y)		L1_23
+
+        //x->done = 1;
+L1_22				SetDone(x)					L1_7
+
+      //else if (!y->marked) //y is not marked
+
+L1_23			IsNotMarked(y)			L1_25
+L1_23			IsMarked(y)				L1_26
+
+        //x->left = t; 
+L1_25				Set_Sel_Null_T(x, left)		L1_25_1
+L1_25_1			Set_Sel_T(x, left, t)		L1_27
+        //t = x; 
+L1_27				Copy_Var_T(t, x)			L1_28
+        //x = y;
+L1_28				Copy_Var_T(x, y)			L1_29
+        //x->marked = 1; 
+L1_29				SetMarked(x)				L1_7
+
+      //else {	
+        // x->done = 1; // x is done
+L1_26				SetDone(x)					L1_7
+  // else { 
+    // y = x; 
+L1_9		Copy_Var_T(y, x)		L1_30
+
+    //x = t;
+L1_30		Copy_Var_T(x, t)		L1_31
+
+    //if (x == NULL) return
+L1_31		Is_Null_Var(x)			L1_exit
+L1_31		Is_Not_Null_Var(x)		L1_33
+
+    // else { 
+      // if (!x->done_right)  //right sub-tree of x is not done
+L1_33			IsNotDoneRight(x)		L1_34
+L1_33			IsDoneRight(x)			L1_35
+    
+        //t = x->right; 
+L1_34				Get_Sel_T(t, x, right)		L1_36
+        //x->right = y; 
+L1_36				Set_Sel_Null_T(x, right)	L1_36_1
+L1_36_1			Set_Sel_T(x, right, y)		L1_37
+        //x->done_right = 1;	//set: right sub-tree of x is done
+L1_37				SetDoneRight(x)				L1_7
+      
+      // else  {
+        // t = x->left; 
+L1_35				Get_Sel_T(t, x, left)		L1_39
+        // x->left = y; 
+L1_39				Set_Sel_Null_T(x, left)		L1_39_1
+L1_39_1			Set_Sel_T(x, left, y)		L1_40
+        // x->doL1_e = 1; //set: x is done
+L1_40				SetDone(x)					L1_7

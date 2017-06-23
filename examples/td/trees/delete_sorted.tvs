@@ -1,0 +1,21 @@
+// Tree with root "root"
+%n = {u, us}
+%p = {
+	sm = {us:1/2}
+	root = {u}
+	varSel[root,left] = {us:1/2}
+	varSel[root,right] = {us:1/2}
+	left = {u->us:1/2, us->us:1/2}
+	right = {u->us:1/2, us->us:1/2}
+	down = {u->us:1/2,us->us:1/2}
+	downStar = {u->u, u->us, us->us:1/2}
+        r[root] = {u,us}
+
+	inOrder[dle,left] = {u, us}
+	inOrder[dle,right] = {u, us}
+	inOrder[dle] = {u, us}
+
+	dle = {u->u:1, u->us:1/2, us->u:1/2, us->us:1/2}
+	cmp[dle,right] = {u->u:1, u->us:1/2, us->u:1/2, us->us:1/2}
+	cmp[dle,left] = {u->u:1, u->us:1/2, us->u:1/2, us->us:1/2}
+}

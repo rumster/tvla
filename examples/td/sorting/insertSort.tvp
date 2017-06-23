@@ -1,0 +1,68 @@
+///////
+// Sets
+
+%s PVar {x, r, pr, rn, pl, l} // Names of pointer variables.
+%s HVar {x}  // Names of pointer variables used for taking heap snapshots.
+%s HLoc {L1_0} // Names of program labels where snapshots of the heap are taken.
+
+#include "predicates_sort.tvp"
+
+%%
+
+#include "actions_sort.tvp"
+
+%%
+
+////////////////////////////////////////////////////////
+// Transition system for insert sort.
+// The data in the sorted list is presumed to be unique.
+
+                                       // L insertSort(L x) {
+L1_0 Copy_Reach_L(x, L1_0)    L1_1     // [ Take a snapshot of the heap to later         ]
+                                       // [ verify that the output list is a permutation ]
+                                       // [ of the list pointed by x.                    ]
+L1_1  Copy_Var_L(r, x)        L1_2     //   r = x;
+L1_2  Set_Null_L(pr)          L1_3     //   pr = NULL;
+                                     
+L1_3  Is_Not_Null_Var(r)      L1_4     //   while (r != NULL) {
+L1_3  Is_Null_Var(r)          L1_22  
+L1_4  Copy_Var_L(l, x)        L1_5     //     l = x;
+L1_5  Get_Next_L(rn, r)       L1_6     //     rn = r->n;
+L1_6  Set_Null_L(pl)          L2_7     //     pl = NULL;
+
+  L2_7  Is_Not_Eq_Var(l, r)     L2_8   //     while (l != r) {
+  L2_7  Is_Eq_Var(l, r)         L2_20
+  L2_8  Greater_Data_L(l, r)    L2_9   //       if (l->data > r->data) {
+  L2_8  Less_Equal_Data_L(l, r) L2_18
+  L2_9  Set_Next_Null_L(pr)     L2_10  //         pr->n = NULL;
+  L2_10 Set_Next_L(pr, rn)      L2_11  //         pr->n = rn;
+  L2_11 Set_Next_Null_L(r)      L2_12  //         r->n = NULL;
+  L2_12 Set_Next_L(r, l)        L2_13  //         r->n = l;
+  L2_13 Is_Null_Var(pl)         L2_14  //         if (pl == NULL)
+  L2_13 Is_Not_Null_Var(pl)     L2_15
+  L2_14 Copy_Var_L(x, r)        L2_17  //           x = r;
+                                      //         else {
+  L2_15 Set_Next_Null_L(pl)     L2_16  //           pl->n = NULL;
+  L2_16 Set_Next_L(pl, r)       L2_17  //           pl->n = r; }
+  L2_17 Copy_Var_L(r, pr)       L2_20  //         r = pr;
+                                    //         break;
+                                    //       }
+  L2_18 Copy_Var_L(pl, l)       L2_19  //       pl = l;
+  L2_19 Get_Next_L(l, l)        L2_7   //       l = l->n;
+                                    //     }
+  L2_20 Copy_Var_L(pr, r)       L2_21  //     pr = r;
+  L2_21 Copy_Var_L(r, rn)       L2_30   //     r = rn;
+
+  L2_30 Set_Null_L(l)           L2_31  // l = NULL;
+  L2_31 Set_Null_L(pl)          L2_32  // pl = NULL;
+  L2_32 Set_Null_L(rn)          L1_3   // rn = NULL;
+                                 //   }
+L1_22 Set_Null_L(l)           L1_23  //   l = NULL;
+L1_23 Set_Null_L(r)           L1_24  //   r = NULL;
+L1_24 Set_Null_L(pr)          L1_25  //   pr = NULL;
+L1_25 Set_Null_L(pl)          L1_26  //   pl = NULL;
+L1_26 Set_Null_L(rn)          L1_exit //   rn = NULL;
+                                 //   return x;
+                                 // }
+L1_exit Assert_Permutation_L(x, L1_0) L1_exit2
+L1_exit2 Assert_Sorted_L(x)           L1_exit3

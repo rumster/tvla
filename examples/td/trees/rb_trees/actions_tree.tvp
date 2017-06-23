@@ -1,0 +1,268 @@
+// Binary Tree Actions
+
+%action uninterpreted() { 
+  %t "uninterpreted"
+}
+
+%action skip() { 
+  %t "skip"
+}
+
+
+///////////////////////////////////////////////////////////
+// Actions encoding program statements that involve boolean
+// program variables.
+
+%action Is_True(x1) {
+    %t x1
+    %p x1()
+}
+
+%action Is_False(x1) {
+    %t "!" + x1
+    %p !x1()
+}
+
+%action Set_True(x1) {
+  %t x1 + " = true"
+  {
+    x1() = 1
+  }
+}
+
+%action Set_False(x1) {
+  %t x1 + " = false"
+  {
+    x1() = 0
+  }
+}
+
+%action SetTrue2(lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  {
+    pred(v) = pred(v) | lhs(v)
+  }
+}
+
+%action SetFalse2(lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  {
+    pred(v) = !lhs(v) & pred(v)
+  }
+}
+
+%action Is_True2(lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  %p E(v) lhs(v) & pred(v)
+}
+
+%action Is_False2(lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  %p !(E(v) lhs(v) & pred(v))
+}
+
+%action IsTrue2(result, lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  {
+    result() = (E(v) lhs(v) & pred(v))
+  }
+}
+
+%action IsFalse2(result, lhs, pred) {
+  %t pred + " = " + lhs
+  %f { lhs(v), pred(v) }
+  {
+    result() = !(E(v) lhs(v) & pred(v))
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////
+// Actions encoding program conditions involving pointer equality.
+
+%action Is_Not_Null_Var(x1) {
+    %t x1 + " != null"
+    %f { x1(v) } 
+    %p E(v) x1(v)
+}
+
+%action Is_Null_Var(x1) {
+    %t x1 + " == null"
+    %f { x1(v) } 
+    %p !(E(v) x1(v))
+}
+
+%action Is_Eq_Var(x1, x2) {
+    %t x1 + " == " + x2
+    %f { x1(v), x2(v) } 
+    %p A(v) x1(v) <-> x2(v)
+}
+
+%action Is_Not_Eq_Var(x1, x2) {
+    %t x1 + " != " + x2
+    %f { x1(v), x2(v) } 
+    %p !A(v) x1(v) <-> x2(v)
+}
+
+
+//////////////////////////////////////////////////////////////
+// Actions encoding program statements that manipulate pointer
+// variables and pointer fields.
+
+// x1 = (Tree) malloc(sizeof(struct node))
+%action Malloc_T(x1) {
+    %t x1 + " = (Tree) malloc(sizeof(struct node)) "
+    %new
+    {
+	x1(v) = isNew(v)
+	r[x1](v) = isNew(v)
+	downStar(v1, v2) = downStar(v1, v2) | (isNew(v1) & v1 == v2)
+    }
+}
+
+// x1 = NULL
+%action Set_Null_T(x1) {
+    %t x1 + " =(T) NULL"
+    {
+	x1(v) = 0 
+	r[x1](v) = 0 
+    }
+}
+
+// x1 = x2
+%action Copy_Var_T(x1, x2) {
+    %t x1 + " = (T)" + x2
+    %f { x2(v), r[x2](v) } 
+    {
+	x1(v) = x2(v) 
+	r[x1](v) = r[x2](v) 
+    }
+}
+
+// x1 = x2->sel
+%action Get_Sel_T(x1, x2, sel) {
+	%t x1 + " = (T)" + x2 + "->" + sel
+	%f {
+               E(v_1, v_2) x2(v_1) & sel(v_1, v_2) & downStar(v_2, v)
+		           // update-formula for r[x1](v) 
+      } 
+      %message !(E(v) x2(v)) -> "a possibly illegal dereference to ->" + sel + " component of " + x2 + "\n"
+	{
+	x1(v) = E(v1) x2(v1) & sel(v1, v)
+	r[x1](v) = E(v_1,v_2) x2(v_1) & sel(v_1, v_2) & downStar(v_2, v) 
+	}
+}
+
+// x1 = x2->parent
+%action Get_Parent(x1, x2) {
+  %t x1 + " = (T)" + x2 + "->parent"
+  %f 
+  {
+    E(v_1, v_2) x2(v_1) & down(v_2, v_1)// & downStar(v_2, v)
+    // update-formula for r[x1](v) 
+  }
+  %message !(E(v) x2(v)) -> "a possibly illegal dereference to ->parent of " + x2 + "\n"
+  {
+    x1(v) = E(v1) (x2(v1) & down(v, v1))
+    r[x1](v) = E(v_1,v_2) x2(v_1) & down(v_2, v_1) & downStar(v_2, v)
+  }
+}
+
+// x1->sel = NULL
+%action Set_Sel_Null_T(x1, sel) {
+    %t x1 + "->" + sel + " = (T) NULL"
+    %f { x1(v), // change-formula for sel(v_1, v_2) 
+        E(v_1) x1(v_1) & sel(v_1, v_2), 
+               // change-formula for down(v_1, v_2)
+            //  optimized change-formula for downStar formula
+		E(v_1, v_2) x1(v_1) & sel(v_1, v_2) & downStar(v_2, v)
+			// for reachability and downStar
+
+	}
+    %message !(E(v) x1(v)) -> "a possibly illegal dereference to ->" + sel + " component of " + x1 + "\n"
+    {
+	//sel(v_1, v_2) = (x1(v_1) ? 0 : sel(v_1, v_2))
+	sel(v_1, v_2) = sel(v_1, v_2) & !x1(v_1)
+        down(v_1, v_2) = ((x1(v_1) & sel(v_1, v_2)) ? 0 : down(v_1, v_2)) 
+        downStar(v_1, v_2) = 
+           ((downStar(v_1, v_2) &
+           E(v_3, v_4) downStar(v_1, v_3) & x1(v_3) & sel(v_3, v_4) & downStar(v_4, v_2))?
+		0 : downStar(v_1, v_2)) 
+
+	r[x1](v) = r[x1](v) & !(E(v_1, v_2) x1(v_1) & sel(v_1, v_2) & downStar(v_2, v)) 
+	foreach (x2 in PVar - {x1}) {
+		r[x2](v) = r[x2](v) & !(E(v_1, v_2) x1(v_1) & r[x2](v_1) &
+					sel(v_1, v_2) & downStar(v_2, v)) 
+	}
+
+     }
+}
+
+// assert(x1->sel==NULL); x1->sel = x2
+%action Set_Sel_T(x1, sel, x2) { 
+    %t x1 + "->" + sel + " = (T)" + x2
+    %f { x1(v), x2(v), 
+            //  change-formula for sel
+        E(v_4) x2(v_4) &  downStar(v_4, v_2)
+            // optimized change-formula for downStar formula
+            // missing focus for treeness precondition
+     }
+    %message !(E(v) x1(v)) -> "a possibly illegal dereference to ->" + sel + " component of " + x1 + "\n"
+    %message (E(v_1, v_2) x1(v_1) & sel(v_1, v_2)) -> "an internal error assuming " + x1 + "->" + sel + "==NULL\n"
+
+    // Data-structure invariant (DSI) messages.
+
+    // DSI 1: Checks for creation of a cycle.
+    %message (E(v_1, v_2)
+		x1(v_1) & x2(v_2) & downStar(v_2, v_1)) ->
+       "A cycle may be introduced by assignment " + x1 + "->" + sel + "=" + x2 + "\n"
+
+    // DSI 2: Checks for introduction of a node with multiple parents.
+    // This may be too restrictive, if trees can be shared.  By default,
+    // this invariant can be commented out.  If it is needed, then DSI 3
+    // can be commented out instead because this invariant is stronger.
+    // Whenever this invariant is commented out, property invfunction of
+    // predicates sel() and down() (see pred_tree.tvp) should also be
+    // commented out to avoid unsoundness!
+    %message (E(v_1, v_2) down(v_1, v_2) & x2(v_2)) ->
+       "A node with multiple parents may be introduced by assignment " + x1 + "->" + sel + "=" + x2 + "\n"
+
+    // DSI 3: Checks for introduction of multiple paths between two
+    // nodes.  This invariant is weaker and more expensive to check
+    // than DSI 2.  If DSI 2 is used, can comment out this one.
+    //%message (E(v_1, v_2, v_3, v_4) 
+    //            downStar(v_1, v_2) & x1(v_2) &
+    //            x2(v_3) & downStar(v_3, v_4) &
+    //            downStar(v_1, v_4)) ->
+    //   "Two nodes with multiple paths may be introduced by assignment " + x1 + "->" + sel + "=" + x2 + "\n"
+    {
+        sel(v_1, v_2) = sel(v_1, v_2) |  x1(v_1) & x2(v_2)
+	down(v_1, v_2) = down(v_1, v_2) | x1(v_1) & x2(v_2) 
+
+	foreach (x3 in PVar) {
+		r[x3](v) = r[x3](v) | E(v_1) x1(v_1) & r[x3](v_1) & r[x2](v) 
+	}
+
+	downStar(v_1, v_2) =  
+           (E(v_3, v_4) x1(v_3) & x2(v_4) & downStar(v_1, v_3) &
+            downStar(v_4, v_2) ? 1: downStar(v_1, v_2)) 
+    }
+}
+
+// free(x1)
+%action Free_T(x1) {
+    %t "free(" + x1 + ") "
+    %f { x1(v) }
+    %message (E(v_1, v_2) x1(v_1) & (|/{ sel(v_1, v_2) : sel in TSel })) ->
+	"Internal Error! assume that the selectors of " + x1 + "are all NULL"
+    %retain !x1(v)
+}
+
+
+//////////////////////////////////////////
+// Actions for testing various properties.

@@ -1,0 +1,97 @@
+///////
+// Sets
+
+%s PVar {x1, y1, w2, w3, h, t, hc1, hc2, hc3}
+%s PThreads {t1, t2, t3}
+%s PLabels {S1_0, L1_1, L1_2, L1_3, L1_4, L1_5, L1_6, L1_7, L1_8, L1_C, R1_1, R1_2, R1_3, R1_4, R1_5, R1_6, T1_1, T1_2, T1_3, T1_4, T1_5, T1_6, exit}
+
+#include "predicates_lists.tvp"
+
+%%
+
+#include "actions_lists.tvp"
+
+%action Copy_Var_CAS(src, cmp, dst) {
+  %t "Copy_Var_CAS " + src + " " + cmp + " " + dst
+  %f {
+       src(v1), cmp(v2), dst(v3)
+     }  
+  %p A(v) src(v) <-> cmp(v)
+  {
+    src(v4) = dst(v4)
+  }
+  %message (!(E(v4) dst(v4))) -> "Invalid " + dst + " variable"
+}
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that searches a list for an element
+// with a specified value.
+
+S1_0 Copy_Var_L(t, h) start
+
+start uninterpreted() trans1
+start uninterpreted() trans2
+start uninterpreted() trans3
+
+trans1 SetThreadPos2(t1, S1_0, L1_1)  L1_1
+trans1 SetThreadPos2(t1, L1_1, L1_1)  L1_7
+trans1 AreThreadsAtPos3(t1, t2, t3, exit)  exit
+
+trans2 SetThreadPos2(t2, S1_0,  R1_1) R1_1
+trans2 SetThreadPos2(t2, R1_1,  R1_5) R1_5
+trans2 SetThreadPos2(t2, R1_5,  R1_1) R1_1
+trans2 AreThreadsAtPos3(t1, t2, t3, exit)  exit
+
+trans3 SetThreadPos2(t3, S1_0,  T1_1) T1_1
+trans3 SetThreadPos2(t3, T1_1,  T1_5) T1_5
+trans3 SetThreadPos2(t3, T1_5,  T1_1) T1_1
+trans3 AreThreadsAtPos3(t1, t2, t3, exit)  exit
+
+exitT1_1 Set_Null_L(y1)                exitT1_2
+exitT1_2 SetThreadPos2(t1, L1_1, exit) start
+
+exitT2_1 Set_Null_L(hc2)               exitT2_2
+exitT2_2 SetThreadPos2(t2, R1_1, exit) exit
+
+exitT3_1 Set_Null_L(hc3)               exitT3_2
+exitT3_2 SetThreadPos2(t3, T1_1, exit) exit
+
+// Push
+L1_1 Is_Null_Var(x1)           exitT1_1
+L1_1 Is_Not_Null_Var(x1)       L1_2
+L1_2 Copy_Var_L(y1, x1)        L1_3
+L1_3 Get_Next_L(x1, y1)        L1_4
+L1_4 Copy_Var_L(hc1, h)        L1_5
+L1_5 Set_Next_Null_L(y1)       L1_6
+L1_6 Set_Next_L(y1, hc1)       start
+L1_7 Copy_Var_CAS(h, hc1, y1)  L1_8
+L1_7 Is_Not_Eq_Var(h, hc1)     L1_4
+L1_8 Set_Null_L(hc1)           L1_1
+
+// Pop 1
+R1_1 Is_Eq_Var(t, h)           exitT2_1
+R1_1 Is_Not_Eq_Var(t, h)       R1_2
+
+R1_2 Copy_Var_L(hc2, h)        R1_3
+R1_3 Set_Null_L(w2)            R1_4
+R1_4 Get_Next_L(w2, hc2)       start
+
+R1_5 Copy_Var_CAS(h, hc2, w2)  R1_6
+R1_5 Is_Not_Eq_Var(h, hc2)     R1_8
+R1_6 Set_Next_Null_L(hc2)      R1_8
+R1_8 Set_Null_L(hc2)           start
+
+// Pop 2
+T1_1 Is_Eq_Var(t, h)           exitT3_1
+T1_1 Is_Not_Eq_Var(t, h)       T1_2
+
+T1_2 Copy_Var_L(hc3, h)        T1_3
+T1_3 Set_Null_L(w3)            T1_4
+T1_4 Get_Next_L(w3, hc3)       start
+
+T1_5 Copy_Var_CAS(h, hc3, w3)  T1_6
+T1_5 Is_Not_Eq_Var(h, hc3)     T1_8
+T1_6 Set_Next_Null_L(hc3)      T1_8
+T1_8 Set_Null_L(hc3)           start

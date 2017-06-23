@@ -1,8 +1,6 @@
 package tvla.core.generic;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import tvla.core.HighLevelTVS;
 import tvla.core.Node;
@@ -26,17 +24,20 @@ public class BoundedStructEmbeddingTest {
 	 *            A bounded structure.
 	 * @return true if 'lhs' is embedded in 'rhs'.
 	 */
-	public static boolean isEmbedded(HighLevelTVS lhs, HighLevelTVS rhs) {
+	public static boolean isEmbedded(HighLevelTVS lhs, HighLevelTVS rhs, Map<Node, List<Node>> embeddingFunctionLHStoRHS) {
 		assert lhs.getVocabulary() == rhs.getVocabulary();
 
 		// Arrange it so lhs is the structure with the smaller universe.
 		// The algorithm will attempt to find an embedding function of
 		// rhs into lhs.
+		boolean isSwapped = false;
 		if (lhs.nodes().size() > rhs.nodes().size()) {
 			// Swap lhs and rhs.
 			HighLevelTVS tmp = lhs;
 			lhs = rhs;
 			rhs = tmp;
+
+			isSwapped = true;
 		}
 
 		// Check embedding with respect to nullary predicates.
@@ -53,8 +54,11 @@ public class BoundedStructEmbeddingTest {
 		}
 
 		// A map from the nodes of rhs onto the nodes of lhs.
-		Map<Node, Node> embeddingFunction = HashMapFactory.make(rhs.nodes()
-				.size());
+		if (embeddingFunctionLHStoRHS == null)
+			embeddingFunctionLHStoRHS = new HashMap<>();
+
+		embeddingFunctionLHStoRHS.clear();
+
 		// lhsNodes is used to check that the embedding function is surjective.
 		Collection<Node> unmatchedLhsNodes = HashSetFactory.make(lhs.nodes());
 
@@ -75,6 +79,12 @@ public class BoundedStructEmbeddingTest {
 				for (Predicate predicate : lhs.getVocabulary().unaryRel()) {
 					Kleene lhsVal = lhs.eval(predicate, lhsNode);
 					Kleene rhsVal = rhs.eval(predicate, rhsNode);
+
+					if (lhsVal != rhsVal) {
+						lhsNode = null;
+						break;
+					}
+
 					if (lhsVal == Kleene.unknownKleene
 							|| rhsVal == Kleene.unknownKleene
 							|| lhsVal == rhsVal) {
@@ -100,7 +110,13 @@ public class BoundedStructEmbeddingTest {
 				}
 			}
 			if (matchedNode != null) { // found a match for rhsNode
-				embeddingFunction.put(rhsNode, matchedNode);
+
+				Node lhsOrig = isSwapped ? rhsNode: matchedNode;
+				Node rhsOrig = isSwapped ? matchedNode : rhsNode;
+
+				embeddingFunctionLHStoRHS.putIfAbsent(lhsOrig, new ArrayList<Node>());
+				embeddingFunctionLHStoRHS.get(lhsOrig).add(rhsOrig);
+
 				unmatchedLhsNodes.remove(matchedNode);
 			} else {
 				return false;

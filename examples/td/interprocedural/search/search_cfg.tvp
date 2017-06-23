@@ -1,0 +1,53 @@
+
+// entring to procedure: search
+search Copy_Variable_L(h,search$1) search_entry_2
+search_entry_2 Set_Null_L(search$1) search_entry_3
+search_entry_3 nothing() search_body_1
+
+// if ( (h == NULL) )
+search_body_1 Is_Null_Var_L(h) search_body_3
+search_body_1 Is_Not_Null_Var_L(h) search_body_2
+
+// then {
+
+// return NULL
+search_body_3 Set_Null_L(search$ret) search_exit_1
+
+// }
+
+// if ( (uniterpreted conditional) )
+search_body_2 uninterpreted() search_body_5
+search_body_2 uninterpreted() search_body_4
+
+// then {
+
+// return h
+search_body_5 Copy_Variable_L(search$ret,h) search_exit_1
+
+// }
+
+// h = h->n;
+search_body_4 Get_Next_L(h,h) search_body_6
+
+// setting the paramters
+search_body_6 Copy_Variable_L(search$1,h) search_body_10
+search_body_10 DO_PUSH(search,search_body_11,search,Locals_search,Temps_search) search
+search_body_11 DO_RESTORE(search,Locals_search,CallSites_search) search_body_12
+search_body_12 POP(search,CallSites_search) search_body_8
+
+// h = search$ret;
+search_body_8 Copy_Variable_L(h,search$ret) search_body_9
+
+// search$ret = NULL;
+search_body_9 Set_Null_L(search$ret) search_body_7
+
+// return h
+search_body_7 Copy_Variable_L(search$ret,h) search_exit_1
+
+// exiting from procedure: search
+search_exit_1 Set_Null_L(h) search_exit_2
+search_exit_2 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(search_body_11) search_body_11

@@ -1,0 +1,86 @@
+///////
+// Sets
+
+%s PVar {x1, y1, w1, x2, y2, w2, h, t, tc1, tc2}
+%s PThreads {t1, t2}
+%s PLabels {S1_0, L1_1, L1_2, L1_3, L1_4, L1_5, L1_6, L1_7, L1_C, R1_1, R1_2, R1_3, R1_4, R1_5, R1_6, R1_7, R1_C, exit}
+
+#include "predicates_lists.tvp"
+
+%%
+
+#include "actions_lists.tvp"
+
+%action Set_Next_CAS(src, cmp, next) {
+  %t "Set_Next_CAS " + src + " " + cmp + " " + next
+  %f {
+       src(v), cmp(v2), next(v3),
+       // optimized change-formula for t[n] update-formula
+       E(v_4) next(v_4) & t[n](v_4, v_2)
+     }
+  %p A(v) src(v) <-> cmp(v)
+  {
+    n(v_1, v_2) = n(v_1, v_2) | (src(v_1) & next(v_2))
+    src(v) = next(v)
+  }
+}
+
+%%
+
+///////////////////////////////////////////////////////////////////////
+// Transition system for a function that searches a list for an element
+// with a specified value.
+
+S1_0 Copy_Var_L(t, h) start
+
+start uninterpreted() trans1
+start uninterpreted() trans2
+
+trans1 SetThreadPos2(t1, S1_0, L1_1) L1_1
+trans1 SetThreadPos2(t1, L1_1, L1_2) L1_2
+trans1 SetThreadPos2(t1, L1_2, L1_3) L1_3
+trans1 SetThreadPos2(t1, L1_3, L1_4) L1_4
+trans1 SetThreadPos2(t1, L1_4, L1_5) L1_5
+trans1 SetThreadPos2(t1, L1_5, L1_6) L1_6
+trans1 SetThreadPos2(t1, L1_6, L1_4) L1_4
+trans1 SetThreadPos2(t1, L1_C, L1_7) L1_7
+trans1 SetThreadPos2(t1, L1_7, L1_1) L1_1
+trans1 AreThreadsAtPos(t1, t2, exit) exit
+
+trans2 SetThreadPos2(t2, S1_0, R1_1) R1_1
+trans2 SetThreadPos2(t2, R1_1, R1_2) R1_2
+trans2 SetThreadPos2(t2, R1_2, R1_3) R1_3
+trans2 SetThreadPos2(t2, R1_3, R1_4) R1_4
+trans2 SetThreadPos2(t2, R1_4, R1_5) R1_5
+trans2 SetThreadPos2(t2, R1_5, R1_6) R1_6
+trans2 SetThreadPos2(t2, R1_6, R1_4) R1_4
+trans2 SetThreadPos2(t2, R1_C, R1_7) R1_7
+trans2 SetThreadPos2(t2, R1_7, R1_1) R1_1
+trans2 AreThreadsAtPos(t1, t2, exit) exit
+
+exitT1 SetThreadPos2(t1, L1_1, exit) start
+exitT2 SetThreadPos2(t2, R1_1, exit) start
+
+CAST1 SetThreadPos2(t1, L1_6, L1_C) start
+CAST2 SetThreadPos2(t2, R1_6, R1_C) start
+
+L1_1 Is_Null_Var(x1)           exitT1
+L1_1 Is_Not_Null_Var(x1)       start
+L1_2 Copy_Var_L(y1, x1)        start
+L1_3 Get_Next_L(x1, y1)        start
+L1_4 Copy_Var_L(tc1, t)        start
+L1_5 Set_Next_Null_L(y1)       start
+L1_6 Set_Next_CAS(t, tc1, y1)  CAST1
+L1_6 Is_Not_Eq_Var(t, tc1)     start
+L1_7 Set_Null_L(tc1)           start
+
+R1_1 Is_Null_Var(x2)           exitT2
+R1_1 Is_Not_Null_Var(x2)       start
+R1_2 Copy_Var_L(y2, x2)        start
+R1_3 Get_Next_L(x2, y2)        start
+R1_4 Copy_Var_L(tc2, t)        start
+R1_5 Set_Next_Null_L(y2)       start
+R1_6 Set_Next_CAS(t, tc2, y2)  CAST2
+R1_6 Is_Not_Eq_Var(t, tc2)     start
+R1_7 Set_Null_L(tc2)           start
+

@@ -301,7 +301,7 @@ public class AnalysisGraph {
 		}
 	}
 
-	/** Prints the current state of the CFG and the strctures in it.
+	/** Prints the current state of the CFG and the structures in it.
 	 */
 	public void dump() {
 		Collection<Location> inOrderLocations = new ArrayList<Location>(inOrder.size());

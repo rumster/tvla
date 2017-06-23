@@ -1,0 +1,84 @@
+/***********************************/
+/* general conditions and actions. */
+/***********************************/
+
+/*********************************************************/
+/* Conditions                                            */
+/* The strucutre get through only if the condition holds */
+/*********************************************************/
+
+/* Comparing pointer values */
+
+/* x1 != NULL ? */
+%action  Is_Not_Null_Var_L(x1) {
+    %t x1 + " != null"
+    %f { x1(v) }
+    %p E(v) x1(v)
+}
+
+/* x1 == NULL ? */
+%action Is_Null_Var_L(x1){
+    %t x1 + " == null"
+    %f { x1(v) }
+    %p !(E(v) x1(v))
+}
+
+/* x1 != x2 ? */
+%action Is_Not_Eq_Var_L(x1, x2) {
+    %t x1 + " != " + x2
+    %f { x1(v), x2(v) }
+    %p !(A(v) x1(v) <-> x2(v))
+}
+
+/* x1 == x2 ? */
+%action Is_Eq_Var_L(x1, x2) {
+    %t x1 + " == " + x2
+    %f { x1(v), x2(v) }
+    %p (A(v) x1(v) <-> x2(v))
+}
+
+/* Checking Boolean values */
+
+/* x1 == TRUE ? */
+%action Is_True(x1) {
+    %t "is_true(" + x1 + ")"
+    %f { x1() }
+    %p (x1(v))
+}
+
+/* x1 == FALSE ? */
+%action Is_False(x1) {
+    %t "is_false(" + x1 + ")"
+    %f { x1() }
+    %p ( ! x1(v))
+}
+
+
+/***********/
+/* Actions */
+/***********/
+
+/* x1 = TRUE */ 
+%action Set_True(x1) {
+    %t "set_true(" + x1 + ")"
+    {
+    x1() = 1    
+    }
+}
+
+/* x1 = FALSE */
+%action Set_False(x1) {
+    %t "Set_False(" + x1 + ")"
+    {
+    x1() = 0    
+    }
+}
+
+/* nop - used for gotos by the frontend */
+%action nothing() { 
+}
+
+/* used for uniterpreted conditions (i.e., comparing scalars) */
+%action uninterpreted() {
+    %t "uninterpreted"
+}

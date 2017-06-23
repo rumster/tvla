@@ -1,0 +1,18 @@
+%p tt()
+%p ff() {0}
+
+%p free(v)
+
+%p null(v) unique box
+
+foreach (t in Types) {
+  %p t(v)
+}
+
+foreach (z in BVar) {
+  %p z()
+}
+
+foreach (sel in PField) {
+  %p sel(v_1, v_2) function 
+}

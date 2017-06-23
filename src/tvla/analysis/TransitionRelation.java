@@ -65,7 +65,7 @@ public interface TransitionRelation {
      */
     public void dump();
 	
-    public static interface AbstractState {
+        public static interface AbstractState {
         public TVS getStructure();
         public Object getLocation();
     }

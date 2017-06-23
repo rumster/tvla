@@ -169,17 +169,17 @@ public class HashGraph extends AbstractGraph {
 		assert(containsNode(from));
 		assert(containsNode(to));
 
-		Edge seekedEdge = new HashEdge(from,to,null); 
+		//Edge seekedEdge = new HashEdge(from,to,null);
 		Iterator edgeItr = getOutgoingEdges(from).iterator();
 		while (edgeItr.hasNext()) {
 			Edge edge = (Edge) edgeItr.next();
-			if (seekedEdge.equals(edge)) {
+			if (edge.getSource().equals(from) &&
+          edge.getDestination().equals(to)) {
 				assert(getIncomingEdges(to).contains(edge));
 				assert(getIncomingNodes(to).contains(from));
 				assert(getOutgoingNodes(from).contains(to));
 				return edge;
 			}
-				
 		}
 			
 		assert(!getIncomingNodes(to).contains(from));
@@ -323,8 +323,8 @@ public class HashGraph extends AbstractGraph {
 //            change |= outgoingEdges.removeAll(edges);
 //        }
 //        for (Iterator incomingIter = nodeToIncoming.values().iterator(); incomingIter.hasNext(); ) {
-//            Collection incomingEdges = (Collection) incomingIter.next();
-//            incomingEdges.removeAll(edges);
+//            Collection dataArray = (Collection) incomingIter.next();
+//            dataArray.removeAll(edges);
 //        }
 //        ++version;
 //    }
@@ -393,7 +393,7 @@ public class HashGraph extends AbstractGraph {
 		while (outEdgesItr.hasNext()) {
 			Object edgeObj = outEdgesItr.next();
 			HashEdge edge = (HashEdge) edgeObj;
-			cp.addEdge(edge.source,edge.destination);
+			cp.addEdge(edge.source, edge.destination, edge.getLabel());
 		}
 
 		return cp;

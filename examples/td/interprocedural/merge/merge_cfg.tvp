@@ -1,0 +1,104 @@
+
+// entring to procedure: merge
+merge Copy_Variable_L(p,merge$1) merge_entry_2
+merge_entry_2 Set_Null_L(merge$1) merge_entry_3
+merge_entry_3 Copy_Variable_L(q,merge$2) merge_entry_4
+merge_entry_4 Set_Null_L(merge$2) merge_entry_5
+merge_entry_5 Set_Null_L(t) merge_entry_6
+merge_entry_6 Set_Null_L(r) merge_entry_7
+merge_entry_7 nothing() merge_body_1
+
+// if ( (p == NULL) )
+merge_body_1 Is_Null_Var_L(p) merge_body_3
+merge_body_1 Is_Not_Null_Var_L(p) merge_body_2
+
+// then {
+
+// return q
+merge_body_3 Copy_Variable_L(merge$ret,q) merge_exit_1
+
+// }
+
+// if ( (q == NULL) )
+merge_body_2 Is_Null_Var_L(q) merge_body_5
+merge_body_2 Is_Not_Null_Var_L(q) merge_body_4
+
+// then {
+
+// return p
+merge_body_5 Copy_Variable_L(merge$ret,p) merge_exit_1
+
+// }
+
+// if ( (uniterpreted conditional) )
+merge_body_4 uninterpreted() merge_body_7
+merge_body_4 uninterpreted() merge_body_8
+
+// then {
+
+// t = p->n;
+merge_body_7 Get_Next_L(t,p) merge_body_9
+
+// p->n = NULL;
+merge_body_9 Set_Next_Null_L(p) merge_body_10
+
+// setting the paramters
+merge_body_10 Copy_Variable_L(merge$1,t) merge_body_14
+merge_body_14 Copy_Variable_L(merge$2,q) merge_body_15
+merge_body_15 DO_PUSH(merge,merge_body_16,merge,Locals_merge,Temps_merge) merge
+merge_body_16 DO_RESTORE(merge,Locals_merge,CallSites_merge) merge_body_17
+merge_body_17 POP(merge,CallSites_merge) merge_body_12
+
+// t = merge$ret;
+merge_body_12 Copy_Variable_L(t,merge$ret) merge_body_13
+
+// merge$ret = NULL;
+merge_body_13 Set_Null_L(merge$ret) merge_body_11
+
+// r = p;
+merge_body_11 Copy_Variable_L(r,p) I1
+
+// } else {
+
+// t = q->n;
+merge_body_8 Get_Next_L(t,q) merge_body_18
+
+// q->n = NULL;
+merge_body_18 Set_Next_Null_L(q) merge_body_19
+
+// setting the paramters
+merge_body_19 Copy_Variable_L(merge$1,p) merge_body_23
+merge_body_23 Copy_Variable_L(merge$2,t) merge_body_24
+merge_body_24 DO_PUSH(merge,merge_body_25,merge,Locals_merge,Temps_merge) merge
+merge_body_25 DO_RESTORE(merge,Locals_merge,CallSites_merge) merge_body_26
+merge_body_26 POP(merge,CallSites_merge) merge_body_21
+
+// t = merge$ret;
+merge_body_21 Copy_Variable_L(t,merge$ret) merge_body_22
+
+// merge$ret = NULL;
+merge_body_22 Set_Null_L(merge$ret) merge_body_20
+
+// r = q;
+merge_body_20 Copy_Variable_L(r,q) merge_body_6
+
+// }
+
+// r->n = t;
+
+merge_body_6 Set_Next_L(r,t) merge_body_27
+
+// return r
+merge_body_27 Copy_Variable_L(merge$ret,r) merge_exit_1
+
+// exiting from procedure: merge
+merge_exit_1 Set_Null_L(p) merge_exit_2
+merge_exit_2 Set_Null_L(q) merge_exit_3
+merge_exit_3 Set_Null_L(t) merge_exit_4
+merge_exit_4 Set_Null_L(r) merge_exit_5
+merge_exit_5 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(merge_body_16) merge_body_16
+EXIT return(merge_body_25) merge_body_25

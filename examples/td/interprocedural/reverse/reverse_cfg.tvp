@@ -1,0 +1,68 @@
+
+// entring to procedure: reverse
+reverse Copy_Variable_L(r,reverse$1) reverse_entry_2
+reverse_entry_2 Set_Null_L(reverse$1) reverse_entry_3
+reverse_entry_3 Set_Null_L(y) reverse_entry_4
+reverse_entry_4 Set_Null_L(t) reverse_entry_5
+reverse_entry_5 nothing() reverse_body_1
+
+// if ( (r != NULL ) )
+reverse_body_1 Is_Not_Null_Var_L(r) reverse_body_3
+reverse_body_1 Is_Null_Var_L(r) reverse_body_2
+
+// then {
+
+// t = r->n;
+reverse_body_3 Get_Next_L(t,r) reverse_body_4
+
+// setting the paramters
+reverse_body_4 Copy_Variable_L(reverse$1,t) reverse_body_8
+reverse_body_8 DO_PUSH(reverse,reverse_body_9,reverse,Locals_reverse,Temps_reverse) reverse
+reverse_body_9 DO_RESTORE(reverse,Locals_reverse,CallSites_reverse) reverse_body_10
+reverse_body_10 POP(reverse,CallSites_reverse) reverse_body_6
+
+// t = reverse$ret;
+reverse_body_6 Copy_Variable_L(t,reverse$ret) reverse_body_7
+
+// reverse$ret = NULL;
+reverse_body_7 Set_Null_L(reverse$ret) reverse_body_5
+
+// y = r->n;
+reverse_body_5 Get_Next_L(y,r) reverse_body_11
+
+// r->n = NULL;
+reverse_body_11 Set_Next_Null_L(r) reverse_body_12
+
+// if ( (y != NULL ) )
+reverse_body_12 Is_Not_Null_Var_L(y) reverse_body_13
+reverse_body_12 Is_Null_Var_L(y) reverse_body_14
+
+// then {
+
+// y->n = NULL;
+reverse_body_13 Set_Next_Null_L(y) reverse_body_15
+
+// y->n = r;
+reverse_body_15 Set_Next_L(y,r) reverse_body_2
+
+// } else {
+
+// t = r;
+reverse_body_14 Copy_Variable_L(t,r) reverse_body_2
+
+// }
+
+// }
+
+// return t
+reverse_body_2 Copy_Variable_L(reverse$ret,t) reverse_exit_1
+
+// exiting from procedure: reverse
+reverse_exit_1 Set_Null_L(r) reverse_exit_2
+reverse_exit_2 Set_Null_L(y) reverse_exit_3
+reverse_exit_3 Set_Null_L(t) reverse_exit_4
+reverse_exit_4 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(reverse_body_9) reverse_body_9

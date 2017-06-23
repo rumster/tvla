@@ -76,10 +76,22 @@ public class AnalysisStatus {
      */
     public static final int FRAME_TIME      = 12;
 
+		/** The id of the timer that measures the time spent on termination analysis
+		 */
+		public static final int TD_TIME      = 13;
+
+		/** The id of the timer that measures the time spent on termination analysis summarization section
+		 */
+		public static final int TD_SUM_TIME      = 14;
+
+		/** The id of the timer that measures the time spent on termination analysis verification section
+		 */
+		public static final int TD_SAT_TIME      = 15;
+
     /** Number of timers
      */
-    public static final int NUM_TIMERS      = 13;
-    
+    public static final int NUM_TIMERS      = 16;
+
     /** The global load timer.
 	 */
 	public static Timer loadTimer = new Timer();
@@ -131,6 +143,8 @@ public class AnalysisStatus {
 	
 	public boolean continuousStatisticsReports;
 
+  public Boolean TerminationAnalysisResult = null;
+
 	/** The maximum amount of memory used during analysis.
 	 */
 	protected long maxMemory;
@@ -144,19 +158,23 @@ public class AnalysisStatus {
 	protected long memorySamples;
 	
 	protected int structuresPerSecond;	
-    protected double loadTime;
-    protected double meetTime;
-    protected double composeTime;
-    protected double decomposeTime;
-    protected double permuteTime;
-    protected double frameTime;
-	protected double totalAnalysisTime = 0;
+  protected double loadTime;
+  protected double meetTime;
+  protected double composeTime;
+  protected double decomposeTime;
+  protected double permuteTime;
+  protected double frameTime;
+  protected double totalAnalysisTime = 0;
 	protected double updateTime;
 	protected double preconditionTime;
 	protected double blurTime;
 	protected double focusTime;
 	protected double coerceTime;
 	protected double joinTime;
+
+  protected double tdTime;
+  protected double tdSumTime;
+  protected double tdSatTime;
 	
 	/** An array of timers.
 	 */
@@ -192,7 +210,7 @@ public class AnalysisStatus {
 		autoGC = ProgramProperties.getBooleanProperty("tvla.engine.autoGC", autoGC);
 		statisticsEvery = ProgramProperties.getIntProperty("tvla.engine.statisticsEvery", 1000);
 		continuousStatisticsReports = ProgramProperties.getBooleanProperty("tvla.log.continuousStatisticsReports", false);
-		
+
 		initTimers();
 		activeStatus = this;
 	}
@@ -275,16 +293,19 @@ public class AnalysisStatus {
 			totalAnalysisTime	= getTimerMeasure(TOTAL_ANALYSIS_TIME);
 			updateTime			= getTimerMeasure(UPDATE_TIME);
 			preconditionTime	= getTimerMeasure(PRECONDITION_TIME);
-			blurTime			= getTimerMeasure(BLUR_TIME);
-			focusTime			= getTimerMeasure(FOCUS_TIME);
-			coerceTime			= getTimerMeasure(COERCE_TIME);
-			joinTime			= getTimerMeasure(JOIN_TIME);
-			loadTime			= getTimerMeasure(LOAD_TIME);
-            meetTime            = getTimerMeasure(MEET_TIME);
-            composeTime         = getTimerMeasure(COMPOSE_TIME);
-            decomposeTime       = getTimerMeasure(DECOMPOSE_TIME);
-            permuteTime       = getTimerMeasure(PERMUTE_TIME);
-            frameTime       = getTimerMeasure(FRAME_TIME);
+			blurTime		 	= getTimerMeasure(BLUR_TIME);
+			focusTime		  	= getTimerMeasure(FOCUS_TIME);
+			coerceTime	   = getTimerMeasure(COERCE_TIME);
+			joinTime			 = getTimerMeasure(JOIN_TIME);
+			loadTime			 = getTimerMeasure(LOAD_TIME);
+			meetTime       = getTimerMeasure(MEET_TIME);
+			composeTime    = getTimerMeasure(COMPOSE_TIME);
+			decomposeTime  = getTimerMeasure(DECOMPOSE_TIME);
+			permuteTime    = getTimerMeasure(PERMUTE_TIME);
+			frameTime      = getTimerMeasure(FRAME_TIME);
+      tdTime         = getTimerMeasure(TD_TIME);
+      tdSumTime      = getTimerMeasure(TD_SUM_TIME);
+      tdSatTime      = getTimerMeasure(TD_SAT_TIME);
 		}
 	}
 
@@ -311,11 +332,11 @@ public class AnalysisStatus {
 	
 	public void printStatistics(StringBuffer to) {
 		double currentTotalTime = getTimerMeasure(TOTAL_ANALYSIS_TIME);
-        double currentMeetTime = getTimerMeasure(MEET_TIME);
-        double currentComposeTime = getTimerMeasure(COMPOSE_TIME);
-        double currentDecomposeTime = getTimerMeasure(DECOMPOSE_TIME);
-        double currentPermuteTime = getTimerMeasure(PERMUTE_TIME);
-        double currentFrameTime = getTimerMeasure(FRAME_TIME);
+    double currentMeetTime = getTimerMeasure(MEET_TIME);
+    double currentComposeTime = getTimerMeasure(COMPOSE_TIME);
+    double currentDecomposeTime = getTimerMeasure(DECOMPOSE_TIME);
+    double currentPermuteTime = getTimerMeasure(PERMUTE_TIME);
+    double currentFrameTime = getTimerMeasure(FRAME_TIME);
 		double currentLoadTime = getTimerMeasure(LOAD_TIME);
 		double currentFocusTime = getTimerMeasure(FOCUS_TIME);
 		double currentPreconditionTime = getTimerMeasure(PRECONDITION_TIME);
@@ -323,6 +344,10 @@ public class AnalysisStatus {
 		double currentCoerceTime = getTimerMeasure(COERCE_TIME);
 		double currentBlurTime = getTimerMeasure(BLUR_TIME);
 		double currentJoinTime = getTimerMeasure(JOIN_TIME);
+
+    double currentTdTime    = getTimerMeasure(TD_TIME);
+    double currentTdSumTime = getTimerMeasure(TD_SUM_TIME);
+    double currentTdSatTime = getTimerMeasure(TD_SAT_TIME);
 		
 		// Normalize times to reduce the effect of accumulating errors.
 		/*
@@ -357,13 +382,16 @@ public class AnalysisStatus {
 		currentCoerceTime = ((int)(currentCoerceTime*PERCISION))/PERCISION;
 		currentBlurTime = ((int)(currentBlurTime*PERCISION))/PERCISION;
 		currentJoinTime = ((int)(currentJoinTime*PERCISION))/PERCISION;
-        currentMeetTime = ((int)(currentMeetTime*PERCISION))/PERCISION;
-        currentComposeTime = ((int)(currentComposeTime*PERCISION))/PERCISION;
-        currentDecomposeTime = ((int)(currentDecomposeTime*PERCISION))/PERCISION;
-        currentPermuteTime = ((int)(currentPermuteTime*PERCISION))/PERCISION;
-        currentFrameTime = ((int)(currentFrameTime*PERCISION))/PERCISION;
-		
-		memorySamples = memorySamples > 0 ? memorySamples : 1;
+		currentMeetTime = ((int)(currentMeetTime*PERCISION))/PERCISION;
+		currentComposeTime = ((int)(currentComposeTime*PERCISION))/PERCISION;
+		currentDecomposeTime = ((int)(currentDecomposeTime*PERCISION))/PERCISION;
+		currentPermuteTime = ((int)(currentPermuteTime*PERCISION))/PERCISION;
+		currentFrameTime = ((int)(currentFrameTime*PERCISION))/PERCISION;
+    currentTdTime = ((int)(currentTdTime*PERCISION))/PERCISION;
+    currentTdSumTime = ((int)(currentTdSumTime*PERCISION))/PERCISION;
+    currentTdSatTime = ((int)(currentTdSatTime*PERCISION))/PERCISION;
+
+    memorySamples = memorySamples > 0 ? memorySamples : 1;
 		
 		exhaustiveGC();
 		
@@ -371,26 +399,26 @@ public class AnalysisStatus {
 			Logger.println( StringUtils.addUnderline("Statistics") );
         
 		println(to, "Initial memory             : " + initialMemory/(float)1000000 + "\tMb");
-        println(to, "Max memory                 : " + maxMemory/(float)1000000 + "\tMb");
-        println(to, "Average memory             : " + (averageMemory/memorySamples)/(float)1000000 + "\tMb");
-        println(to, "Load time                  : " + (float) currentLoadTime + "\tseconds");
-        println(to, "Total analysis time        : " + (float) currentTotalTime + "\tseconds");
-        println(to, "Focus time                 : " + (float) currentFocusTime + "\tseconds");
-        println(to, "Precondition time          : " + (float) currentPreconditionTime + "\tseconds");
-        println(to, "Update time                : " + (float) currentUpdateTime + "\tseconds");
-        println(to, "Coerce time                : " + (float) currentCoerceTime + "\tseconds");
-        println(to, "Blur time                  : " + (float) currentBlurTime + "\tseconds");
-        println(to, "Join time                  : " + (float) currentJoinTime + "\tseconds");
+        println(to, "Max memory                   : " + maxMemory/(float)1000000 + "\tMb");
+        println(to, "Average memory               : " + (averageMemory/memorySamples)/(float)1000000 + "\tMb");
+        println(to, "Load time                    : " + (float) currentLoadTime + "\tseconds");
+        println(to, "Total analysis time          : " + (float) currentTotalTime + "\tseconds");
+        println(to, "Focus time                   : " + (float) currentFocusTime + "\tseconds");
+        println(to, "Precondition time            : " + (float) currentPreconditionTime + "\tseconds");
+        println(to, "Update time                  : " + (float) currentUpdateTime + "\tseconds");
+        println(to, "Coerce time                  : " + (float) currentCoerceTime + "\tseconds");
+        println(to, "Blur time                    : " + (float) currentBlurTime + "\tseconds");
+        println(to, "Join time                    : " + (float) currentJoinTime + "\tseconds");
         if (currentMeetTime > 0)
-            println(to, "Meet time                  : " + (float) currentMeetTime + "\tseconds");        
+            println(to, "Meet time                    : " + (float) currentMeetTime + "\tseconds");
         if (currentComposeTime > 0)
-            println(to, "Compose time               : " + (float) currentComposeTime + "\tseconds");
+            println(to, "Compose time                 : " + (float) currentComposeTime + "\tseconds");
         if (currentDecomposeTime > 0)
-            println(to, "Decompose time             : " + (float) currentDecomposeTime + "\tseconds");
+            println(to, "Decompose time               : " + (float) currentDecomposeTime + "\tseconds");
         if (currentPermuteTime > 0)
-            println(to, "Permute time               : " + (float) currentPermuteTime + "\tseconds");
+            println(to, "Permute time                 : " + (float) currentPermuteTime + "\tseconds");
         if (currentFrameTime > 0)
-            println(to, "Frame time                 : " + (float) currentFrameTime + "\tseconds");
+            println(to, "Frame time                   : " + (float) currentFrameTime + "\tseconds");
 
         println(to, "Total number of structures : " + numberOfStructures);
         println(to, "Structures per second      : " + structuresPerSecond);
@@ -403,9 +431,16 @@ public class AnalysisStatus {
         for (Location failLoc : Action.locationsWherePropertyFails) {
         	println(to, "PROPERTY FAILED at " + failLoc.label());
         }
-        		
-        
-        println(to, "");
+
+        if (TerminationAnalysisResult != null) {
+          println(to, "Termination analysis result  : " + (TerminationAnalysisResult ? "Terminating" : "Non terminating"));
+          println(to, "Termination analysis time    : " + (float) currentTdTime + "\tseconds");
+          println(to, "TD summarizaiton time        : " + (float) currentTdSumTime + "\tseconds");
+          println(to, "TD verification time         : " + (float) currentTdSatTime + "\tseconds");
+        }
+
+
+    println(to, "");
 		/*
         Logger.println("Eval stats:");
         Logger.println(" evals: " + FormulaIterator.stat_Evals);

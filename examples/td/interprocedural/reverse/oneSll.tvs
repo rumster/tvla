@@ -1,0 +1,12 @@
+%n = {u0,u1}
+%p = {
+List = {u0,u1}
+sm = {u1:1/2}
+n = {u0->u1:1/2, u1->u1:1/2}
+hd = {u0}
+r_L[hd] = {u0,u1}
+
+cur_cs_is[meta_main] = 1
+
+}
+

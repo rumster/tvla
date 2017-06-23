@@ -1,0 +1,275 @@
+/**********************************************************/
+/* List data type Interprocedural actions                 */
+/* The abstract semantics of Interprocedural statements.  */
+/**********************************************************/
+
+
+/**********************************************************/
+/* Handling calls:                                        */
+/* DO_PUSH - creates a new stack frame and pushs it into  */
+/*           the stack.                                   */
+/*                                                        */
+/* Handling returns:                                      */
+/* DO_RESTORE - finds the caller of the current function  */
+/*              caller.                                   */
+/* POP - removes the top frame off the stack.             */   
+/*                                                        */ 
+/*   Note that the state between DO_RESTORE and DO_POP    */
+/*   is inconsistent - the current function "has" a       */
+/*   stack frame. Thus, this two actions must always come */
+/*   in pairs. The reason for the seperation is technical */
+/*   we want a coerce to take place between DO_RESTORE    */
+/*   and DO_POP, but we do not want to pay the price of   */
+/*   always doing coerce after focus nd after update.     */ 
+/**********************************************************/
+
+
+/******************************************************/
+/* DO_PUSH Creates and add a new stack node.          */
+/* CUR - is the current procedure - the one that      */
+/*       invokes the call.                            */
+/* CS - is the call site the of the currently invoked */
+/*      procedure.                                    */ 
+/* CALLEE - is the name of the invoked procedure.     */        
+/* LOCALS_CUR - is the set of local ariables of the   */
+/*      current (Calling) procedure.                  */ 
+/* LOCALS_TEMP - is the set of the temporaries of the */
+/*      calling procedures - not used after the call. */
+/******************************************************/
+
+%action DO_PUSH(CUR,CS,CALLEE, LOCALS_CUR, LOCALS_TEMP) { 
+    %t "DO_PUSH(" + CUR + "," + CALLEE + "," + CS + "," + 
+                  LOCALS_CUR + "," + LOCALS_TEMP + ")"
+    %new
+    {
+        // creates a new stack node and connect it to the stack. 
+        Stack(v) = Stack(v) | isNew(v)
+        pr(v_1,v_2) = pr(v_1,v_2) | isNew(v_1) & topS(v_2)
+        topS(v) = isNew(v)
+
+        // local temps are not remembered.
+        foreach (lcl1 in LOCALS_TEMP) {
+            lcl1(v) = 0
+            r_L[lcl1](v) = 0        
+        }
+
+        // the current procedure local variables become invisible
+        // update the properties of the invisible variables.  
+        foreach (lcl in LOCALS_CUR) {
+            rs_SL[topS,lcl](v) = rs_SL[topS,lcl](v) | lcl(v) 
+            stored[lcl](v_1,v_2) = stored[lcl](v_1,v_2) | isNew(v_1) & lcl(v_2)     
+            is_SL[lcl](v) = is_SL[lcl](v) | rs_SL[topS,lcl](v) & lcl(v)
+            notNull[lcl](v) = notNull[lcl](v) | isNew(v) & E(v_1)  lcl(v_1) 
+
+            /* The current locals are NULLED */
+            lcl(v) = 0
+            r_L[lcl](v) = 0         
+        }
+
+        top[CUR](v) = isNew(v) 
+        r_top_S[CUR](v) = isNew(v) | Stack(v) 
+
+        foreach (lcl in Locals) {
+            pto_top_SL[CUR,lcl](v) = lcl(v) 
+            rl_top_SL[CUR,lcl](v) = r_L[lcl](v) 
+        }
+
+
+        // saves control information          
+        foreach (call_site in CallSites) {
+            ret_to_cs[call_site](v) = 
+                ret_to_cs[call_site](v) | isNew(v) & cur_cs_is[call_site]() 
+        }
+
+        cur_cs_is[CS]() = 1
+        foreach(call_site in CallSites - {CS}) {
+            cur_cs_is[call_site]() = 0 
+        }
+
+
+        // since we assume each procedure has different sets of locals, we implicitly 
+        // demand that the previous function was the one that is being called 
+        foreach (lcl in Locals_sq & LOCALS_CUR) {
+            sq[lcl](v) =
+                sq[lcl](v) | 
+                isNew(v) & (E(v_1,v_2) pto_top_SL[CUR,lcl](v_1) & lcl(v_2) & n(v_1,v_2))
+        }
+
+        foreach (lcl in Locals_rsq & LOCALS_CUR) {
+            rsq[lcl](v) = 
+                rsq[lcl](v) | 
+                isNew(v) & (E(v_1,v_2) pto_top_SL[CUR,lcl](v_1) & lcl(v_2) & n(v_2,v_1))
+        }
+
+
+        // NEW !! for merge
+
+        foreach (lcl in Locals & LOCALS_CUR) {
+            als[lcl](v) = 
+                als[lcl](v) | ( topS(v) & ( E(v_1) pto_top_SL[CUR,lcl](v_1) &  lcl(v_1))) 
+        }
+
+	foreach (lcl in Locals) {
+	    pto_alone[lcl](s) = pto_alone[lcl](s) | ( E(l) isNew(s) & lcl(l) & !rs_SL[topS,lcl](l)) 	
+        }
+
+    }
+}
+
+
+
+
+/***************************************************/
+/* Finds the caller of the current function caller */
+/* and set the current function's caller to be the */
+/* active function.                                */ 
+/* CUR - is the procedure which is returned to.    */
+/* LOCALS_CUR - is the set of local variables of   */
+/*              the procedure returned to.         */
+/* CS_CUR - is the callsite from which the         */
+/*          procedure that terminated was invoked. */
+/*                                                 */  
+/* Assuming curS == NULL                           */
+/***************************************************/
+ 
+%action DO_RESTORE(CUR,LOCALS_CUR ,CS_CUR)  {   
+    %t  "RESTORE(" + CUR + "," + LOCALS_CUR + "," + CS_CUR + ")" 
+    %f  { E(v_1) topS(v_1) & pr(v_1,v) , 
+          foreach(lcl in LOCALS_CUR) {
+            E(v_1,v_2) topS(v_1) & pr(v_1,v_2) & stored[lcl](v_2,v) 
+          } }
+    {       
+        /* restoring the locals of the current procedure (the one returned to) */
+        foreach (lcl in LOCALS_CUR) {
+            lcl(v) = pto_top_SL[CUR,lcl](v)
+            r_L[lcl](v) = rl_top_SL[CUR,lcl](v)
+        }       
+
+        /* finding the current procedure caller */
+        /* callerS = topS->pr */
+        callerS(v) = E(v_1) topS(v_1) & pr(v_1,v)
+
+        /* If the caller is the same procedure as CUR */
+        foreach (lcl in Locals) {
+            pto_SL[callerS,lcl](v) = 
+                    E(v_1,v_2) topS(v_1) & pr(v_1,v_2) & stored[lcl](v_2,v)
+        }
+
+        foreach (lcl in Locals_sq & LOCALS_CUR) {
+            rl_SL[callerS,lcl](v) = 
+                (E(v_1) topS(v_1) & 
+                ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} )) & 
+                  ((E(v_1) topS(v_1) & sq[lcl](v_1)            ) ? 
+                    rl_top_SL[CUR,lcl](v) |
+                         E(v_1,v_2) topS(v_1) &  pr(v_1,v_2) & stored[lcl](v_2,v) :
+                    (E (v_1,v_2,v_3) 
+                         topS(v_1) & pr(v_1,v_2) & stored[lcl](v_2,v_3) & n*(v_3,v)))
+        }
+
+        foreach (lcl in Locals_rsq & LOCALS_CUR) {
+            rl_SL[callerS,lcl](v) = 
+                (E(v_1) topS(v_1) & 
+                ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} )) & 
+                  ((E(v_1) topS(v_1) & rsq[lcl](v_1)           ) ? 
+                    rl_top_SL[CUR,lcl](v) & 
+                        (! pto_top_SL[CUR,lcl](v) | c_L(v)) : 
+                    (E (v_1,v_2,v_3) topS(v_1) & pr(v_1,v_2) & 
+                        stored[lcl](v_2,v_3) & n*(v_3,v)))
+        }
+
+        foreach (lcl in Locals_none & LOCALS_CUR) {
+            rl_SL[callerS,lcl](v) = 
+              ((E (v_1,v_2,v_3) topS(v_1) & 
+                pr(v_1,v_2) & stored[lcl](v_2,v_3) & pto_top_SL[CUR,lcl](v_3)) ?
+                    rl_top_SL[CUR,lcl](v) : 
+                    (E (v_1,v_2,v_3) topS(v_1) & pr(v_1,v_2) & 
+                                     stored[lcl](v_2,v_3) & n*(v_3,v)))
+        }
+
+
+        /* If the caler is another procedure */
+        foreach (lcl in Locals - LOCALS_CUR) {
+          foreach (proc in ProcNames - { CUR } ) {
+              rl_SL[callerS,lcl](v) = 
+                E(v_1,v_2) (topS(v_1) & pr(v_1,v_2) & top[proc](v_2)) & 
+                rl_top_SL[proc,lcl](v) 
+            }
+        }
+
+
+
+
+    }
+}
+
+
+/***************************************************/
+/* Discard the activation record at the top of the */
+/* stack.                                          */
+/* This activation records belongs to the procedure*/
+/* that has terminated.                            */  
+/***************************************************/
+
+%action POP(CUR,CS_CUR) {
+    %t "POP(" + CUR + "," + CS_CUR + ")" 
+    {
+        pr (v_1,v_2) = pr(v_1,v_2) & !topS(v_1)
+        topS(v) = callerS(v)
+        callerS(v) = 0
+
+        /* Assumption - there is no mutual recursion;                */
+        /*     no self loops of procedures which are greater than 1. */
+        top[CUR](v) = callerS(v) & E(v_1) topS(v_1) & 
+                      ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} ) 
+                      
+        r_top_S[CUR](v) =  Stack(v) & !topS(v) & E(v_1) topS(v_1) & 
+                             ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} )  
+
+        foreach (lcl in Locals) {
+            rs_SL[topS,lcl](v) = 
+                rs_SL[topS,lcl](v) & (is_SL[lcl](v) | ! pto_top_SL[CUR,lcl](v))
+            pto_top_SL[CUR,lcl](v) = E(v_1) topS(v_1) &  
+                ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} )  & 
+                pto_SL[callerS,lcl](v)
+            rl_top_SL[CUR,lcl](v) = E(v_1) topS(v_1) & 
+                ( | / {ret_to_cs[cs](v_1) : cs in CS_CUR} )  & 
+                rl_SL[callerS,lcl](v)
+
+            pto_SL[callerS,lcl](v) = 0
+            rl_SL[callerS,lcl](v) = 0
+
+            is_SL[lcl](v) = 
+                is_SL[lcl](v) & 
+                ( !pto_top_SL[CUR,lcl](v) |   
+                   E(v_1, v_2) (v_1 != v_2) & !topS(v_1) & !topS(v_2) & 
+                   stored[lcl](v_1,v) & stored[lcl](v_2,v))
+        }
+
+        foreach (CS in CallSites) {
+            cur_cs_is[CS]() = E(v) topS(v) & ret_to_cs[CS](v)
+        }
+
+  
+        // New - for merge
+
+        foreach (lcl in Locals) {
+            als[lcl](v) = 
+                als[lcl](v) & ! callerS(v) 
+        }
+
+    }
+    %retain ! topS(v)
+}
+
+
+
+%action end_of_prog() {
+    %t "End of program" 
+    %p ! E(v) Stack(v)
+}
+
+%action return(CS) {
+    %t  "checks weather call site is " + CS + "\n"
+    %f  { cur_cs_is[CS]() }
+    %p  cur_cs_is[CS]()
+}

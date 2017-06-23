@@ -1,0 +1,199 @@
+/*************************************************************/
+/* List data type actions                                    */
+/* Note that the only Intraprocedural actions that might     */
+/* effect the properties of the invisible variables are the  */
+/* destructive  updates.                                     */
+/*************************************************************/
+
+// x1 = NULL
+%action Set_Null_L(x1) {
+    %t x1 + " = null (List)"
+    %message  (E (v) x1(v) & !List(v)) -> 
+                      "The type of " + x1 + " is not List"
+    {
+    x1(v) = 0
+    r_L[x1](v) = 0
+    }
+}
+
+//  x1 = x2
+%action Copy_Variable_L(x1, x2) {
+    %t x1 + " = " + x2 + " (List)"
+    %f { x2(v) }
+    {
+    x1(v) = x2(v)
+    r_L[x1](v) = r_L[x2](v)
+    }
+}
+
+//x1 = x2->n
+%action Get_Next_L(x1, x2) {
+    %t x1 + " = " + x2 + "->n" + " (List)"
+    %f { x2(v) , E(v_1) x2(v_1) & n(v_1, v) }
+    %message  (!E(v) x2(v)) -> 
+                    "an illegal dereference to next element of " + x2 + "\n"
+    {
+    x1(v) = E(v_1) x2(v_1) & n(v_1, v)
+    r_L[x1](v) = r_L[x2](v) & (c_L(v) | !x2(v))
+    }
+}
+
+// x1 = (L) malloc(*L)
+%action Malloc_L(x1) {
+    %t x1 + " = malloc(List) "
+    %new
+    {
+    List(v) = List(v) | isNew(v)
+    x1(v) = isNew(v)
+    r_L[x1](v) = isNew(v)
+    }
+}
+
+
+// free (x1) 
+/* deleteing by removing element - all pointer to the element are removed. */
+/* expects x1->n to be null                                                */
+%action Free_L(x1) {
+    %t "free_L (" + x1 + ") (List)"
+    %f { x1(v) , (E(v_1) x1(v_1) & n(v,v_1)) }
+    %message (!E(v) x1(v)) -> 
+            "error in program - freeing an not alocated variable: " + x1 + "\n" 
+    {
+    
+    // updating Stack->List instrumentation
+    foreach(lcl in Locals) {
+        notNull[lcl](v) = notNull[lcl](v) & 
+                          ! (E(v_1) stored[lcl](v,v_1) & x1(v_1))
+    }
+    
+    foreach (lcl in Locals_sq) {
+        sq[lcl](v)  = 
+            sq[lcl](v)  & !(E(v_1) stored[lcl](v,v_1) & x1(v_1))
+    }
+
+    foreach (lcl in Locals_rsq) {
+        rsq[lcl](v) = 
+            rsq[lcl](v) & 
+             !(E(v_1,v_2) pr(v,v_1) & stored[lcl](v_1,v_2) & x1(v_2))
+    }
+
+    nis_L(v) = nis_L(v) & !(E(v_1) n(v,v_1) & x1(v_1))
+
+    
+    
+    
+    }
+    %retain !   x1(v)
+}
+
+
+// x1->n = NULL
+%action Set_Next_Null_L(x1) {
+    %t x1 + "->n " + " = null (List)"
+    %f { x1(v) , E(v_1) x1(v_1) & n(v_1,v)} 
+    %message (!E(v) x1(v)) -> 
+             "an illegal dereference to ->" + sel + " component of " + x1 + "\n"
+    {
+        // List instrumentation.
+        n(v_1, v_2) = n(v_1, v_2) & !x1(v_1)
+        is_L(v) = is_L(v) & 
+                       (!(E(v_1) x1(v_1) & n(v_1, v)) |
+                        E(v_1, v_2) v_1 != v_2 & n(v_1, v) & 
+                                    !x1(v_1) & n(v_2, v) & !x1(v_2))
+        r_L[x1](v) = x1(v)
+
+        foreach(z in Globals + Locals - {x1}) {
+          r_L[z](v) = r_L[z](v) & 
+            ( (c_L(v) & r_L[x1](v)) ?
+                z(v) | E(v_1) z(v_1) & TC (v_1, v) (v_3, v_4) (n(v_3, v_4) & !x1(v_3)) :
+                ! (E(v_1) r_L[z](v_1) & x1(v_1) & r_L[x1](v) & !x1(v)))
+        }
+        c_L(v) = c_L(v) & ! (E(v_1) x1(v_1) & c_L(v_1) & r_L[x1](v))
+
+        nis_L(v) = 
+            ((E (v_1) x1(v_1) & nis_L(v_1)) ?
+                nis_L(v) & !x1(v) &
+                    ((A (v_1,v_2) (x1(v_1) & n(v_1,v_2)) -> !n(v,v_2)) |
+                    (E (v_1,v_2) v != v_1 & !x1(v_1) & n(v,v_2) & n(v_1,v_2))) :
+                nis_L(v) )
+
+
+        /* Updating the Stack->List instrumentation */
+
+        foreach (lcl in Locals_sq) {
+            sq[lcl](v)  = 
+                sq[lcl](v)  & !(E(v_1,v_2) pr(v,v_1) & stored[lcl](v_1,v_2) & x1(v_2))
+        }
+
+        foreach (lcl in Locals_rsq) {
+            rsq[lcl](v) = 
+                rsq[lcl](v) & !(E(v_1) stored[lcl](v,v_1) & x1(v_1))
+        }
+
+
+       foreach (lcl in Locals) {
+           foreach(proc in ProcNames){
+                rl_top_SL[proc,lcl](v) =  
+                    rl_top_SL[proc,lcl](v) &
+                        ( !r_L[x1](v) |
+                          ( c_L(v) ?
+                            (E(v_1,v_2) top[proc](v_1) & stored[lcl](v_1,v_2) & 
+                                v_2 == v | TC(v_2,v) (v_3,v_4) n(v_3,v_4) & !x1(v_3)):
+                            x1(v) | 
+                                ! (E (v_1) rl_top_SL[proc,lcl](v_1) & x1(v_1) & r_L[x1](v))))
+           }
+        }
+   }
+}
+
+// x1->n = x2 
+/* assuming x1->n == NULL */
+%action Set_Next_L(x1, x2) {
+    %t x1 + "->n = " + x2 + " (List) "
+    %f { x1(v) , x2(v) , E(v_1) x2(v_1) & n(v,v_1) } 
+    %message (E(v_1,v_2) x1(v_1) & n(v_1,v_2)) -> 
+                     "x1->n != NULL - analysis is incorrect !"
+    %message (!E(v) x1(v)) -> 
+                     "an illegal dereference to n of " + x1 + "\n"
+    {
+
+        // Updating the List original instrumentation.
+        n(v_1, v_2) = n(v_1, v_2) |  (x1(v_1) & x2(v_2))
+        is_L(v) = is_L(v) | x2(v) & (E(v_1) n(v_1, v))
+
+        foreach(z in Locals + Globals) {
+          r_L[z](v) = r_L[z](v) | E(v_1) r_L[z](v_1) & x1(v_1) & r_L[x2](v)
+        }
+
+        c_L(v) = c_L(v) | (E(v_1) x1(v_1) & r_L[x2](v_1) & r_L[x2](v))
+
+        nis_L(v) = nis_L(v) |
+                   x1(v) & (E(v_1,v_2) x2(v_2) & n(v_1, v_2)) |
+                   E(v_1) n(v,v_1) & x2(v_1)
+
+
+        // Updating the Stack->List instrumentation     
+        foreach (local in Locals_sq) {
+            sq[local](v) = sq[local](v) |
+                       (E (v_1,v_2,v_3) (x1(v_1) & x2(v_2) & 
+                                         stored[local](v_3,v_1) & pr(v,v_3) & 
+                                         stored[local](v,v_2)))
+        }
+
+        foreach (local in Locals_rsq) {
+               rsq[local](v) = rsq[local](v) |
+                       (E (v_1,v_2,v_3) (x1(v_1) & x2(v_2) & 
+                                         stored[local](v_3,v_2) & pr(v,v_3) & 
+                                         stored[local](v,v_1)))
+        }
+    
+
+    foreach (lcl in Locals) {
+          foreach(proc in ProcNames) {
+            rl_top_SL[proc,lcl](v) = 
+                 rl_top_SL[proc,lcl](v) | 
+                 (E(v_1) x1(v_1) & rl_top_SL[proc,lcl](v_1) & r_L[x2](v))
+      }
+    }
+    }
+}

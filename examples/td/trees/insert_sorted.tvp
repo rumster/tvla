@@ -1,0 +1,81 @@
+%s PVar {root, cur, prev, el, t}
+%s TSel {left, right}
+%s Sets {free}
+
+#define VARSEL
+
+#include "pred_sort.tvp"
+#include "pred_set.tvp"
+
+%%
+#include "actions_sort.tvp"
+#include "actions_set.tvp"
+%%
+
+// cur = root;
+start Copy_Var_T(cur, root) n1_1
+
+// while (cur != NULL && cur->data != el->data) {
+   n1_1 Is_Not_Null_Var(cur) n1_2
+   n1_1 Is_Null_Var(cur) n1_7
+
+   // For now not interpreting non-equality (while not using DataIsNequal).
+   n1_2 uninterpreted() n1_7
+   n1_2 uninterpreted() n1_3
+
+   // prev = cur;
+   n1_3 Copy_Var_T(prev, cur) n1_4
+
+   // if (el->data < cur->data)
+      n1_4 Less_Data_T(el, cur) n1_5
+      n1_4 Greater_Equal_Data_T(el, cur) n1_6
+
+      // cur = cur->left;
+      n1_5 Get_Sel_T(cur, cur, left) n1_1
+
+   // else cur = cur->right;
+      n1_6 Get_Sel_T(cur, cur, right) n1_1
+// }
+
+
+// Don't insert duplicates
+// if (cur == NULL) {
+   n1_7 Is_Null_Var(cur) n1_8
+   n1_7 Is_Not_Null_Var(cur) n1_7_a
+   // Null out cur and prev, as an optimizer could.
+   n1_7_a Set_Null_T(cur) n1_7_b
+   n1_7_b Set_Null_T(prev) found
+
+   // if (cur == root)
+   n1_8 Is_Eq_Var(cur, root) n1_9
+   n1_8 Is_Not_Eq_Var(cur, root) n1_10
+   // root = el;
+   n1_9 Copy_Var_T(root, el) notFound
+
+   // if (el->data < prev->data)
+      n1_10 Less_Data_T(el, prev) n1_11
+      n1_10 Greater_Equal_Data_T(el, prev) n1_13
+
+      // prev->left = el;
+      n1_11 Set_Sel_Null_T(prev, left) n1_12
+      n1_12 Set_Sel_T(prev, left, el) n1_12_a
+      // Null out el and prev, as an optimizer could.
+      n1_12_a Set_Null_T(el) n1_12_b
+      n1_12_b Set_Null_T(prev) notFound
+
+   // else prev->right = el;
+      n1_13 Set_Sel_Null_T(prev, right) n1_14
+      n1_14 Set_Sel_T(prev, right, el) n1_14_a
+      // Null out el and prev, as an optimizer could.
+      n1_14_a Set_Null_T(el) n1_14_b
+      n1_14_b Set_Null_T(prev) notFound
+// }
+
+found uninterpreted() test
+notFound uninterpreted() test
+
+// Now test the structures
+test Is_Sorted_Data_T(root) exit
+test Is_Not_Sorted_Data_T(root) error
+
+%% error, exit, found, notFound, test

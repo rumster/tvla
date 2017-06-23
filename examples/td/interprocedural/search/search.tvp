@@ -1,0 +1,38 @@
+
+%s ProcNames { search } 
+%s Prog_Globals { hd } 
+#include "search_def.tvp"
+
+%s Locals Locals_search  
+%s Locals_sq Locals_sq_search  
+%s Locals_rsq Locals_rsq_search  
+%s Locals_none Locals_none_search  
+%s Temps Temps_search  
+%s CallSites CallSites_search  + {meta_main}
+%s Params Params_search  
+%s Trans Trans_search  
+%s Globals Prog_Globals + Params + Temps + Trans  
+
+%s LOCALS_TEMP Temps
+%s LOCALS_CUR  Locals
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+meta_main Copy_Variable_L(search$1,hd) search 
+
+
+#include "search_cfg.tvp"
+
+EXIT end_of_prog() END

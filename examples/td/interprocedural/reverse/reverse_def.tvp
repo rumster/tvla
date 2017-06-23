@@ -1,0 +1,20 @@
+
+
+// procedure: reverse variables definition
+
+
+// Locals
+%s Locals_reverse { r } 
+%s Locals_sq_reverse { r } 
+%s Locals_rsq_reverse {  } 
+%s Locals_none_reverse {  } 
+
+
+// Globals and Temps and params 
+%s Trans_reverse { reverse$1 , reverse$ret } 
+%s Temps_reverse { y , t } 
+%s Params_reverse {  } 
+
+
+// CallSites
+%s CallSites_reverse { reverse_body_9 } 

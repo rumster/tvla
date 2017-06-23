@@ -1,17 +1,10 @@
 package tvla.analysis;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import tvla.core.Coerce;
-import tvla.core.Focus;
-import tvla.core.HighLevelTVS;
-import tvla.core.TVSFactory;
+import tvla.core.*;
 import tvla.core.assignments.Assign;
+import tvla.core.base.BaseHighLevelTVS;
 import tvla.core.common.ModifiedPredicates;
 import tvla.exceptions.AnalysisHaltException;
 import tvla.exceptions.FocusNonTerminationException;
@@ -19,10 +12,12 @@ import tvla.exceptions.SemanticErrorException;
 import tvla.exceptions.UserErrorException;
 import tvla.io.IOFacade;
 import tvla.io.TVLAIO;
+import tvla.termination.TerminationAnalysisInput;
 import tvla.transitionSystem.Action;
 import tvla.transitionSystem.Location;
 import tvla.transitionSystem.PrintableProgramLocation;
 import tvla.util.Logger;
+import tvla.util.Pair;
 import tvla.util.ProgramProperties;
 import tvla.util.StringUtils;
 
@@ -81,6 +76,11 @@ public abstract class Engine {
      * Holds the transition relation of the active analysis
      */
     protected TransitionRelation transitionRelation = null;
+
+    /**
+     * Holds the termination analysis data of the active analysis
+     */
+    protected TerminationAnalysisInput terminationAnalysisInput = null;
 
     // /////////////////////////////////////////////////
     // Some of the statistics is still stored here,
@@ -165,9 +165,15 @@ public abstract class Engine {
      *            initialized.
      * @since 8.2.2001 Added TVS output printing capabilities.
      */
-    public Collection<HighLevelTVS> apply(Action action, HighLevelTVS structure, String label,
-            Map<HighLevelTVS, Set<String>> messages) {
+    public Collection<HighLevelTVS> apply(Action action,
+                                          HighLevelTVS structure,
+                                          String label,
+                                          Map<HighLevelTVS, Set<String>> messages,
+                                          Map<HighLevelTVS, Map<Node, Node>> nodesTransition) {
         try {
+
+            HighLevelTVS parent = structure;
+
             Collection<HighLevelTVS> answer = new ArrayList<HighLevelTVS>();
             // Focus
             Collection<HighLevelTVS> focusResult = null;
@@ -315,8 +321,14 @@ public abstract class Engine {
                     }
 
                     answer.add(result);
+
+                    BaseHighLevelTVS resultH = (BaseHighLevelTVS)focusedStructure;
+                    if (nodesTransition != null && resultH.LastIncrements != null && resultH.LastIncrements.nodesMap != null) {
+                        nodesTransition.put(result, resultH.LastIncrements.nodesMap);
+                    }
                 }
             }
+
             ModifiedPredicates.clear();
             focusDiscardPercent = (focusOnEntry - answer.size()) / focusOnEntry;
             // if ((focusOnEntry - focusOnExit)/(float)focusOnEntry < .5 &&
@@ -444,7 +456,7 @@ public abstract class Engine {
     }
 
     /**
-     * Returns the transition relation ofthe current engine
+     * Returns the transition relation of the current engine
      * 
      * @author noam rinetzky
      */
@@ -547,6 +559,7 @@ public abstract class Engine {
     // ///////////////////////////////////////////////////
 
     public PrintableProgramLocation getProcessedLocation() {
+        assert (currentLocation != null);
         return this.currentLocation;
     }
 

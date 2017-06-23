@@ -1,0 +1,58 @@
+
+// entring to procedure: insert
+insert Copy_Variable_L(h,insert$1) insert_entry_2
+insert_entry_2 Set_Null_L(insert$1) insert_entry_3
+insert_entry_3 Set_Null_L(t) insert_entry_4
+insert_entry_4 nothing() insert_body_1
+
+// if ( (h != NULL ) && (uniterpreted conditional) )
+insert_body_1 Is_Not_Null_Var_L(h) insert_body_4
+insert_body_4 uninterpreted() insert_body_3
+insert_body_1 Is_Null_Var_L(h) insert_body_2
+insert_body_1 uninterpreted() insert_body_2
+
+// then {
+
+// t = h->n;
+insert_body_3 Get_Next_L(t,h) insert_body_5
+
+// setting the paramters
+insert_body_5 Copy_Variable_L(insert$1,t) insert_body_9
+insert_body_9 DO_PUSH(insert,insert_body_10,insert,Locals_insert,Temps_insert) insert
+insert_body_10 DO_RESTORE(insert,Locals_insert,CallSites_insert) insert_body_11
+insert_body_11 POP(insert,CallSites_insert) insert_body_7
+
+// t = insert$ret;
+insert_body_7 Copy_Variable_L(t,insert$ret) insert_body_8
+
+// insert$ret = NULL;
+insert_body_8 Set_Null_L(insert$ret) insert_body_6
+
+// h->n = NULL;
+insert_body_6 Set_Next_Null_L(h) insert_body_12
+
+// h->n = t;
+insert_body_12 Set_Next_L(h,t) insert_body_13
+
+// return h
+insert_body_13 Copy_Variable_L(insert$ret,h) insert_exit_1
+
+// }
+
+// t = malloc(List);
+insert_body_2 Malloc_L(t) insert_body_14
+
+// t->n = h;
+insert_body_14 Set_Next_L(t,h) insert_body_15
+
+// return t
+insert_body_15 Copy_Variable_L(insert$ret,t) insert_exit_1
+
+// exiting from procedure: insert
+insert_exit_1 Set_Null_L(h) insert_exit_2
+insert_exit_2 Set_Null_L(t) insert_exit_3
+insert_exit_3 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(insert_body_10) insert_body_10

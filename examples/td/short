@@ -1,0 +1,24 @@
+echo "" > output/output
+echo "------Shallow programs manipulating acyclic lists-----------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_acyclic
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Deeply nested programs manipulating acyclic lists-----" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_nested_short
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Shallow programs manipulating cyclic lists------------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_cyclic
+
+echo "" >> output/output
+echo "" >> output/output
+echo "------Recursive programs manipulating acyclic lists---------" >> output/output
+echo "" >> output/output
+bash subscripts/tvla_runner subscripts/script_interprocedural_short
+
+cat output/output

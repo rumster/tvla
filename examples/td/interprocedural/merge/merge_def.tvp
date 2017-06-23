@@ -1,0 +1,20 @@
+
+
+// procedure: merge variables definition
+
+
+// Locals
+%s Locals_merge { p,q } 
+%s Locals_sq_merge {  } 
+%s Locals_rsq_merge {  } 
+%s Locals_none_merge { p,q  } 
+
+
+// Globals and Temps and params 
+%s Trans_merge { merge$1 , merge$2 , merge$ret } 
+%s Temps_merge { t , r } 
+%s Params_merge {  } 
+
+
+// CallSites
+%s CallSites_merge { merge_body_16 , merge_body_25 } 

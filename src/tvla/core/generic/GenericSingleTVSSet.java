@@ -26,7 +26,7 @@ public class GenericSingleTVSSet extends GenericTVSSet {
 	 */
 	protected Canonic newCanonic;
 	
-	/** Maps nodes to canonic names for the new (candidate) tructure.
+	/** Maps nodes to canonic names for the new (candidate) structure.
 	 */
 	protected Map<Node, Canonic> newCanonicName		= HashMapFactory.make();
 	
@@ -239,7 +239,7 @@ public class GenericSingleTVSSet extends GenericTVSSet {
             DecompositionName component = member.getComponent();
             HighLevelTVS structure = member.getStructure();
             if (members.add(structure)) {
-                Map<Node, Node> mapping = member.getMapping();;
+                Map<Node, Node> mapping = member.getMapping();
                 if (remap) {
                     // Remap names from newStructure to singleStructure according to 
                     // canonical names mapping.

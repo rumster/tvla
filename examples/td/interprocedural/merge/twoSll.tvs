@@ -1,0 +1,29 @@
+/*
+%n = {u1,u11,u2,u22}
+%p = {
+List = {u1,u11,u2,u22}
+n = {u1->u11, u2->u22}
+hd1 = {u1}
+hd2 = {u2}
+r_L[hd1] = {u1,u11}
+r_L[hd2] = {u2,u22}
+cur_cs_is[meta_main] = 1
+}
+
+*/
+
+%n = {u1,u11,u2,u22}
+%p = {
+
+List = {u1,u11,u2,u22}
+sm = {u11:1/2,u22:1/2}
+n = {u1->u11:1/2, u11->u11:1/2,u2->u22:1/2, u22->u22:1/2}
+hd1 = {u1}
+hd2 = {u2}
+r_L[hd1] = {u1,u11}
+r_L[hd2] = {u2,u22}
+
+cur_cs_is[meta_main] = 1
+
+}
+

@@ -1,0 +1,17 @@
+while read -r tvp; read -r tvs
+do
+  echo "Analyzing $(basename "$tvp")" | tee -a output/output
+
+  java -Xmx2048M -jar ../bin/tvla3.jar $tvp $tvs -td > output/temp 2>&1
+
+  ter="$(grep "Termination analysis result" output/temp | cut -d':' -f2 | xargs)";
+  if [ "$ter" = "Terminating" ]
+  then 
+    echo "Terminates: TRUE" >> output/output;
+  else
+    echo "Terminates: UNKNOWN" >> output/output;
+  fi
+
+  echo "$(grep "Total analysis time" output/temp)"  >> output/output
+  echo "$(grep "Termination analysis time" output/temp)" >> output/output
+done < $1

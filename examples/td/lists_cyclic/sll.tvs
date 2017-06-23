@@ -1,0 +1,23 @@
+// A cyclic singly-linked list with two or more elements pointed by program x.
+%n = {head, tail}
+%p = {
+       sm = {tail:1/2}
+       n = {head->tail:1/2, tail->tail:1/2, tail->head:1/2}
+       x = {head}
+       r[n,x] = {head, tail}
+       c[n] = {head, tail}
+}
+
+// A cyclic singly-linked list with a single element pointed by x.
+%n = {head}
+%p = {
+       x = {head}
+       r[n,x] = {head}
+       n = {head->head}
+       c[n] = {head}
+}
+
+// An empty list (x points to NULL).
+%n = {}
+%p = {
+}

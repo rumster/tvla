@@ -1,0 +1,27 @@
+/**********************************************/
+/*************** Core Predicates *************/
+
+%p dle(v_1, v_2) transitive reflexive {}
+
+/***********************************************************/
+/****************** Instrumentation Predicates *************/
+%i cmp[dle,left](v_1, v_2) = dle(v_2, v_1) {}
+%i cmp[dle,right](v_1, v_2) = dle(v_1, v_2) {}
+
+#ifdef VARSEL
+foreach (x in PVar) {
+  foreach (sel in TSel) {
+    %i varSel[x,sel](v) = E(v1) (x(v1) & sel(v1, v))
+  }
+}
+#endif VARSEL
+
+%i inOrder[dle,left](v)  = A(v_1)  left(v, v_1) -> dle(v_1, v) nonabs
+%i inOrder[dle,right](v) = A(v_1) right(v, v_1) -> dle(v, v_1) nonabs
+%i inOrder[dle](v) = inOrder[dle,left](v) & inOrder[dle,right](v) nonabs
+
+/*************************************************/
+/**************** Consistency Rules **************/
+%r !dle(v_1, v_2) ==> dle(v_2, v_1)
+%r E(v_2) left(v_1, v_2)  & downStar(v_2, v_3) ==> dle(v_3, v_1)
+%r E(v_2) right(v_1, v_2) & downStar(v_2, v_3) ==> dle(v_1, v_3)

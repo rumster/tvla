@@ -1,0 +1,72 @@
+//////////////////
+// Core Predicates
+
+// For every program variable z there is a unary predicate that holds for
+// list elements pointed by z.
+// The unique property is used to convey the fact that the predicate can hold
+// for at most one individual.
+// The pointer property is a visualization hint for graphical renderers.
+foreach (z in PVar) {
+  %p z(v_1) unique pointer
+}
+
+// The predicate n represents the n field of the list data type.
+%p n(v_1, v_2) function acyclic
+
+/////////////////////////////////////////////
+// Instrumentation (i.e., derived) predicates
+
+// The is[n] predicate holds for list elements pointed by two different
+// list elements.
+%i is[n](v) =   E(v_1, v_2) (v_1 != v_2 & n(v_1, v) & n(v_2, v))
+
+// The t[n] predicate records transitive reflexive reachability between
+// list elements along the n field.
+%i t[n](v_1, v_2) = n*(v_1, v_2) transitive reflexive
+
+// Integrity constraints for transitive reachability
+%r !t[n](v_1, v_2) ==> !n(v_1, v_2)
+%r !t[n](v_1, v_2) ==> v_1 != v_2
+%r E(v_1) (t[n](v_1, v_2) & t[n](v_1, v_3) & !t[n](v_2, v_3)) ==> t[n](v_3, v_2)
+
+// For every program variable z the predicate r[n,z] holds for individual
+// v when v is reachable from variable z along the n field (more formally,
+// the corresponding list element is reachable from z).
+foreach (z in PVar) {
+  %i r[n,z](v) =  E(v_1) (z(v_1) & t[n](v_1, v))
+}
+
+
+/////////////////////////////////////
+// Predicates related to numeric data
+
+// The predicate dle holds for two list elements if the numeric value
+// in the data field of the first element is less or equal to the value
+// in the data field of the second element.
+%p dle(v_1, v_2) transitive reflexive
+
+// The following integrity constraint means that dle is anti-symmetric
+// and together with the functional properties above (transitive and reflezive)
+// we get that dle is a total order.
+%r !dle(v_1, v_2) ==> dle(v_2, v_1)
+
+// The predicate inOrder[del,n] holds for a list element, if it points,
+// via the field n, to a list element whose data field is less or equal
+// to the value of its data field.
+// The nonabs property means that this predicate is not used for abstracting
+// structures.  This is done for performance reasons.
+%i inOrder[dle,n](v) = A(v_1) n(v, v_1) -> dle(v, v_1) nonabs
+
+// Similar to inOrder but captures the opposite correlation between the
+// next element and the value of data.
+%i inROrder[dle,n](v) = A(v_1) n(v, v_1) -> dle(v_1, v) nonabs
+
+// The predicate or[n,z,l] is used to take a snapshot of the part of the
+// heap reachable from pointer variable z via dereferences of field n
+// when the program reaches the program label l.
+// (See Copy_Reach_L in actions.tvp.)
+foreach (z in HVar) {
+  foreach (l in HLoc) {
+    %p or[n,z,l](v) 
+  }
+}

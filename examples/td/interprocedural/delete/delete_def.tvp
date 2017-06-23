@@ -1,0 +1,22 @@
+
+
+// procedure: delete variables definition
+
+
+// Locals
+%s Locals_delete { h } 
+%s Locals_sq_delete { h } 
+%s Locals_rsq_delete {  } 
+%s Locals_none_delete {  } 
+
+
+// Globals and Temps and params 
+%s Trans_delete { delete$1 , delete$ret } 
+%s Temps_delete { t } 
+%s Params_delete { } 
+
+
+
+
+// CallSites
+%s CallSites_delete { delete_body_13 } 

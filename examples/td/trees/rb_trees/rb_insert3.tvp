@@ -1,0 +1,277 @@
+%s PVar {root, cur, prev, el, t, nodeT, node, a, nodePP, b, c, root, uncle, nodeP, temp$8, temp$14, nodeTP}
+%s TSel {left, right}
+%s Sets {free}
+%s PField {}
+
+%s Types {boolean, java.lang.Object, java.lang.String[]}
+%s BVar {temp$0, temp$1, temp$9}
+
+
+#define VARSEL
+
+#include "pred_tree.tvp"
+#include "pred_sort.tvp"
+#include "predicates_analysis.tvp"
+#include "predicates_common.tvp"
+
+%p isRed(v) nonabs
+
+%%
+#include "actions_analysis.tvp"
+#include "actions_common.tvp"
+#include "actions_tree.tvp"
+#include "actions_sort.tvp"
+
+%%
+
+// cur = root;
+start Copy_Var_T(cur, root) n1
+
+   // while (cur != NULL && cur->data != el->data) {
+   n1 Is_Not_Null_Var(cur) n2
+   n1 Is_Null_Var(cur) n7
+
+   // For now not interpreting non-equality (while not using DataIsNequal).
+   n2 uninterpreted() n7
+   n2 uninterpreted() n3
+
+   // prev = cur;
+   n3 Copy_Var_T(prev, cur) n4
+
+   // if (el->data < cur->data)
+      n4 Less_Data_T(el, cur) n5
+      n4 Greater_Equal_Data_T(el, cur) n6
+
+      // cur = cur->left;
+      n5 Get_Sel_T(cur, cur, left) n1
+
+   // else cur = cur->right;
+      n6 Get_Sel_T(cur, cur, right) n1
+   // }
+
+
+// Don't insert duplicates
+// if (cur == NULL) {
+   n7 Is_Null_Var(cur) n8
+   n7 Is_Not_Null_Var(cur) found
+   // Null out cur and prev, as an optimizer could.
+   //n7_a Set_Null_T(cur) n7_b
+   //n7_b Set_Null_T(prev) found
+
+   // if (cur == root)
+   n8 Is_Eq_Var(cur, root) n9
+   n8 Is_Not_Eq_Var(cur, root) n10
+   // root = el;
+   n9 Copy_Var_T(root, el) notFound
+
+   // if (el->data < prev->data)
+      n10 Less_Data_T(el, prev) n11
+      n10 Greater_Equal_Data_T(el, prev) n13
+
+      // prev->left = el;
+      n11 Set_Sel_Null_T(prev, left) n12
+      n12 Set_Sel_T(prev, left, el) n12_a
+      // Null out el and prev, as an optimizer could.
+      n12_a Set_Null_T(el) n12_b
+      n12_b Set_Null_T(prev) notFound
+
+   // else prev->right = el;
+      n13 Set_Sel_Null_T(prev, right) n14
+      n14 Set_Sel_T(prev, right, el) n14_a
+      // Null out el and prev, as an optimizer could.
+      n14_a Set_Null_T(el) n14_b
+      n14_b Set_Null_T(prev) notFound
+// }
+
+notFound Copy_Var_T(node, el)    found2
+
+found    Copy_Var_T(node, cur)   found2
+found2   SetTrue2(nodeP, isRed)  main.L3
+
+// Fix tree
+
+//main.L0   skip() main.L1 // WARNING: Unmodeled statement args := @parameter0: java.lang.String[]
+//main.L1   assignPVarPVar(root, null) main.L2 // root = null
+//main.L2   assignPVarPVar(node, null) main.L3 // node = null
+
+main.L3   assignPVarPVar(uncle, null) main.L4 // uncle = null
+main.L4   assignPVarPVar(nodeP, null) main.L5 // nodeP = null
+main.L5   assignPVarPVar(nodePP, null) main.L6 // nodePP = null
+main.L6   assignPVarPVar(a, null) main.L7 // a = null
+main.L7   assignPVarPVar(b, null) main.L8 // b = null
+main.L8   assignPVarPVar(c, null) main.L9 // c = null
+main.L9   assignPVarPVar(nodeTP, null) main.L10 // nodeTP = null
+main.L10   Get_Parent(nodeP, node) main.L11 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)
+main.L11   IsTrue2(temp$0, nodeP, isRed) main.L12 // temp$0 = staticinvoke <RBTree: boolean IsRed(java.lang.Object)>(nodeP)
+main.L12   eqBVarBVar_true(temp$0, ff) main.L13
+main.L12   eqBVarBVar_false(temp$0, ff) main.L137
+main.L13   skip() main.L14 // goto [?= staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)]
+main.L14   Get_Parent(nodeP, node) main.L15 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)
+main.L15   Get_Parent(nodePP, nodeP) main.L15.1 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodePP, nodeP)
+main.L15.1 Set_Null_T(a) main.L16
+main.L16   Get_Sel_T(a, nodePP, left) main.L17 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodePP)
+main.L17   eqPVarPVar_true(nodeP, a)  main.L18
+main.L17   eqPVarPVar_false(nodeP, a) main.L19
+main.L18   skip() main.L79 // goto [?= staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(uncle, nodePP)]
+main.L19   Get_Sel_T(uncle, nodePP, right) main.L20 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(uncle, nodePP)
+main.L20   IsTrue2(temp$1, uncle, isRed) main.L21 // temp$1 = staticinvoke <RBTree: boolean IsRed(java.lang.Object)>(uncle)
+main.L21   eqBVarBVar_true(temp$1, ff) main.L22
+main.L21   eqBVarBVar_false(temp$1, ff) main.L28
+main.L22   skip() main.L23 // goto [?= staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)]
+main.L23   SetFalse2(nodeP, isRed) main.L24 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)
+main.L24   SetFalse2(uncle, isRed) main.L25 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(uncle)
+main.L25   SetTrue2(nodePP, isRed) main.L26 // staticinvoke <RBTree: boolean SetRed(java.lang.Object)>(nodePP)
+main.L26   assignPVarPVar(node, nodePP) main.L27 // node = nodePP
+main.L27   skip() main.L76 // goto [?= temp$8 = null]
+main.L28   Get_Sel_T(a, nodeP, right) main.L29 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(a, nodeP)
+main.L29   eqPVarPVar_true(node, a)  main.L30
+main.L29   eqPVarPVar_false(node, a) main.L31
+main.L30   skip() main.L52 // goto [?= staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)]
+main.L31   assignPVarPVar(node, nodeP) main.L32 // node = nodeP
+main.L32   assignPVarPVar(nodeT, node) main.L33 // nodeT = node
+main.L33   Get_Parent(nodeTP, nodeT) main.L34 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L34   isPVarNull(nodeTP)    main.L36
+main.L34   isPVarNotNull(nodeTP) main.L35
+main.L35   skip() main.L47 // goto [?= staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, root)]
+main.L36   Get_Sel_T(a, nodeTP, left) main.L37 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodeTP)
+main.L37   Get_Sel_T(b, nodeT, right) main.L38 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(b, nodeT)
+main.L38   Get_Sel_T(c, b, left) main.L39 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(c, b)
+main.L39   eqPVarPVar_true(nodeT, a)  main.L40
+main.L39   eqPVarPVar_false(nodeT, a) main.L41
+main.L40   skip() main.L43 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)]
+main.L41   Set_Sel_Null_T(nodeTP, left)    main.L41.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L41.1 Set_Sel_T(nodeTP, left, b) main.L42  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L42   skip() main.L44 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)]
+main.L43   Set_Sel_Null_T(nodeTP, right)    main.L43.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L43.1 Set_Sel_T(nodeTP, right, b) main.L44  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L44   Set_Sel_Null_T(nodeT, right)    main.L44.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L44.1 Set_Sel_T(nodeT, right, c) main.L45  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L45   Set_Sel_Null_T(nodeTP, right)    main.L45.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L45.1 Set_Sel_T(nodeTP, right, nodeT) main.L46  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L46   skip() main.L52 // goto [?= staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)]
+main.L47   Get_Sel_T(a, root, left) main.L48 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L48   Get_Sel_T(b, a, left) main.L49 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, a)
+main.L49   Set_Sel_Null_T(root, left)    main.L49.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(root, b)
+main.L49.1 Set_Sel_T(root, left, b) main.L50  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(root, b)
+main.L50   Set_Sel_Null_T(a, right)    main.L50.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L50.1 Set_Sel_T(a, right, root) main.L51  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L51   assignPVarPVar(root, a) main.L52 // root = a
+main.L52   Get_Parent(nodeP, node) main.L53 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeP, node)
+main.L53   Get_Parent(nodePP, nodeP) main.L54 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodePP, nodeP)
+main.L54   SetFalse2(nodeP, isRed) main.L55 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)
+main.L55   SetTrue2(nodePP, isRed) main.L56 // staticinvoke <RBTree: boolean SetRed(java.lang.Object)>(nodePP)
+main.L56   assignPVarPVar(nodeT, nodePP) main.L57 // nodeT = nodePP
+main.L57   Get_Parent(nodeTP, nodeT) main.L58 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L58   isPVarNull(nodeTP)    main.L60
+main.L58   isPVarNotNull(nodeTP) main.L59
+main.L59   skip() main.L71 // goto [?= staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(a, root)]
+main.L60   Get_Sel_T(a, nodeTP, left) main.L61 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodeTP)
+main.L61   Get_Sel_T(b, nodeT, left) main.L62 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, nodeT)
+main.L62   Get_Sel_T(c, b, left) main.L63 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(c, b)
+main.L63   eqPVarPVar_true(nodeT, a)  main.L64
+main.L63   eqPVarPVar_false(nodeT, a) main.L65
+main.L64   skip() main.L67 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)]
+main.L65   Set_Sel_Null_T(nodeTP, left)    main.L65.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L65.1 Set_Sel_T(nodeTP, left, b) main.L66  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L66   skip() main.L68 // goto [?= staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)]
+main.L67   Set_Sel_Null_T(nodeTP, right)    main.L67.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L67.1 Set_Sel_T(nodeTP, right, b) main.L68  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L68   Set_Sel_Null_T(nodeT, left)    main.L68.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L68.1 Set_Sel_T(nodeT, left, c) main.L69  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L69   Set_Sel_Null_T(nodeTP, right)    main.L69.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L69.1 Set_Sel_T(nodeTP, right, nodeT) main.L70  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L70   skip() main.L76 // goto [?= temp$8 = null]
+main.L71   Get_Sel_T(a, root, right) main.L72 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L72   Get_Sel_T(b, a, left) main.L73 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, a)
+main.L73   Set_Sel_Null_T(root, right)    main.L73.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(root, b)
+main.L73.1 Set_Sel_T(root, right, b) main.L74  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(root, b)
+main.L74   Set_Sel_Null_T(a, left)    main.L74.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L74.1 Set_Sel_T(a, left, root) main.L75  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L75   assignPVarPVar(root, a) main.L76 // root = a
+main.L76   assignPVarPVar(temp$8, null) main.L77 // temp$8 = null
+main.L77   assignPVarPVar(nodeTP, temp$8) main.L78 // nodeTP = temp$8
+main.L78   skip() main.L136 // goto [?= (branch)]
+main.L79   Get_Sel_T(uncle, nodePP, left) main.L80 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(uncle, nodePP)
+main.L80   IsTrue2(temp$9, uncle, isRed) main.L81 // temp$9 = staticinvoke <RBTree: boolean IsRed(java.lang.Object)>(uncle)
+main.L81   eqBVarBVar_true(temp$9, ff) main.L82
+main.L81   eqBVarBVar_false(temp$9, ff) main.L88
+main.L82   skip() main.L83 // goto [?= staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)]
+main.L83   SetFalse2(nodeP, isRed) main.L84 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)
+main.L84   SetFalse2(uncle, isRed) main.L85 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(uncle)
+main.L85   SetTrue2(nodePP, isRed) main.L86 // staticinvoke <RBTree: boolean SetRed(java.lang.Object)>(nodePP)
+main.L86   assignPVarPVar(node, nodePP) main.L87 // node = nodePP
+main.L87   skip() main.L136 // goto [?= (branch)]
+main.L88   Get_Sel_T(a, nodeP, left) main.L89 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodeP)
+main.L89   eqPVarPVar_true(node, a)  main.L90
+main.L89   eqPVarPVar_false(node, a) main.L91
+main.L90   skip() main.L114 // goto [?= staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)]
+main.L91   assignPVarPVar(node, nodeP) main.L92 // node = nodeP
+main.L92   assignPVarPVar(nodeT, node) main.L93 // nodeT = node
+main.L93   Get_Parent(nodeTP, nodeT) main.L94 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L94   isPVarNull(nodeTP)    main.L96
+main.L94   isPVarNotNull(nodeTP) main.L95
+main.L95   skip() main.L107 // goto [?= staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(a, root)]
+main.L96   Get_Sel_T(a, nodeTP, left) main.L97 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodeTP)
+main.L97   Get_Sel_T(b, nodeT, left) main.L98 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, nodeT)
+main.L98   Get_Sel_T(c, b, left) main.L99 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(c, b)
+main.L99   eqPVarPVar_true(nodeT, a)  main.L100
+main.L99   eqPVarPVar_false(nodeT, a) main.L101
+main.L100   skip() main.L103 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)]
+main.L101   Set_Sel_Null_T(nodeTP, left)    main.L101.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L101.1 Set_Sel_T(nodeTP, left, b) main.L102  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L102   skip() main.L104 // goto [?= staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)]
+main.L103   Set_Sel_Null_T(nodeTP, right)    main.L103.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L103.1 Set_Sel_T(nodeTP, right, b) main.L104  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L104   Set_Sel_Null_T(nodeT, left)    main.L104.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L104.1 Set_Sel_T(nodeT, left, c) main.L105  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L105   Set_Sel_Null_T(nodeTP, right)    main.L105.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L105.1 Set_Sel_T(nodeTP, right, nodeT) main.L106  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L106   skip() main.L112 // goto [?= temp$14 = null]
+main.L107   Get_Sel_T(a, root, right) main.L108 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L108   Get_Sel_T(b, a, left) main.L109 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, a)
+main.L109   Set_Sel_Null_T(root, right)    main.L109.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(root, b)
+main.L109.1 Set_Sel_T(root, right, b) main.L110  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(root, b)
+main.L110   Set_Sel_Null_T(a, left)    main.L110.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L110.1 Set_Sel_T(a, left, root) main.L111  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L111   assignPVarPVar(root, a) main.L112 // root = a
+main.L112   assignPVarPVar(temp$14, null) main.L113 // temp$14 = null
+main.L113   assignPVarPVar(nodeTP, temp$14) main.L114 // nodeTP = temp$14
+main.L114   SetFalse2(nodeP, isRed) main.L115 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(nodeP)
+main.L115   SetTrue2(nodePP, isRed) main.L116 // staticinvoke <RBTree: boolean SetRed(java.lang.Object)>(nodePP)
+main.L116   assignPVarPVar(nodeT, nodePP) main.L117 // nodeT = nodePP
+main.L117   Get_Parent(nodeTP, nodeT) main.L118 // staticinvoke <RBTree: void GetParent(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L118   isPVarNull(nodeTP)    main.L120
+main.L118   isPVarNotNull(nodeTP) main.L119
+main.L119   skip() main.L131 // goto [?= staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, root)]
+main.L120   Get_Sel_T(a, nodeTP, left) main.L121 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, nodeTP)
+main.L121   Get_Sel_T(b, nodeT, right) main.L122 // staticinvoke <RBTree: void GetSelRight(java.lang.Object,java.lang.Object)>(b, nodeT)
+main.L122   Get_Sel_T(c, b, left) main.L123 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(c, b)
+main.L123   eqPVarPVar_true(nodeT, a)  main.L124
+main.L123   eqPVarPVar_false(nodeT, a) main.L125
+main.L124   skip() main.L127 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)]
+main.L125   Set_Sel_Null_T(nodeTP, left)    main.L125.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L125.1 Set_Sel_T(nodeTP, left, b) main.L126  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L126   skip() main.L128 // goto [?= staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)]
+main.L127   Set_Sel_Null_T(nodeTP, right)    main.L127.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L127.1 Set_Sel_T(nodeTP, right, b) main.L128  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, b)
+main.L128   Set_Sel_Null_T(nodeT, right)    main.L128.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L128.1 Set_Sel_T(nodeT, right, c) main.L129  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeT, c)
+main.L129   Set_Sel_Null_T(nodeTP, right)    main.L129.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L129.1 Set_Sel_T(nodeTP, right, nodeT) main.L130  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(nodeTP, nodeT)
+main.L130   skip() main.L136 // goto [?= (branch)]
+main.L131   Get_Sel_T(a, root, left) main.L132 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(a, root)
+main.L132   Get_Sel_T(b, a, left) main.L133 // staticinvoke <RBTree: void GetSelLeft(java.lang.Object,java.lang.Object)>(b, a)
+main.L133   Set_Sel_Null_T(root, left)    main.L133.1 // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(root, b)
+main.L133.1 Set_Sel_T(root, left, b) main.L134  // staticinvoke <RBTree: void SetSelLeft(java.lang.Object,java.lang.Object)>(root, b)
+main.L134   Set_Sel_Null_T(a, right)    main.L134.1 // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L134.1 Set_Sel_T(a, right, root) main.L135  // staticinvoke <RBTree: void SetSelRight(java.lang.Object,java.lang.Object)>(a, root)
+main.L135   assignPVarPVar(root, a) main.L136 // root = a
+main.L136   skip() main.L11 // goto [?= temp$0 = staticinvoke <RBTree: boolean IsRed(java.lang.Object)>(nodeP)]
+main.L137   SetFalse2(root, isRed) main.L138 // staticinvoke <RBTree: boolean SetBlack(java.lang.Object)>(root)
+main.L138   skip() test // WARNING: Unmodeled statement return
+
+// Now test the structures
+test Is_Sorted_Data_T(root) exit
+test Is_Not_Sorted_Data_T(root) error
+
+%% error, exit, test

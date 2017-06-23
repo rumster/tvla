@@ -1,0 +1,76 @@
+///////
+// Sets
+
+%s PVar{ x, r, pr, rn, pl, l, z, w, t } // Names of pointer variables.
+%s HVar{ x }  // Names of pointer variables used for taking heap snapshots.
+%s HLoc{ L0 } // Names of program labels where snapshots of the heap are taken.
+
+#include "predicates_sort.tvp"
+
+%%
+
+#include "actions_sort.tvp"
+
+%%
+
+////////////////////////////////////////////////////////
+// Transition system for insert sort.
+// The data in the sorted list is presumed to be unique.
+
+// L insertSort(L x) {
+L1_0  Copy_Reach_L(x, L0)     L1_1   // [ Take a snapshot of the heap to later         ]
+// [ verify that the output list is a permutation ]
+// [ of the list pointed by x.                    ]
+
+
+L1_1   Copy_Var_L(r, x)        L1_2   //   r = x;
+L1_2   Is_Not_Null_Var(r)      L1_4   //   while (r != NULL) {
+L1_2   Is_Null_Var(r)          L1_22  //
+                                  //    // Create the new node and copy the data
+                                  //
+L1_4   Malloc_L(w)             L1_5   //     w = malloc(sizeof(struct node));
+L1_5   Set_Next_Null_L(w)      L1_6   //     w->n = NULL;
+L1_6   CopyData(w, r)          L1_7   //     w->Data = r->Data;
+                                  //  
+L1_7   Set_Null_L(pl)          L1_8   //     pl = null;
+L1_8   Copy_Var_L(l, z)        L2_9   //     l = z;
+                                  //     
+  L2_9   Is_Not_Null_Var(l)      L2_10   //     while (l != NULL) { // Iterate over z in insert in the correct place
+  L2_9   Is_Null_Var(l)          L1_14
+       
+  L2_10  Less_Equal_Data_L(l, w) L2_12  //       if (l->data > w->data) {
+  L2_10  Greater_Data_L(l, w)    L1_14  //         break; // found place to insert
+                                    //       }
+       
+  L2_12  Copy_Var_L(pl, l)       L2_13  //       pl = l;
+  L2_13  Get_Next_L(l, pl)       L2_9   //       l = l->n;
+                                    //     }
+       
+L1_14  Is_Null_Var(pl)         L1_15  //     if (pl == NULL) {
+L1_14  Is_Not_Null_Var(pl)     L1_16  //
+L1_15  Copy_Var_L(z, w)        L1_18  //       z = w;
+                                  //     }
+                                  //     else {
+L1_16  Set_Next_Null_L(pl)     L1_17  //       pl->n = NULL;
+L1_17  Set_Next_L(pl, w)       L1_18  //       pl->n = w;
+                                 //     }
+
+L1_18  Set_Next_L(w, l)        L1_19a  //     w.n = l; // l maybe null
+L1_19a Copy_Var_L(t, r)        L1_19   //     r = r->n;
+L1_19  Get_Next_L(r, t)        L1_2   //     r = r->n;
+                                 //   }
+
+L1_22  Set_Null_L(l)           L1_23  //   l = NULL;
+L1_23  Set_Null_L(r)           L1_24  //   r = NULL;
+L1_24  Set_Null_L(w)           L1_25  //   w = NULL;
+L1_25  Set_Null_L(pl)          L1_26  //   pl = NULL;
+L1_26  Set_Null_L(rn)          exit //   rn = NULL;
+                                 //   return x;
+                                 // }
+
+//exit Assert_Permutation_L2(x, z, L0) exit2
+exit Assert_Sorted_L(z)                 exit2
+
+/////////////////////////////////////////////////////////////////////////
+// Display structures that arise only at the following program locations.
+%% exit

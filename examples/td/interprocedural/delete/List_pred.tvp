@@ -1,0 +1,74 @@
+/*******************************************************/
+/* The list data type predicates and instrumentations  */
+/* Describes the properties of heap elements with      */
+/* regard to other heap elements and visible variables */   
+/*******************************************************/
+
+/*******************************************************/
+/* Properties of heap (List) elements. properties that */
+/* derive from the heap elements alone.                */ 
+/*******************************************************/
+
+
+// is v a heap element ? ( A List node) 
+%p List(v) {}
+
+// Does the n-component of the heap element v_1 point to
+// heap element v_2 ? 
+%p n(v_1,v_2) function 
+
+// do two or more heap elements points by their n-componenet to v ? 
+%i is_L(v) =  E(v_1, v_2) (v_1!=v_2 & n(v_1, v) & n(v_2,v))
+
+// do two or more heap elements points by their n-componenet to v ? 
+//%i is_L(v) =  E(v_1, v_2) (v_1!=v_2 & n(v_1, v) & n(v_2,v))
+
+// Does another heap element point to the heap element v's n-component 
+// point to ? (used in destructive reverse only).
+%i nis_L(v) = List(v) & (E(v_1,v_2) v != v_1 & n(v,v_2) & n(v_1,v_2))
+
+// is v part of a n-component circle ?
+%i c_L(v)  =  n+(v, v)
+
+
+
+/*******************************************************/
+/* Properties of heap elements  with regard to the     */
+/* the visible variables.                              */ 
+/* These predicates are group I, of table 2.           */
+/*******************************************************/
+
+
+foreach (lcl in Locals) {
+    // does the local / parameter / temporary  variable x 
+    // of the current procedure point to v ?
+    %p lcl(v) unique box
+}
+
+foreach (glb in Globals) {
+    // does the global variable g point to v ?
+    %p glb(v) unique box
+}
+
+
+foreach (z in Globals + Locals) {
+    // is v reachable by 0 or more n-components from the 
+    // visible instance of the ( global / local / parameter 
+    // / temporary variable) x of the current procedure? 
+    %i r_L[z](v)  = E(v_1) (z(v_1) & n*(v_1, v))
+}
+
+
+
+/************************************************************/
+/*   Using the special properties of the list to improve    */
+/*             the precision of the analysis                */
+/************************************************************/
+
+// In a list n is a total order between all reachable elements:
+// If  v_1 is reachable from current instance of z and v_2 is not
+// "before" or "after" v_2 in  the list, than v_2 is not reachable
+// from the current instance of z.
+foreach (z in Globals + Locals) {
+    %r E(v_1) r_L[z](v_1) & ! n*(v_1,v) & ! n*(v,v_1) ==> ! r_L[z](v)
+}

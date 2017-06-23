@@ -1,0 +1,55 @@
+
+// entring to procedure: app
+app Copy_Variable_L(p, app$1) app_entry_2
+app_entry_2 Set_Null_L(app$1) app_entry_3
+app_entry_3 Copy_Variable_L(q, app$2) app_entry_4
+app_entry_4 Set_Null_L(app$2) app_entry_5
+app_entry_5 Set_Null_L(t) app_entry_6
+app_entry_6 nothing() app_body_1
+
+// if ( (p == NULL) )
+app_body_1 Is_Null_Var_L(p) app_body_3
+app_body_1 Is_Not_Null_Var_L(p) app_body_2
+
+// then {
+
+// return q
+app_body_3 Copy_Variable_L(app$ret,q) app_exit_1
+
+// }
+
+
+// t = p->n;
+app_body_2 Get_Next_L(t,p) app_body_4
+
+// setting the paramters
+app_body_4 Copy_Variable_L(app$1,t) app_body_8
+app_body_8 Copy_Variable_L(app$2,q) app_body_9
+app_body_9 DO_PUSH(app,app_body_10,app,Locals_app,Temps_app) app
+app_body_10 DO_RESTORE(app,Locals_app,CallSites_app) app_body_11
+app_body_11 POP(app,CallSites_app) app_body_6
+
+// t = app$ret;
+app_body_6 Copy_Variable_L(t,app$ret) app_body_7
+
+// app$ret = NULL;
+app_body_7 Set_Null_L(app$ret) app_body_5
+
+// p->n = NULL;
+app_body_5 Set_Next_Null_L(p) app_body_12
+
+// p->n = t;
+app_body_12 Set_Next_L(p,t) app_body_13
+
+// return p
+app_body_13 Copy_Variable_L(app$ret,p) app_exit_1
+
+// exiting from procedure: app
+app_exit_1 Set_Null_L(p) app_exit_2
+app_exit_2 Set_Null_L(q) app_exit_3
+app_exit_3 Set_Null_L(t) app_exit_4
+app_exit_4 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(app_body_10) app_body_10

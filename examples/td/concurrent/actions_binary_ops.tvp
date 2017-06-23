@@ -1,0 +1,76 @@
+///////////////////////////////////////////////////////////
+// Actions encoding program statements that involve boolean
+// program variables.
+
+%action Is_True(x1) {
+  %t x1
+    %p x1()
+}
+
+%action Is_False(x1) {
+  %t "!" + x1
+    %p !x1()
+}
+
+%action Set_True(x1) {
+  %t x1 + " = true"
+  {
+    x1() = 1
+  }
+}
+
+%action Set_False(x1) {
+  %t x1 + " = false"
+  {
+    x1() = 0
+  }
+}
+
+// TODO BD extract to other file
+%action Set_False_All(x1) {
+  %t x1 + " = false"
+  %f { x1(v) }
+  {
+    x1(v) = 0
+  }
+}
+
+// TODO BD extract to other file
+%action Set_Not_All(lhs, pred, value) {
+  %t pred + "(" + lhs + ")=" + value
+  %f { lhs(v) }
+  {
+    pred(v) = (!lhs(v) & pred(v)) | (lhs(v) & value())
+  }
+}
+
+%action Set_Not(x1) {
+  %t x1 + " = !x1" 
+  {
+    x1() = !x1()
+  }
+}
+
+%action Validate_Is_True(x1) {
+  %t x1
+    %message(!x1()) ->
+    "Validation failed: predicate " + x1 + " is false\n"
+  {
+  }
+}
+
+%action Validate_Is_False(x1) {
+  %t x1
+    %message(x1()) ->
+    "Validation failed: predicate " + x1 + " is true\n"
+  {
+  }
+}
+
+%action Validate_Are_Equal(pred1, pred2) {
+  %t pred1 + "=" + pred2
+  %f{ pred1(v) | pred2(v) }
+  %p  E(v) (pred1(v) & !pred2(v))
+  %message (E(v) (pred1(v) & !pred2(v)) ) ->
+    "Validation Validate_Are_Equal" + pred1 + " = " + pred2 + "failed"
+}

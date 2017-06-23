@@ -1,0 +1,24 @@
+// An acyclic singly-linked list with two or more elements pointed by program x.
+%n = {head1, tail1, head2, tail2, sentinel, tn1, tn2}
+%p = {
+    sm = {tail1:1/2, tail2:1/2}
+
+    isThread = {tn1, tn2}
+    at[S1_0] = {tn1, tn2}
+    t1 = {tn1}
+    t2 = {tn2}
+
+    x1 = {head1}
+    x2 = {head2}
+    h = {sentinel}
+
+    r[n,x1] = {head1, tail1}
+    r[n,x2] = {head2, tail2}
+    r[n,h] = {sentinel}
+
+    n = {head1->tail1:1/2, tail1->tail1:1/2,
+        head2->tail2:1/2, tail2->tail2:1/2}
+    t[n] = {head1->head1, head1->tail1, tail1->tail1:1/2,
+            head2->head2, head2->tail2, tail2->tail2:1/2,
+            tn1->tn1, tn2->tn2, sentinel->sentinel}
+}

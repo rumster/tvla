@@ -1,0 +1,127 @@
+///////////////////////////////////////////////////////////////////////////////
+// Actions modeling basic Java statements
+
+%action setup_garbage() {
+  %t "setup_garbage"
+  {
+    foreach (t in Types) {
+      t(v) = (free(v) ? 1/2 : t(v))
+    }
+  }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Actions on Boolean variables
+
+%action assign_true(b) {
+  %t b + " = true"
+  {
+    b() = 1
+  }
+}
+
+%action assign_false(b) {
+  %t b + " = false"
+  {
+    b() = 0
+  }
+}
+
+%action assignBVarBVar(x, y) {
+  %t x + " = " + y
+  {
+    x() = y()
+  }
+}
+
+
+%action eqBVarBVar_true(x, y) {
+  %t x + " == " + y
+  %p x() <-> y()
+  {
+  }
+}
+
+%action eqBVarBVar_false(x, y) {
+  %t x + " != " + y
+  %p !(x() <-> y())
+  {
+  }
+}
+
+/*
+%action testBVar_true(x) {
+  %t x + " == true"
+  %p x()
+  {
+  }
+}
+
+%action testBVar_false(x) {
+  %t x + " == false"
+  %p !x()
+  {
+  }
+}
+*/
+
+//////////////////////////////////////////////////////////////////////////////
+// Actions on Pointer variables
+
+%action assignNew(x, t) {
+  %t v + " = new " + t
+  %f { x(v) }
+  %p (E(v) x(v)) & (E(v) free(v) & sm(v)) & (E(v) free(v) & !x(v))
+  {
+    t(v) = t(v) | x(v)
+    foreach (ot in Types-{t}) {
+      ot(v) = ot(v) & !x(v)
+    }
+    free(v) = free(v) & !x(v)
+    sm(v) = sm(v) | free(v) & 1/2
+  }
+}
+
+%action assignPVarPVar(l, r) {
+  %t l + " = " + r
+  {
+    l(v) = r(v)
+  }
+}
+
+%action eqPVarPVar_true(x, y) {
+  %t x + " == " + y
+  %p E(v) x(v) & y(v)
+  {
+  }
+}
+
+%action eqPVarPVar_false(x, y) {
+  %t x + " != " + y
+  %p !E(v) x(v) & y(v)
+  {
+  }
+}
+
+%action assignBVarEqPVarPvar(b, x, y) {
+  %t b + " = (" + x + " == " + y + ")"
+  {
+    b() = E(v) x(v) & y(v)
+  }
+}
+
+
+%action isPVarNull(x) {
+  %t x + " == " + y
+  %p !(E(v) x(v))
+  {
+  }
+}
+
+%action isPVarNotNull(x) {
+  %t x + " == " + y
+  %p (E(v) x(v))
+  {
+  }
+}

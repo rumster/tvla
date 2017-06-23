@@ -1,0 +1,99 @@
+/*************************************************/
+/*         The activation records stack          */
+/*************************************************/
+
+/**********************************************************/
+/* The implementation of the stack as a linked list       */
+/**********************************************************/
+
+// Is v an activation record ?
+%p Stack(v) {}
+
+// Is activation record v_1 (the immediate) previous to v_2 
+// in the stack ?
+// i.e., did the procedure whose activation record is v_1
+// the caller of the procedure whose activation record is v_2 ?
+%p pr(v_1,v_2) function invfunction 
+
+
+
+/**********************************************************/
+/*          properties of the control (call sites)        */
+/**********************************************************/
+
+
+foreach (call in CallSites) {
+    // Is call the call site of the current procedure ? 
+    %p cur_cs_is[call]() {}
+}
+
+foreach (call in CallSites) {
+    // is label the return address of the procedure whose 
+    // activation record is v ?
+    %p ret_to_cs[call](v)
+}
+    
+
+/**********************************************************/
+/*             Properties of Stack Pointers               */
+/**********************************************************/
+
+// "pointers" to the stack (to activation records):
+// This pointers points to the head of the stack. They are used
+// to manipulate the stack at calls and returns.
+// topS - points to the caller of the current activation record
+// callerS - points to the caller  of the caller of the current 
+//           activation record when a return is executed.
+%s StackPointers { topS , callerS}
+
+foreach (sp in StackPointers) {
+    %p sp(v) unique box
+}
+
+// "pointers" to the stack (to activation records):
+// top[proc] -  points to the most recent invocation of procedure proc
+
+foreach (proc in ProcNames) {
+    %p top[proc](v) unique box
+}
+
+/************************************************************/
+/*                 Stack Instrumentation                    */
+/************************************************************/
+
+foreach (proc in ProcNames) {
+        // is v an activation record that was invoked before
+        // the most recent activation record of proc was invoked.
+        %i r_top_S[proc](v)  = E(v_1) (top[proc](v_1) & pr*(v_1, v))
+}
+
+
+
+/************************************************************/
+/*   Using the special properties of the stack to improve   */
+/*             the precision of the analysis                */
+/************************************************************/
+
+// All activation records are in one acyclic list. If v_2 is an
+// activation record which may be the only previous activation 
+// record of v_1, then it must be its previous. In particular, 
+// this rule changes the pr selector value from 1/2 to 1 to stack 
+// nodes which points only one element.
+// This situation occurs, for example, when a summary node represents
+// only the first invocation of a procedure.  
+// Assumption: meta_main is the caller to the first procedure.
+%r Stack(v_1) & Stack(v_2) &  
+   !ret_to_cs[meta_main](v_1) & 
+   (A(v_3) (v_3 != v_2) -> !pr(v_1,v_3))  ==> pr(v_1,v_2)
+
+
+// v_1,v_2,v_3 are all activation reocrds. 
+// if v_3 is not one of the activation records which are previous 
+// to v_2, then v_2 is one of the previous to v_3.
+// if v_1 is not one of the activation records which are previous 
+// to v_3, then v_3 is one of the previous to v_1.
+// Thus  - it is not possible that v_2 is previous to v_1 since v_3 
+// must be previous to v_1 and v_2 must be previous to v_3.
+// Unformally, it removes false triangles from the stack:
+%r Stack(v_1) & Stack(v_2)  & 
+   E(v_3) Stack(v_3) & !pr*(v_2,v_3) & !pr*(v_3,v_1) ==> !pr(v_1,v_2)  

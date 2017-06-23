@@ -1,0 +1,45 @@
+///////
+// Sets
+
+%s PVar {x, e, p, t}
+
+#include "predicates.tvp"
+%p isTraversed(v)
+
+%%
+
+#include "actions.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that creates an element with a specified 
+// value and inserts it before the first element with a larger value.
+
+L1_0 Is_Not_Null_Var(x)  L1_1
+L1_0 Is_Null_Var(x)      exit
+
+L1_1  Get_Next_L(e, x)    L1_2   // e = x.n;
+L1_2  Set_Null_L(p)       L1_3   // p = NULL;
+
+L1_3   Is_Not_Eq_Var(e, x) L1_5   // while (e != NULL && value < elem->val) {
+L1_3   Is_Eq_Var(e, x)     L1_7
+L1_5   Set_True2(e, isTraversed) L1_5a
+L1_5a  Copy_Var_L(p, e)    L1_6   //   p = e;
+L1_6   Get_Next_L(e, e)    L1_3   //   e = e->n;
+                                 // }
+L1_7  Is_Eq_Var(e, x)     L1_8   // if (e == x) {
+L1_7  Is_Not_Eq_Var(e, x) L1_11
+L1_8  Malloc_L(x)         L1_9   //   x = malloc(sizeof(struct node));
+L1_9  Set_Next_Null_L(x)  L1_10  //   x->n = NULL;
+L1_10 Set_Next_L(x, e)    exit   //   x->n = e;
+                                 // } 
+                                 // else {
+L1_11 Malloc_L(t)         L1_12  //   t = malloc(sizeof(struct node));
+L1_12 Set_Next_Null_L(t)  L1_13  //   t->n = NULL;
+L1_13 Set_Next_L(t, e)    L1_14  //   t->n = e;
+L1_14 Set_Next_Null_L(p)  L1_15  //   p->n = NULL;
+L1_15 Set_Next_L(p, t)    exit   //   p->n = t;
+                                 // }
+exit Assert_ListInvariants(x) error
+exit Assert_No_Leak(x)        error

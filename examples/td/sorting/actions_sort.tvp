@@ -1,0 +1,227 @@
+%action Skip() { 
+    %t "skip"
+}
+
+
+///////////////////////////////////////
+// Actions related to boolean variables
+
+%action Set_True(lhs) {
+  %t lhs + " = true"
+  {
+    lhs() = 1
+  }
+}
+
+%action Set_False(lhs) {
+  %t lhs + " = false"
+  {
+    lhs() = 0
+  }
+}
+
+%action Is_True(lhs) {
+  %t lhs
+  %p lhs()
+}
+
+%action Set_True2(lhs, pred) {
+  %t pred + " = " + lhs
+  %f{ lhs(v) }
+  {
+    pred(v) = pred(v) | lhs(v)
+  }
+}
+
+%action Is_False(lhs) {
+  %t "!" + lhs
+  %p !lhs()
+}
+
+
+///////////////////////////////////////
+// Actions related to pointer variables
+
+%action Set_Null_L(lhs) {
+  %t lhs + " = NULL"
+  {
+    lhs(v) = 0
+  }
+}
+
+%action Copy_Var_L(lhs, rhs) {
+  %t lhs + " = " + rhs
+  %f { rhs(v) } 
+  {
+    lhs(v) = rhs(v) 
+  }
+}
+
+%action Malloc_L(lhs) {
+  %t lhs + " = (L) malloc(sizeof(struct node))"
+  %new
+  {
+    lhs(v) = isNew(v)
+    t[n](v_1, v_2) = (isNew(v_1) ? v_1 == v_2 : t[n](v_1, v_2))
+    r[n,lhs](v) = isNew(v)
+    dle(v_1, v_2) = (isNew(v_1) & isNew(v_2)) |
+                    (v_1 != v_2  & (isNew(v_1)| isNew(v_2))? 1/2 : dle(v_1, v_2))
+    inOrder[dle,n](v) = (isNew(v) ? 1 : inOrder[dle,n](v))
+    inROrder[dle,n](v) = (isNew(v) ? 1 : inROrder[dle,n](v))            
+  }
+}
+
+%action Get_Next_L(lhs, rhs) {
+  %t lhs + " = " + rhs + "->" + n
+  %f { E(v_1, v_2) rhs(v_1) & n(v_1, v_2) &  t[n](v_2, v) }
+  %message  (!E(v) rhs(v)) ->
+            "Illegal dereference to\n" + n + " component of " + rhs
+  {
+    lhs(v) = E(v_1) rhs(v_1) & n(v_1, v)
+  }
+}
+
+%action Set_Next_Null_L(lhs) {
+  %t lhs + "->" + n + " = NULL"
+  %f { lhs(v),
+       // Optimized change-formula for t[n] update-formula.
+       E(v_1, v_2) lhs(v_1) & n(v_1, v_2) & t[n](v_2, v)   
+     }
+  %message (!E(v) lhs(v)) ->
+           "Illegal dereference to\n" + n + " component of " + lhs
+  {
+    n(v_1, v_2) = n(v_1, v_2) & !lhs(v_1)
+  }
+}
+
+%action Set_Next_L(lhs, rhs) {
+  %t lhs + "->" + n + " = " + rhs
+  %f { lhs(v), rhs(v),
+       // Optimized change-formula for t[n] upate-formula.
+       E(v_4) rhs(v_4) & t[n](v_4, v_2)
+     }
+  %message (E(v_1, v_2) lhs(v_1) & n(v_1, v_2)) ->
+           "Internal Error! assume that " + lhs + "->" + n + "==NULL"
+  %message (E(v_1, v_2) lhs(v_1) & rhs(v_2) & t[n](v_2, v_1)) ->
+           "A cycle may be introduced\nby assignment " +
+           lhs + "->" + n + "=" + rhs
+  {
+    n(v_1, v_2) = n(v_1, v_2) | lhs(v_1) & rhs(v_2)
+  }
+}
+
+%action Is_Not_Null_Var(lhs) {
+  %t lhs + " != NULL"
+  %f { lhs(v) } 
+  %p E(v) lhs(v)
+}
+
+%action Is_Null_Var(lhs) {
+  %t lhs + " == NULL"
+  %f { lhs(v) } 
+  %p !(E(v) lhs(v))
+}
+
+%action Is_Eq_Var(lhs, rhs) {
+  %t lhs + " == " + rhs
+  %f { lhs(v), rhs(v) } 
+  %p A(v) lhs(v) <-> rhs(v)
+}
+
+%action Is_Not_Eq_Var(lhs, rhs) {
+  %t lhs + " != " + rhs
+  %f { lhs(v), rhs(v) } 
+  %p !A(v) lhs(v) <-> rhs(v)
+}
+
+
+//////////////////////
+// Numeric comparisons
+
+%action Greater_Data_L(lhs, rhs) {
+  %t lhs + "->data > " + rhs + "->data"  
+  %f { lhs(v_1) & rhs(v_2) & dle(v_1, v_2) }
+  %p !E(v_1, v_2) lhs(v_1) & rhs(v_2) & dle(v_1, v_2)
+}
+
+%action Less_Equal_Data_L(lhs, rhs) {
+  %t lhs + "->data <= " + rhs + "->data"     
+  %f { lhs(v_1) & rhs(v_2) & dle(v_1, v_2) }
+  %p E(v_1, v_2) lhs(v_1) & rhs(v_2) & dle(v_1, v_2)
+}
+
+%action Greater_Equal_Data_L(lhs, rhs) {
+  %t lhs + "->data >= " + rhs + "->data"     
+  %f { lhs(v_1) & rhs(v_2) & dle(v_2, v_1) }
+  %p E(v_1, v_2) lhs(v_1) & rhs(v_2) & dle(v_2, v_1)
+}
+
+%action Malloc_L(lhs) {
+  %t lhs + " = (L) malloc(sizeof(struct node))"
+  %new
+  {
+    lhs(v) = isNew(v)
+    t[n](v_1, v_2) = (isNew(v_1) ? v_1 == v_2 : t[n](v_1, v_2))
+    r[n,lhs](v) = isNew(v)
+    dle(v_1, v_2) = (isNew(v_1) & isNew(v_2)) |
+                    (v_1 != v_2  & (isNew(v_1)| isNew(v_2))? 1/2 : dle(v_1, v_2))
+    inOrder[dle,n](v) = (isNew(v) ? 1 : inOrder[dle,n](v))
+    inROrder[dle,n](v) = (isNew(v) ? 1 : inROrder[dle,n](v))
+  }
+}
+
+%action CopyData(lhs, rhs) {
+  %t lhs + ".data = " + rds + ".data"
+  %f { E(v_1, v_2) rhs(v_1) & lhs(v_2) }
+  %message (!(E(v_1, v_2) rhs(v_2) & lhs(v_1))) ->
+            "Illegal dereference to of " + rhs + " or " + lhs
+  {
+    dle(v_1, v_2) = dle(v_1, v_2) |
+                    (lhs(v_1) & (E(t) rhs(t) & dle(t, v_2))) |
+                    (lhs(v_2) & (E(t) rhs(t) & dle(v_2, t)))
+
+    inOrder[dle,n](v) = inOrder[dle,n](v) |
+                         (lhs(v) & (E(t) rhs(t) & inOrder[dle,n](t)))
+
+    inROrder[dle,n](v) = inROrder[dle,n](v) |
+                          (lhs(v) & (E(t) rhs(t) & inROrder[dle,n](t)))
+  }
+}
+
+///////////////////////////
+// Sorting specific actions
+
+%action Copy_Reach_L(lhs, l) {
+  %t "storeReach(" + lhs + ", " + l + ")"
+  {
+    or[n,lhs,l](v) = r[n,lhs](v)
+  }
+}
+
+%action Assert_Permutation_L(lhs, label) {
+  %t "AssertPermutation(" + lhs + ", " + label + ")"
+  %message !(A(v) (r[n,lhs](v) <-> or[n,lhs,label](v))) -> 
+           "Unable to prove that the list pointed-to by " + lhs +
+           "is a permutation of the original list at program label " + label
+}
+
+%action Assert_Sorted_L(lhs) {
+  %t "AssertSorted(" + lhs +  ")"
+  %message !(A(v) (r[n,lhs](v) -> inOrder[dle,n](v))) ->
+           "Unable to prove that the list pointed-to by " + lhs + " is sorted"
+}
+
+%action Assert_Reverse_Sorted_L(lhs) {
+  %t "AssertReverseSorted(" + lhs +  ")"
+  %message !(A(v) (r[n,lhs](v) -> inROrder[dle,n](v))) ->
+           "Unable to prove that the list pointed-to by " + lhs + 
+           " is sorted in reversed order"
+}
+
+%action Assert_No_Leak(lhs) {
+  %t "assertNoLeak(" + lhs + ")"
+  %f { lhs(v) }
+  %p E(v) !r[n,lhs](v)
+  %message ( E(v) !r[n,lhs](v) ) -> 
+           "There may be a list element not reachable from variable " + lhs + "!"
+}

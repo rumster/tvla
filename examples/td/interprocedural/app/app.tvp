@@ -1,0 +1,39 @@
+
+%s ProcNames { app }
+%s Prog_Globals { hd2 , hd1 }
+#include "app_def.tvp"
+
+%s Locals Locals_app
+%s Locals_sq Locals_sq_app
+%s Locals_rsq Locals_rsq_app
+%s Locals_none Locals_none_app
+%s Temps Temps_app
+%s CallSites CallSites_app  + {meta_main}
+%s Params Params_app
+%s Trans Trans_app
+%s Globals Prog_Globals + Params + Temps + Trans
+
+%s LOCALS_TEMP Temps_app
+%s LOCALS_CUR  Locals_app
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+meta_main Copy_Variable_L(app$1,hd1) meta_main1
+meta_main1 Copy_Variable_L(app$2,hd2) app
+
+#include "app_cfg.tvp"
+
+EXIT end_of_prog() END

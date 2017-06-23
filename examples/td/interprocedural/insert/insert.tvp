@@ -1,0 +1,37 @@
+
+%s ProcNames { insert } 
+%s Prog_Globals { hd } 
+#include "insert_def.tvp"
+
+%s Locals Locals_insert  
+%s Locals_sq Locals_sq_insert  
+%s Locals_rsq Locals_rsq_insert  
+%s Locals_none Locals_none_insert  
+%s Temps Temps_insert  
+%s CallSites CallSites_insert  + {meta_main} 
+%s Params Params_insert  
+%s Trans Trans_insert  
+%s Globals Prog_Globals + Params + Temps + Trans  
+
+%s LOCALS_TEMP Temps
+%s LOCALS_CUR  Locals
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+meta_main Copy_Variable_L(insert$1,hd) insert
+
+#include "insert_cfg.tvp"
+
+EXIT end_of_prog() END

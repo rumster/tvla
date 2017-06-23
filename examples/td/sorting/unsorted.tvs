@@ -1,0 +1,34 @@
+/*
+// An empty list.
+%n = {}
+%p = {
+}
+
+// An unshared acyclic singly-linked list with a single element,
+// pointed by variable x.
+// The list is (obviously) sorted with respect to the data field.
+%n = {head}
+%p = {
+       x = {head}
+       t[n] = {head->head}
+       r[n,x] = {head}
+       inOrder[dle,n] = {head}
+       inROrder[dle,n] = {head}
+       dle = {head->head}
+}
+*/
+
+// An acyclic unshared singly-linked list with two or more elements,
+// pointed by variable x.
+// The list is unsorted with respect to the data field.
+%n = {tail, head}
+%p = {
+       sm = {tail:1/2}
+       x = {head}
+       r[n,x] = {head, tail}
+       inOrder[dle,n] = {head:1/2, tail:1/2}
+       inROrder[dle,n] = {head:1/2, tail:1/2}
+       n = {head->tail:1/2, tail->tail:1/2}
+       t[n] = {head->head, head->tail, tail->tail:1/2}
+       dle = {head->head, head->tail:1/2, tail->head:1/2, tail->tail:1/2}
+}

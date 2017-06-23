@@ -8,6 +8,7 @@ package tvla.analysis;
 
 import java.util.*;
 
+import tvla.core.Node;
 import tvla.core.TVS;
 import tvla.io.IOFacade;
 import tvla.util.HashSetFactory;
@@ -105,7 +106,7 @@ public class IntraProcTransitionRelation implements TransitionRelation {
     	assert(transitions.containsNode(fromAbstractState));
     	assert(transitions.containsNode(toAbstractState));
     	
-    	transitions.addEdge(fromAbstractState,toAbstractState,transitionLabel);
+    	transitions.addEdge(fromAbstractState, toAbstractState, transitionLabel);
     	ids = null;
     }
  
@@ -291,7 +292,7 @@ public class IntraProcTransitionRelation implements TransitionRelation {
     }
     
     public static class TranisitionRelationNode implements AbstractState {
-    	protected TVS tvs;
+    	  protected TVS tvs;
         protected Object loc;
         protected long id;
 

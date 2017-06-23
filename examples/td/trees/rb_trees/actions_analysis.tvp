@@ -1,0 +1,13 @@
+%action skip() {
+  %t "skip"
+  {
+  }
+}
+
+%action choose(x, t) {
+  %t x + " = choose(" + t + ")"
+  %p t(o)
+  {
+    x(v) = v==o
+  }
+}

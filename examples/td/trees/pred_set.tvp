@@ -1,0 +1,8 @@
+
+/**********************************************/
+/*************** Core Predicates *************/
+foreach (s in Sets) {
+	%p set[s](v)  
+}
+
+%p unique_selection(v) unique box { 1 }

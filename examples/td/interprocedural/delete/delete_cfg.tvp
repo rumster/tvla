@@ -1,0 +1,66 @@
+// entring to procedure: delete
+delete Copy_Variable_L(h,delete$1) delete_entry_2
+delete_entry_2 Set_Null_L(delete$1) delete_entry_3
+delete_entry_3 Set_Null_L(t) delete_entry_4
+delete_entry_4 nothing() delete_body_1
+
+// if ( (h == NULL) )
+delete_body_1 Is_Null_Var_L(h) delete_body_3
+delete_body_1 Is_Not_Null_Var_L(h) delete_body_2
+
+// then {
+
+// return NULL
+delete_body_3 Set_Null_L(delete$ret) delete_exit_1
+
+// }
+
+// t = h->n;
+delete_body_2 Get_Next_L(t,h) delete_body_4
+
+// if ( (uniterpreted conditional) )
+delete_body_4 uninterpreted() delete_body_6
+delete_body_4 uninterpreted() delete_body_5
+
+// then {
+
+// h->n = NULL;
+delete_body_6 Set_Next_Null_L(h) delete_body_7
+
+// free(h) ;
+delete_body_7 Free_L(h) delete_body_8
+
+// return t
+delete_body_8 Copy_Variable_L(delete$ret,t) delete_exit_1
+
+// }
+
+// setting the paramters
+delete_body_5 Copy_Variable_L(delete$1,t) delete_body_12
+delete_body_12 DO_PUSH(delete, delete_body_13, delete, Locals_delete, Temps_delete) delete
+delete_body_13 DO_RESTORE(delete,Locals_delete,CallSites_delete) delete_body_14
+delete_body_14 POP(delete,CallSites_delete) delete_body_10
+
+// t = delete$ret;
+delete_body_10 Copy_Variable_L(t,delete$ret) delete_body_11
+
+// delete$ret = NULL;
+delete_body_11 Set_Null_L(delete$ret) delete_body_9
+
+// h->n = NULL;
+delete_body_9 Set_Next_Null_L(h) delete_body_15
+
+// h->n = t;
+delete_body_15 Set_Next_L(h,t) delete_body_16
+
+// return h
+delete_body_16 Copy_Variable_L(delete$ret,h) delete_exit_1
+
+// exiting from procedure: delete
+delete_exit_1 Set_Null_L(h) delete_exit_2
+delete_exit_2 Set_Null_L(t) delete_exit_3
+delete_exit_3 nothing() EXIT
+
+
+// // returns back to this procedure iff was called from it
+EXIT return(delete_body_13) delete_body_13

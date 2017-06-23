@@ -1,0 +1,52 @@
+///////
+// Sets
+
+%s PVar {x, elem, prev, temp}
+
+#include "predicates_lists_cyclic.tvp"
+%p isTraversed1(v)
+%p isTraversed2(v)
+
+%%
+
+#include "actions_lists_cyclic.tvp"
+
+%%
+
+////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that deletes an element with a specified
+// value from a list.
+
+L1_0   Is_Not_Null_Var(x)            L1_1
+L1_0   Is_Null_Var(x)                L1_exit
+                                    
+L1_1   Get_Next_L(elem, x)           L1_3       // elem = x->n
+                                                //
+L1_3   Is_Eq_Var(elem, x)            L1_11      // while (x != elem) {
+L1_3   Is_Not_Eq_Var(elem, x)        L1_4       //
+L1_4   uninterpreted()               L1_5       //   if (elem->val == delval) {
+L1_4   uninterpreted()               L1_8       //
+L1_5   Copy_Var_L(temp, elem)        L1_6       //     temp = elem;
+L1_6   Set_Next_Null_L(elem)         L1_7       //     elem->n = null;
+L1_7   Set_Next_L(elem, temp)        L1_8       //     elem->n temp;
+                                                //     break;
+                                                //   }
+L1_8   Set_True2(elem, isTraversed1) L1_9
+L1_9   Copy_Var_L(temp, elem)        L1_10      //  temp = elem;
+L1_10  Get_Next_L(elem, temp)        L1_3       //  elem = temp->n;
+                                                // }
+                                                //
+L1_11  Set_Null_L(elem)              L1_12      // elem = null
+L1_12  Get_Next_L(elem, x)           L1_13      // elem = x->n
+                                                //
+L1_13  Is_Eq_Var(elem, x)            L1_exit    // while (x != elem) {
+L1_13  Is_Not_Eq_Var(elem, x)        L1_14      //
+L1_14  Set_True2(elem, isTraversed2) L1_15      //
+L1_15  Copy_Var_L(temp, elem)        L1_16      //   temp = elem;
+L1_16  Get_Next_L(elem, temp)        L1_13      //   elem = temp->n;
+                                                // }
+
+L1_exit Assert_No_Leak(x) L1_error
+
+%%
+L1_exit

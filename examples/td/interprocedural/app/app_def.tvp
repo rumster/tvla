@@ -1,0 +1,20 @@
+
+
+// procedure: app variables definition
+
+
+// Locals
+%s Locals_app { p } 
+%s Locals_sq_app { p  } 
+%s Locals_rsq_app {  } 
+%s Locals_none_app {  } 
+
+
+// Globals and Temps and params 
+%s Trans_app { app$1 , app$2 , app$ret } 
+%s Temps_app { t } 
+%s Params_app { q  } 
+
+
+// CallSites
+%s CallSites_app { app_body_10 } 

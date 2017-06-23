@@ -1,0 +1,20 @@
+
+
+// procedure: search variables definition
+
+
+// Locals
+%s Locals_search {  } 
+%s Locals_sq_search {  } 
+%s Locals_rsq_search {  } 
+%s Locals_none_search {  } 
+
+
+// Globals and Temps and params 
+%s Trans_search { search$1 , search$ret } 
+%s Temps_search {  } 
+%s Params_search { h } 
+
+
+// CallSites
+%s CallSites_search { search_body_11 } 

@@ -1,0 +1,66 @@
+// Lindstrom binary-search-tree traversal.
+// Similar to Deutsch-Schorr-Waite but specialized for binary
+// trees and is constant-space (no child counters/markers)
+
+//#include "tree.h"
+%s TSel {left, right}
+
+// t is a temp needed for TVLA's accessor normalization.
+// The rest of the vars are for the Lindstrom alg.
+%s PVar {root, cur, prev, next, sent, t}
+
+%p isMarked(v)
+
+#include "pred_tree.tvp"
+#include "pred_dfs.tvp"
+
+%%
+#include "actions_tree.tvp"
+#include "actions_dfs.tvp"
+%%
+
+// Lindstrom constant space traversal of a binary tree.
+// void Lindstrom(Tree *root) {
+//  Tree *prev, *cur, *next, *t;
+
+L1_0   Is_Null_Var(root)           exit     //  if (root == NULL) return;
+L1_0   Is_Not_Null_Var(root)       L1_1
+
+L1_1   Copy_Var_T(prev, sent)      L1_2     //  prev = SENTINEL;
+L1_2   Copy_Var_T(cur, root)       L1_3     //  cur = root;
+                                            
+                                            //  while(1)
+                                            //  { // Rotate pointers
+                                            
+L1_3   Get_Sel_T(next, cur, left)  L1_4     //    next = cur->left;
+L1_4   Get_Sel_T(t, cur, right)    L1_5     //    cur->left = cur->right;
+L1_5   Set_Sel_Null_T(cur, left)   L1_6     
+L1_6   Set_Sel_Null_T(cur, right)  L1_7     //    // Early nulling to avoid
+L1_7   Set_Sel_T(cur, left, t)     L1_7a    //    // tree constraint breach!
+L1_7a  Set_Null_T(t)               L1_8     //    // Clear temporary variables early!
+L1_8   Set_Sel_T(cur, right, prev) L1_I1    //    cur->right = prev;
+
+
+L1_I1  Set_True2(cur, isMarked)     L1_9
+                                            //    // Do any work (marking,
+                                            //    // counting, etc.) on cur here.
+
+                                            //    // Move forward.
+L1_9   Copy_Var_T(prev, cur)       L1_10    //    prev = cur;
+L1_10  Copy_Var_T(cur, next)       L1_10a   //    cur = next;
+L1_10a Set_Null_T(next)            L1_11    //    // Clear variables early!
+                                  
+L1_11  Is_Eq_Var(cur, sent)        exit     //    if (cur == SENTINEL) break;
+L1_11  Is_Not_Eq_Var(cur, sent)    L1_12
+                                  
+L1_12  Is_Null_Var(cur)            L1_17    //    // if (ATOM(cur))
+L1_12  Is_Not_Null_Var(cur)        L1_3     //    if (cur == NULL ||    
+                                  
+                                            //      // Swap prev and cur (cur is NULL).
+L1_17  Copy_Var_T(cur, prev)       L1_18    //      cur = prev;
+L1_18  Set_Null_T(prev)            L1_3     //      prev = NULL;
+                                            //    }
+                                            //  }
+                                            //}
+
+%% exit

@@ -1,0 +1,54 @@
+///////
+// Sets
+
+%s PVar{ x, y, t }
+
+%p is_odd()  // Represents the boolean variable 'odd'
+%p is_odd_node(v)
+%p is_last(v)
+
+#include "predicates_lists.tvp"
+
+%%
+
+#include "actions_lists.tvp"
+#include "actions_binary_ops.tvp"
+
+%%
+
+//
+// Example from "Proving Termination of Tree Manipulating Programs" 
+// http://www.lsv.ens-cachan.fr/Publis/PAPERS/PDF/HIRV-atva07.pdf
+//
+// The following procedure marks the elements of a singly linked list as even or odd
+// depending on whether their distance to the end of the list is even or odd.
+// 
+// We validate termination by bounding the heap accesses. Each element is accessed at most 
+// 2 times, as the procedure traverses the list once or twice (depending on the elements count parity)
+// 
+// Should not fail
+
+L1_0 Set_False_All(is_odd_node)              L1_1
+L1_1 Set_False(is_odd)                       L1_2    //  odd = false;
+L1_2 Is_Null_Var(x)                          exit    //
+L1_2 Is_Not_Null_Var(x)                      L1_4    //  if (list != null) {
+                                                     //
+                                                     //    while (true) {
+L1_4 Copy_Var_L(y, x)                        L2_51   //      y = list;
+                                           
+  L2_51 Is_Not_Null_Var(y)                   L2_52   //      while (y != NULL) {
+  L2_51 Is_Null_Var(y)                       L1_6    //
+                                                     //
+  L2_52 Set_Not_All(y, is_odd_node, is_odd)  L2_53   //        y.data = odd;
+  L2_53 Set_Not(is_odd)                      L2_55   //        odd = not(odd);
+  L2_55 Copy_Var_L(t, y)                     L2_56   //        t = y;
+  L2_56 Get_Next_L(y, t)                     L2_51   //        y = t->n;
+                                                     //      }
+                                                     //
+L1_6 Is_False(is_odd)                        exit    //      if (not(odd)) then break;
+L1_6 Is_True(is_odd)                         L1_4    //
+                                                     //    }
+                                                     //  }
+
+%%
+exit

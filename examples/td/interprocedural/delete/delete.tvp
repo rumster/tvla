@@ -1,0 +1,37 @@
+
+%s ProcNames { delete } 
+%s Prog_Globals { hd } 
+#include "delete_def.tvp"
+
+%s Locals Locals_delete  
+%s Locals_sq Locals_sq_delete  
+%s Locals_rsq Locals_rsq_delete  
+%s Locals_none Locals_none_delete  
+%s Temps Temps_delete  
+%s CallSites CallSites_delete  + {meta_main}
+%s Params Params_delete  
+%s Trans Trans_delete  
+%s Globals Prog_Globals + Params + Temps + Trans  
+
+%s LOCALS_TEMP Temps
+%s LOCALS_CUR  Locals
+%s CS_CUR      CallSites
+%s PVar Globals + Locals
+
+#include "List_pred.tvp" 
+#include "Stack_pred.tvp"
+#include "StackListCorrelation.tvp"
+
+%%
+
+#include "cond.tvp"
+#include "List_stat.tvp"
+#include "Stack_stat.tvp"
+
+%%
+
+meta_main Copy_Variable_L(delete$1, hd) delete 
+
+#include "delete_cfg.tvp"
+
+EXIT end_of_prog() END

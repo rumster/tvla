@@ -1,0 +1,20 @@
+
+
+// procedure: insert variables definition
+
+
+// Locals
+%s Locals_insert { h } 
+%s Locals_sq_insert { h } 
+%s Locals_rsq_insert {  } 
+%s Locals_none_insert {  } 
+
+
+// Globals and Temps and params 
+%s Trans_insert { insert$1 , insert$ret } 
+%s Temps_insert { t } 
+%s Params_insert {  } 
+
+
+// CallSites
+%s CallSites_insert { insert_body_10 } 

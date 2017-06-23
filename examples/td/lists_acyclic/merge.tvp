@@ -1,0 +1,69 @@
+///////
+// Sets
+
+%s PVar {t, q, p, h}
+
+#include "predicates_lists.tvp"
+
+%%
+
+#include "actions_lists.tvp"
+
+%%
+
+/////////////////////////////////////////////////////////////////////////////
+// Transition system for a function that merges two ordered lists (pointed by
+// variables p and q) into one ordered list (pointed by variable h).
+
+L1_1  Is_Null_Var(p)     exit // if (p == NULL)
+L1_1  Is_Not_Null_Var(p) L1_2
+                            //   return q;
+L1_2  Is_Null_Var(q)     exit // if (q == NULL)
+L1_2  Is_Not_Null_Var(q) L1_3
+                            //   return p;      
+L1_3  uninterpreted()    L1_4   // if (p->val < q->val) {
+L1_3  uninterpreted()    L1_6
+L1_4  Copy_Var_L(h, p)   L1_5   //   head_list = p;
+L1_5  Get_Next_L(p, p)   L1_8   //   p = p->n;
+                            // }
+                            // else {
+L1_6  Copy_Var_L(h, q)   L1_7   //   head_list = q;
+L1_7  Get_Next_L(q, q)   L1_8   //   q = q->n;
+                            // }
+L1_8  Copy_Var_L(t, h)   L1_9   // tail_list = head_list;
+L1_9  Is_Not_Null_Var(p) L1_10  // while(p != NULL && q != NULL) {
+L1_9  Is_Null_Var(p)     L1_19
+L1_10 Is_Not_Null_Var(q) L1_11
+L1_10 Is_Null_Var(q)     L1_19
+L1_11 uninterpreted()    L1_12  //   if (p->val < q->val) {
+L1_11 uninterpreted()    L1_15
+L1_12 Set_Next_Null_L(t) L1_13  //     tail_list->n = NULL;
+L1_13 Set_Next_L(t, p)   L1_14  //     tail_list->n = p;
+L1_14 Get_Next_L(p, p)   L1_18  //     p = p->n;
+                            //   }
+                            //   else {
+L1_15 Set_Next_Null_L(t) L1_16  //     tail_list->n = NULL;
+L1_16 Set_Next_L(t, q)   L1_17  //     tail_list->n = q;
+L1_17 Get_Next_L(q, q)   L1_18  //     q = q->n;
+                            //   }
+L1_18 Get_Next_L(t, t)   L1_9   //   tail_list = tail_list->n;
+                            // }
+L1_19 Is_Not_Null_Var(p) L1_20  // if (p != NULL) {
+L1_19 Is_Null_Var(p)     L1_22
+L1_20 Set_Next_Null_L(t) L1_21  //   tail_list->n = NULL;
+L1_21 Set_Next_L(t, p)   L1_25  //   tail_list->n = p;
+                            // }
+L1_22 Is_Not_Null_Var(q) L1_23  // else if (q != NULL) {
+L1_22 Is_Null_Var(q)     L1_25
+L1_23 Set_Next_Null_L(t) L1_24  //   tail_list->n = NULL;
+L1_24 Set_Next_L(t, q)   L1_25  //   tail_list->n = p;
+                            // }
+L1_25 skip()             exit
+exit Assert_ListInvariants(h) error
+exit Assert_No_Leak(h)        error
+
+%%
+
+/////////////////////////////////////////////////////////////////////////
+// Display only structures that arise at the following program locations.
+L1_1, exit
