@@ -54,6 +54,7 @@ public class IntraProcEngine extends Engine {
 	protected boolean postHocTransitionRelation = false;
 	protected boolean dynamicTransitionRelation = false;
 	protected boolean checkTermination = false;
+	protected boolean summarizeLoops = true;
 
 	/**
 	 * Constructs and initializes an intra-procedural engine.
@@ -72,6 +73,7 @@ public class IntraProcEngine extends Engine {
 		Map<Pair<Location, Set<Canonic>>, RTNode> nodes = new HashMap<>();
 		Map<Node, List<Node>> embeddingFunction = HashMapFactory.make();
 		Map<HighLevelTVS, Map<Node, Node>> nodesTransition = new HashMap<>();
+		List<String> nodeMessages = new ArrayList<>();
 		int nestingDepth = 1;
 
 		// Joining the input structures and putting them in the entry location.
@@ -116,10 +118,8 @@ public class IntraProcEngine extends Engine {
 
 						curr = nodes.getOrDefault(currKey, null);
 						if (curr == null) {
-							curr = new RTNode(currentLocationLoc, structure);
-							filter = FilterNodes(structure); // interprocedure
-																// fix, skip
-																// 'List' nodes
+							curr = RTNode.Create(currentLocationLoc, structure, summarizeLoops, nodeMessages);
+							filter = FilterNodes(structure); // interprocedure fix, skip 'List' nodes
 
 							nodes.putIfAbsent(currKey, curr);
 							transitionGraph.addNode(curr);
@@ -195,7 +195,7 @@ public class IntraProcEngine extends Engine {
 									canonic);
 							RTNode next = nodes.getOrDefault(nextKey, null);
 							if (next == null) {
-								next = new RTNode(nextLocation, result);
+								next = RTNode.Create(nextLocation, result, summarizeLoops, nodeMessages);
 								nodes.putIfAbsent(nextKey, next);
 								transitionGraph.addNode(next);
 								if (nextLocation == cfg.getEntryLocation())
@@ -277,9 +277,16 @@ public class IntraProcEngine extends Engine {
 			// areLike(terminationAnalysisInput.RegionTransitionGraph,
 			// transitionGraph));
 
+			if (nodeMessages.size() > 0 && ProgramProperties.getBooleanProperty("tvla.td.verbose", false)) {
+				Logger.println();
+				Logger.println("Parsing warnings:");
+				for (String msg : nodeMessages) {
+					Logger.println(msg);
+				}
+			}
+
 			String dotOutDir = ProgramProperties.getProperty("tvla.td.dot", null);
-			TerminationAnalysisInput terminationAnalysisInput = new TerminationAnalysisInput(transitionGraph,
-					entryNodes, nestingDepth, dotOutDir);
+			TerminationAnalysisInput terminationAnalysisInput = new TerminationAnalysisInput(transitionGraph,entryNodes, nestingDepth, dotOutDir, summarizeLoops);
 			TerminationVerifier.defaultInstance.Analyze(terminationAnalysisInput);
 		}
 
@@ -366,19 +373,18 @@ public class IntraProcEngine extends Engine {
 		for (Location loc : cfg.getLocations()) {
 
 			// TODO more generic
-			int loopIndex = Character.isDigit(loc.label().charAt(1)) ? Integer.parseInt(loc.label().substring(1, 2))
-					: 1;
+			String label = loc.label().trim();
+			int loopIndex = label.length() > 1 && Character.isDigit(loc.label().charAt(1)) ? Integer.parseInt(loc.label().substring(1, 2)) : 1;
 
 			for (TVS tvs : loc.structures) {
 
 				Pair<TVS, Location> pair = new Pair<TVS, Location>(tvs, loc);
-				RTNode node = new RTNode(pair);
+				RTNode node = new RTNode(pair, loopIndex);
 				nodes.put(pair, node);
 
 				if (loc == cfg.getEntryLocation())
 					entryNodes.add(node);
 
-				node.LoopIndex = loopIndex;
 				transitionGraph.addNode(node);
 
 				nestingDepth = Math.max(nestingDepth, loopIndex);
@@ -460,8 +466,11 @@ public class IntraProcEngine extends Engine {
 			}
 		}
 
-		TerminationAnalysisInput result = new TerminationAnalysisInput(transitionGraph, entryNodes, nestingDepth,
-				ProgramProperties.getProperty("tvla.td.dot", null));
+		TerminationAnalysisInput result = new TerminationAnalysisInput(transitionGraph,
+		                                                               entryNodes,
+		                                                               nestingDepth,
+		                                                               ProgramProperties.getProperty("tvla.td.dot", null),
+		                                                               summarizeLoops);
 
 		return result;
 	}
@@ -608,6 +617,7 @@ public class IntraProcEngine extends Engine {
 		maintainTransitionRelation = ProgramProperties.getBooleanProperty("tvla.tr.enabled", false);
 
 		checkTermination = ProgramProperties.getBooleanProperty("tvla.td.enabled", false);
+		summarizeLoops = !ProgramProperties.getBooleanProperty("tvla.td.summarizationOff", false);
 
 		if (maintainTransitionRelation) {
 			postHocTransitionRelation = ProgramProperties.getBooleanProperty("tvla.tr.posthoc", false);

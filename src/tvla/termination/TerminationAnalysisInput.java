@@ -12,12 +12,18 @@ public final class TerminationAnalysisInput {
   public final List<RTNode> EntryNodes;
   public final int          NestingDepth;
   public final String       OutputDir;
+  public final Boolean      SummarizeLoops;
 
-  public TerminationAnalysisInput(Graph regionTransitionGraph, List<RTNode> entryNodes, int nestingDepth, String outputDir) {
+  public TerminationAnalysisInput(Graph        regionTransitionGraph,
+                                  List<RTNode> entryNodes,
+                                  int          nestingDepth,
+                                  String       outputDir,
+                                  Boolean      summarizeLoops) {
     RegionTransitionGraph = regionTransitionGraph;
     EntryNodes = entryNodes;
 
     NestingDepth = nestingDepth;
+    SummarizeLoops = summarizeLoops;
     OutputDir = outputDir;
   }
 }

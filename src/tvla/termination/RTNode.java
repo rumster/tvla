@@ -22,7 +22,7 @@ public final class RTNode {
 
 
   public final int ID;
-  public static int s_ID;
+  private static int s_ID;
 
   public Location Location;
   public TVS      Structure;
@@ -33,22 +33,21 @@ public final class RTNode {
   public int LoopIndex = 0;
   public RTNodeType Type = RTNodeType.Default;
 
-  private Map<Integer, RTSubNode> m_SubNodes = null;
+  private Map<Integer, RTSubNode> m_SubNodes = null; 
 
-  public RTNode(Pair<TVS, Location> pair) {
-    this(pair.second, pair.first);
+  public RTNode(Pair<TVS, Location> pair, Integer loopIndex) {
+    this(pair.second, pair.first, loopIndex);
   }
 
-  public RTNode(Location loc, TVS struct) {
+  public RTNode(Location loc, TVS struct, int loopIndex) {
     ID = s_ID++;
     Location = loc;
     Structure = struct;
+    LoopIndex = loopIndex;
 
-    if (loc == null || struct == null) {
+    if (loc == null || struct == null || LoopIndex < 0) {
       System.out.println("TraceNode internal error");
     }
-
-    LoopIndex = Character.isDigit(loc.label().charAt(1)) ? Integer.parseInt(loc.label().substring(1, 2)) : 1;
   }
 
   @Override
@@ -125,7 +124,26 @@ public final class RTNode {
 
     return result;
   }
-/*
+
+  public static RTNode Create(Location loc, TVS struct, Boolean parseLoopIndex, List<String> messages) {
+      
+      int loopIndex = 1;
+      
+      if (parseLoopIndex) {
+          try {
+              loopIndex = Integer.parseInt(loc.label().trim().substring(1, 2));
+          }
+          catch (Exception e) {
+              loopIndex = 1;
+              messages.add("Termination analysis failed to parse location " + loc.label());
+          }
+      }
+      
+      RTNode result = new RTNode(loc, struct, loopIndex);
+      return result;
+  }
+
+  /*
   @Override public boolean equals(Object aThat) {
 
     return Structure == ((RTNode)aThat).Structure && Location == ((RTNode)aThat).Location;
