@@ -342,8 +342,10 @@ public class Runner {
 		System.err.println(" -tr:tvs <file name>     Creates a transition relation output in tvs-like format.");
 		System.err.println(" -dot <file name>        Creates a DOT formatted output.");
 		System.err.println(" -tr:dot <file name>     Creates a transition relation output in dot format.");
-		System.err.println(" -td     					       Enables termination analysis.");
+		System.err.println(" -td                     Enables termination analysis.");
 		System.err.println(" -td.dot  <dir name>     Enables termination analysis, and saves the debug info to <dir name>.");
+		System.err.println(" -td.summarizationOff    Disables loops summarization during termination analysis.");
+		System.err.println(" -td.verbose             Enables termination analysis verbose mode.");
 		System.err.println(" -D<macro name>[(value)] Defines a C preprocessor macro.");
 		System.err.println(" -terse                  Turns off on-line information printouts.");
 		System.err.println(" -nowarnings             Causes all warnings to be ignored.");
@@ -524,6 +526,12 @@ public class Runner {
 
 				ProgramProperties.setBooleanProperty("tvla.td.enabled", true);
 				ProgramProperties.setProperty("tvla.td.dot", args[i]);
+			}
+			else if (args[i].equals("-td.summarizationOff")) {
+				ProgramProperties.setBooleanProperty("tvla.td.summarizationOff", true);
+			}
+			else if (args[i].equals("-td.verbose")) {
+				ProgramProperties.setBooleanProperty("tvla.td.verbose", true);
 			}
 			else if (args[i].equals("-terse")) {
 				ProgramProperties.setProperty("tvla.terse", "true");

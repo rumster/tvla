@@ -31,7 +31,9 @@ public class TerminationVerifier {
 
 		AnalysisStatus.getActiveStatus().startTimer(AnalysisStatus.TD_TIME);
 
-		boolean satisfiable = Analyze(terminationAnalysisInput, graphsSat, graphsUnSat, summaries);
+		boolean satisfiable = terminationAnalysisInput.SummarizeLoops ? 
+								Analyze(terminationAnalysisInput, graphsSat, graphsUnSat, summaries) :
+								AnalyzeSummarizationOff(terminationAnalysisInput, graphsSat, graphsUnSat, summaries);
 
 		AnalysisStatus.getActiveStatus().stopTimer(AnalysisStatus.TD_TIME);
 
@@ -82,30 +84,72 @@ public class TerminationVerifier {
 			}
 		}
 
-		/*
-		 * List<Graph> oldUnSat = graphsUnSatOut; List<Graph> newSat = new
-		 * ArrayList<>(); List<Graph> newUnSat = null;
-		 * 
-		 * for (int i = 0; i < 1; i++) { newUnSat = new ArrayList<>(); for
-		 * (Graph g : oldUnSat) { if (IsSatisfiable(g, newUnSat)) {
-		 * newSat.add(g); } } oldUnSat = newUnSat; }
-		 * 
-		 * Map<Integer, List<Graph>> mapSat = new HashMap<>(); Map<Integer,
-		 * List<Graph>> mapUnSat = new HashMap<>(); mapSat.put(1, newSat);
-		 * mapUnSat.put(1, newUnSat);
-		 * 
-		 * DotUtils.SaveLevelGraphsToMultFiles("C:\\temp\\graphs\\new_sat_",
-		 * true, mapSat);
-		 * DotUtils.SaveLevelGraphsToMultFiles("C:\\temp\\graphs\\new_unsat_",
-		 * true, mapUnSat);
-		 */
-
 		AnalysisStatus.getActiveStatus().stopTimer(AnalysisStatus.TD_SAT_TIME);
 
-		return graphsUnSatOut.size() == 0;
-		// return newUnSat.size() == 0;
-	}
+		return graphsUnSatOut.size() == 0; 
+    }
 
+	private boolean AnalyzeSummarizationOff(TerminationAnalysisInput analysisInput, List<Graph> graphsSatOut, List<Graph> graphsUnSatOut, Map<Integer, List<Graph>> summaries) {
+
+		AnalysisStatus.getActiveStatus().startTimer(AnalysisStatus.TD_SUM_TIME);
+
+		assert analysisInput.RegionTransitionGraph.getNumberOfNodes() > 0;
+		assert analysisInput.RegionTransitionGraph.getNumberOfEdges() > analysisInput.RegionTransitionGraph.getNumberOfNodes() * 0.9;
+
+		Map<Integer, List<Graph>> graphs = SummarizeGraph(analysisInput.RegionTransitionGraph, analysisInput.EntryNodes, 1);
+
+		assert graphs.size() > 0;
+
+		summaries.putAll(graphs);
+      	List<Graph> sccList = new ArrayList<>();
+
+      	for (Map.Entry<Integer, List<Graph>> entry : graphs.entrySet()) {
+      		for (Graph g : entry.getValue())
+      			GraphSCC.ComputeNotTrivialSCC(g, sccList);
+      	}
+
+      	AnalysisStatus.getActiveStatus().stopTimer(AnalysisStatus.TD_SUM_TIME);
+
+      	AnalysisStatus.getActiveStatus().startTimer(AnalysisStatus.TD_SAT_TIME);
+
+      	for (Graph g : sccList) {
+      		if (IsSatisfiable(g, graphsUnSatOut)) {
+      			graphsSatOut.add(g);
+      		}
+      	}
+
+      	List<Graph> oldUnSat = graphsUnSatOut;
+      	List<Graph> newSat = new ArrayList<>();
+      	List<Graph> newUnSat = oldUnSat;
+      	Integer prevUnSatCount = oldUnSat.size() + 1;
+
+      	while (oldUnSat.size() > 0 && oldUnSat.size() < prevUnSatCount) {
+      		prevUnSatCount = newUnSat.size();
+      		newUnSat = new ArrayList<>();
+        
+      		for (Graph g : oldUnSat) {
+      			if (IsSatisfiable(g, newUnSat)) {
+      				newSat.add(g);
+      			}
+      		}
+      		
+      		oldUnSat = newUnSat;
+      	}       
+
+        /*
+      	Map<Integer, List<Graph>> mapSat = new HashMap<>();
+      	Map<Integer, List<Graph>> mapUnSat = new HashMap<>();
+      	mapSat.put(1, newSat);
+      	mapUnSat.put(1, newUnSat);
+
+      	DotUtils.SaveLevelGraphsToMultFiles("C:\\temp\\graphs\\new_sat_", true, mapSat);
+      	DotUtils.SaveLevelGraphsToMultFiles("C:\\temp\\graphs\\new_unsat_", true, mapUnSat);
+         */
+        AnalysisStatus.getActiveStatus().stopTimer(AnalysisStatus.TD_SAT_TIME);
+
+        return oldUnSat.size() == 0;
+	}
+	
 	private boolean IsReachable(Graph graph, Graph subGraph, List<RTNode> nodes) {
 		Set set = GraphUtils.getReachableNodes(graph, nodes, true, true);
 
@@ -345,10 +389,10 @@ public class TerminationVerifier {
 					String trHash = GetTRHash((RTNode) nodeParentObj, nodeExit, tr);
 
 					if (hash.add(trHash)) {
-						RTNode summaryNode = new RTNode(nodeExit.Location, nodeExit.Structure);
-						summaryNode.Label = "Summary";
-						summaryNode.Type = RTNode.RTNodeType.NestedLoopExit;
-						nodeExit.Type = RTNode.RTNodeType.NestedLoopExit;
+          				RTNode summaryNode = new RTNode(nodeExit.Location, nodeExit.Structure, 1);
+          				summaryNode.Label = "Summary";
+          				summaryNode.Type = RTNode.RTNodeType.NestedLoopExit;
+          				nodeExit.Type = RTNode.RTNodeType.NestedLoopExit;
 
 						graphParent.addNode(summaryNode);
 						graphParent.addEdge(nodeParentObj, summaryNode, tr);
