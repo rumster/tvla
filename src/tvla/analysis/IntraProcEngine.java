@@ -442,6 +442,7 @@ public class IntraProcEngine extends Engine {
 
 								if (transitionGraph.containsEdge(curr, next)) {
 									// Consistency assertion
+									@SuppressWarnings("unchecked")
 									Map<Node, List<Node>> regionTransition2 = (Map<Node, List<Node>>) transitionGraph
 											.getEdge(curr, next).getLabel();
 									assert regionTransition.equals(regionTransition2);

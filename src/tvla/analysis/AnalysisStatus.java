@@ -489,8 +489,8 @@ public class AnalysisStatus {
 			println(to, "Termination analysis result  : "
 					+ (TerminationAnalysisResult ? "terminating" : "possibly non-terminating"));
 			println(to, "Termination analysis time    : " + (float) currentTdTime + "\tseconds");
-			println(to, "TD summarizaiton time        : " + (float) currentTdSumTime + "\tseconds");
-			println(to, "TD verification time         : " + (float) currentTdSatTime + "\tseconds");
+			println(to, "Summarizaiton time           : " + (float) currentTdSumTime + "\tseconds");
+			println(to, "Verification time            : " + (float) currentTdSatTime + "\tseconds");
 		}
 
 		println(to, "");
