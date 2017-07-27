@@ -20,40 +20,40 @@
                                           // @Ensures marked == REACH(root)
                                           // void Mark(Node root, NodeSet marked) {
                                           //   Node x;
-L0  IsNotNull(root)                   L1  //   if (root != null) {
-L0  IsNull(root)                      L19 //
-L1  SetClear(pending)                 L2  //     pending.clear();
-L2  SetAdd(pending, root)             L3  //     pending.add(root);
-L3  SetClear(marked)                  L4  //     marked.clear();
-L4  SetNotIsEmpty(pending)            L5  //     while (!pending.isEmpty()) {
-L4  SetIsEmpty(pending)               L19
-L5  SetSelectAndRemove(pending, x)    L6  //       x = pending.selectAndRemove();
+L1_0  IsNotNull(root)                   L1_1  //   if (root != null) {
+L1_0  IsNull(root)                      L1_19 //
+L1_1  SetClear(pending)                 L1_2  //     pending.clear();
+L1_2  SetAdd(pending, root)             L1_3  //     pending.add(root);
+L1_3  SetClear(marked)                  L1_4  //     marked.clear();
+L1_4  SetNotIsEmpty(pending)            L1_5  //     while (!pending.isEmpty()) {
+L1_4  SetIsEmpty(pending)               L1_19
+L1_5  SetSelectAndRemove(pending, x)    L1_6  //       x = pending.selectAndRemove();
 
-L6  SetAdd(marked, x)                 L7  //       marked.add(x);
-L7  AssignFieldSelect(t, x, left)     L8  //       t = x.left;
-L8  IsNotNull(t)                      L9  //       if (t != null) {
-L8  IsNull(t)                         L12
-L9  SetNotContains(marked, t)         L11 //         if (!marked.contains(t)) {
-L9  SetContains(marked, t)            L12
-L11 SetAdd(pending, t)                L12 //           pending.add(t)
+L1_6  SetAdd(marked, x)                 L1_7  //       marked.add(x);
+L1_7  AssignFieldSelect(t, x, left)     L1_8  //       t = x.left;
+L1_8  IsNotNull(t)                      L1_9  //       if (t != null) {
+L1_8  IsNull(t)                         L1_12
+L1_9  SetNotContains(marked, t)         L1_11 //         if (!marked.contains(t)) {
+L1_9  SetContains(marked, t)            L1_12
+L1_11 SetAdd(pending, t)                L1_12 //           pending.add(t)
                                           //         }
                                           //       }
-L12 AssignNull(t)                     L13 //       t = null;
-L13 AssignFieldSelect(t, x, right)    L15 //       t = x.right;
-L15 IsNotNull(t)                      L16 //       if (t != null) {
-L15 IsNull(t)                         L18
-L16 SetNotContains(marked, t)         L17 //         if (!marked.contains(t)) {
-L16 SetContains(marked, t)            L18
-L17 SetAdd(pending, t)                L18 //           pending.add(t)
+L1_12 AssignNull(t)                     L1_13 //       t = null;
+L1_13 AssignFieldSelect(t, x, right)    L1_15 //       t = x.right;
+L1_15 IsNotNull(t)                      L1_16 //       if (t != null) {
+L1_15 IsNull(t)                         L1_18
+L1_16 SetNotContains(marked, t)         L1_17 //         if (!marked.contains(t)) {
+L1_16 SetContains(marked, t)            L1_18
+L1_17 SetAdd(pending, t)                L1_18 //           pending.add(t)
                                           //         }
                                           //       }
-L18 AssignNull(t)                     L4  //       t = null;
+L1_18 AssignNull(t)                     L1_4  //       t = null;
                                           //    }
-L19 SetNotEqualReachset(marked, root) error
+L1_19 SetNotEqualReachset(marked, root) error
                                           //    if (marked.SetNotEqualReachset(root)) {
                                           //      System.err.println("Internal error: mark phase of gc")
                                           //    }
-L19 SetEqualReachset(marked, root)    exit
+L1_19 SetEqualReachset(marked, root)    exit
                                           //   }
                                           // }
 
@@ -61,4 +61,4 @@ L19 SetEqualReachset(marked, root)    exit
 
 /////////////////////////////////////////////////////////////////////////
 // Display only structures that arise at the following program locations.
-L0, exit, error
+L1_0, exit, error
